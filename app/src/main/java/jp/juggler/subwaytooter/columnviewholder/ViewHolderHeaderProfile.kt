@@ -29,7 +29,6 @@ import jp.juggler.subwaytooter.dialog.showTextInputDialog
 import jp.juggler.subwaytooter.emoji.EmojiMap
 import jp.juggler.subwaytooter.itemviewholder.DlgContextMenu
 import jp.juggler.subwaytooter.pref.PrefB
-import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.subwaytooter.span.EmojiImageSpan
 import jp.juggler.subwaytooter.span.LinkInfo
 import jp.juggler.subwaytooter.span.MyClickableSpan
@@ -1044,8 +1043,7 @@ internal class ViewHolderHeaderProfile(
                 valueText.append(TootStatus.formatTime(activity, item.verified_at, false))
                 val end = valueText.length
 
-                val linkFgColor = PrefI.ipVerifiedLinkFgColor.value.notZero()
-                    ?: (Color.BLACK or 0x7fbc99)
+                val linkFgColor = Color.BLACK or 0x7fbc99
 
                 valueText.setSpan(
                     ForegroundColorSpan(linkFgColor),
@@ -1065,8 +1063,7 @@ internal class ViewHolderHeaderProfile(
             valueInvalidator.text = valueText
 
             if (item.verified_at > 0L) {
-                val linkBgColor = PrefI.ipVerifiedLinkBgColor.value.notZero()
-                    ?: (0x337fbc99)
+                val linkBgColor = 0x337fbc99
 
                 valueView.setBackgroundColor(linkBgColor)
             }

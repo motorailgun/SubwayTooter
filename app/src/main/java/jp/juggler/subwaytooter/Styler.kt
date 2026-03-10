@@ -29,7 +29,6 @@ import jp.juggler.subwaytooter.pref.lazyContext
 import jp.juggler.subwaytooter.span.EmojiImageSpan
 import jp.juggler.subwaytooter.span.createSpan
 import jp.juggler.subwaytooter.table.UserRelation
-import jp.juggler.util.data.notZero
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.fixColor
@@ -183,13 +182,9 @@ fun setFollowIcon(
     defaultColor: Int,
     alphaMultiplier: Float,
 ) {
-    val colorFollowed =
-        PrefI.ipButtonFollowingColor.value.notZero()
-            ?: context.attrColor(R.attr.colorButtonAccentFollow)
+    val colorFollowed = context.attrColor(R.attr.colorButtonAccentFollow)
 
-    val colorFollowRequest =
-        PrefI.ipButtonFollowRequestColor.value.notZero()
-            ?: context.attrColor(R.attr.colorButtonAccentFollowRequest)
+    val colorFollowRequest = context.attrColor(R.attr.colorButtonAccentFollowRequest)
 
     val colorError = context.attrColor(R.attr.colorRegexFilterError)
 
@@ -420,7 +415,7 @@ fun Context.setSwitchColor(root: View?) {
     root ?: return
     val colorBg = attrColor(R.attr.colorMainBackground)
     val colorOff = attrColor(R.attr.colorSwitchOff)
-    val colorOn = PrefI.ipSwitchOnColor.value
+    val colorOn = android.graphics.Color.BLACK or 0x0080ff
 
     val colorDisabled = mixColor(colorBg, colorOff)
 
@@ -488,9 +483,7 @@ fun ComponentActivity.enableEdgeToEdgeEx(forceDark: Boolean) {
     }
     val colorBarBg = when{
         forceDark -> Color.BLACK
-        // API 28以下では色を指定できる
-        else -> PrefI.ipWindowInsetsColor.value.notZero()
-            ?: attrColor(R.attr.colorWindowInsetsBg)
+        else -> attrColor(R.attr.colorWindowInsetsBg)
     }
 
     val barStyle =when {

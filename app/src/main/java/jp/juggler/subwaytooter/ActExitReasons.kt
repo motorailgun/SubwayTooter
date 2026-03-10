@@ -78,7 +78,7 @@ class ActExitReasons : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        val stColorScheme = getStColorTheme()
+        val colorScheme = getStColorTheme()
 
         val am = getSystemService(ActivityManager::class.java)
         if (am == null) {
@@ -97,7 +97,7 @@ class ActExitReasons : ComponentActivity() {
 
         setContent {
             StScreen(
-                stColorScheme = stColorScheme,
+                colorScheme = colorScheme,
                 title = getString(R.string.exit_reasons),
                 onBack = { finish() },
             ) { innerPadding ->

@@ -19,7 +19,6 @@ import jp.juggler.subwaytooter.api.entity.TootReaction
 import jp.juggler.subwaytooter.api.entity.TootStatus
 import jp.juggler.subwaytooter.dialog.actionsDialog
 import jp.juggler.subwaytooter.pref.PrefB
-import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.util.DecodeOptions
 import jp.juggler.subwaytooter.util.NetworkEmojiInvalidator
@@ -28,7 +27,6 @@ import jp.juggler.subwaytooter.util.emojiSizeMode
 import jp.juggler.subwaytooter.util.minWidthCompat
 import jp.juggler.subwaytooter.util.startMargin
 import jp.juggler.util.coroutine.launchAndShowError
-import jp.juggler.util.data.notZero
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.getAdaptiveRippleDrawableRound
@@ -102,8 +100,7 @@ fun ItemViewHolder.makeReactionsView(status: TootStatus) {
                 // 自分がリアクションしたやつは背景を変える
                 getAdaptiveRippleDrawableRound(
                     act,
-                    PrefI.ipButtonReactionedColor.value.notZero()
-                        ?: act.attrColor(R.attr.colorButtonAccentReaction),
+                    act.attrColor(R.attr.colorButtonAccentReaction),
                     act.attrColor(R.attr.colorRippleEffect),
                     roundNormal = true
                 )

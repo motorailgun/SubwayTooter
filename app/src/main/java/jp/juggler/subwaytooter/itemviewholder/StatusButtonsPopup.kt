@@ -17,7 +17,6 @@ import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootNotification
 import jp.juggler.subwaytooter.api.entity.TootStatus
 import jp.juggler.subwaytooter.column.Column
-import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.util.data.*
 import jp.juggler.util.log.*
 import jp.juggler.util.ui.*
@@ -135,8 +134,7 @@ internal class StatusButtonsPopup(
         buttonsForStatus.bind(status, notification)
         buttonsForStatus.closeWindow = window
 
-        val bgColor = PrefI.ipPopupBgColor.value
-            .notZero() ?: activity.attrColor(R.attr.colorStatusButtonsPopupBg)
+        val bgColor = activity.attrColor(R.attr.colorStatusButtonsPopupBg)
         val bgColorState = ColorStateList.valueOf(bgColor)
         ivTriangleTop.backgroundTintList = bgColorState
         ivTriangleBottom.backgroundTintList = bgColorState

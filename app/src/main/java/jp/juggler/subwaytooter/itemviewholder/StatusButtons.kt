@@ -48,7 +48,6 @@ import jp.juggler.subwaytooter.table.daoUserRelation
 import jp.juggler.subwaytooter.util.CustomShare
 import jp.juggler.subwaytooter.util.CustomShareTarget
 import jp.juggler.subwaytooter.util.startMargin
-import jp.juggler.util.data.notZero
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.applyAlphaMultiplier
 import jp.juggler.util.ui.attrColor
@@ -221,8 +220,7 @@ class StatusButtons(
                 setButton(
                     btnBoost,
                     false,
-                    PrefI.ipButtonBoostedColor.value.notZero()
-                        ?: activity.attrColor(R.attr.colorButtonAccentBoost),
+                    activity.attrColor(R.attr.colorButtonAccentBoost),
                     R.drawable.ic_mail,
                     "",
                     activity.getString(R.string.boost)
@@ -243,8 +241,7 @@ class StatusButtons(
                 true,
                 when {
                     status.reblogged ->
-                        PrefI.ipButtonBoostedColor.value.notZero()
-                            ?: activity.attrColor(R.attr.colorButtonAccentBoost)
+                        activity.attrColor(R.attr.colorButtonAccentBoost)
 
                     else ->
                         colorTextContent
@@ -290,8 +287,7 @@ class StatusButtons(
                 true,
                 when (myReactionCount) {
                     0 -> colorTextContent
-                    else -> PrefI.ipButtonReactionedColor.value.notZero()
-                        ?: activity.attrColor(R.attr.colorButtonAccentReaction)
+                    else -> activity.attrColor(R.attr.colorButtonAccentReaction)
                 },
                 when (myReactionCount >= maxReactionPerAccount) {
                     true -> R.drawable.outline_face_retouching_off
@@ -325,8 +321,7 @@ class StatusButtons(
                     true,
                     when {
                         status.favourited ->
-                            PrefI.ipButtonFavoritedColor.value.notZero()
-                                ?: activity.attrColor(R.attr.colorButtonAccentFavourite)
+                            activity.attrColor(R.attr.colorButtonAccentFavourite)
 
                         else -> colorTextContent
                     },
@@ -371,8 +366,7 @@ class StatusButtons(
                             true,
                             when {
                                 status.bookmarked ->
-                                    PrefI.ipButtonBookmarkedColor.value.notZero()
-                                        ?: activity.attrColor(R.attr.colorButtonAccentBookmark)
+                                    activity.attrColor(R.attr.colorButtonAccentBookmark)
 
                                 else ->
                                     colorTextContent

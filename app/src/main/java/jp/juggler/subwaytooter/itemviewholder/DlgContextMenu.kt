@@ -27,7 +27,6 @@ import jp.juggler.subwaytooter.column.ColumnType
 import jp.juggler.subwaytooter.dialog.dialogQrCode
 import jp.juggler.subwaytooter.dialog.openDlgListMember
 import jp.juggler.subwaytooter.pref.PrefB
-import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.subwaytooter.span.MyClickableSpan
 import jp.juggler.subwaytooter.table.*
 import jp.juggler.subwaytooter.util.*
@@ -711,12 +710,10 @@ internal class DlgContextMenu(
         llNotification.vg(notification != null)
 
         val colorButtonAccent =
-            PrefI.ipButtonFollowingColor.value.notZero()
-                ?: activity.attrColor(R.attr.colorButtonAccentFollow)
+            activity.attrColor(R.attr.colorButtonAccentFollow)
 
         val colorButtonFollowRequest =
-            PrefI.ipButtonFollowRequestColor.value.notZero()
-                ?: activity.attrColor(R.attr.colorButtonAccentFollowRequest)
+            activity.attrColor(R.attr.colorButtonAccentFollowRequest)
 
         val colorButtonNormal =
             activity.attrColor(R.attr.colorTextContent)

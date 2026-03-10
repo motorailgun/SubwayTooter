@@ -8,7 +8,6 @@ import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.DuplicateMap
 import jp.juggler.subwaytooter.api.entity.*
 import jp.juggler.subwaytooter.columnviewholder.ColumnViewHolder
-import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.subwaytooter.streaming.StreamCallback
 import jp.juggler.subwaytooter.streaming.StreamStatus
 import jp.juggler.subwaytooter.table.SavedAccount
@@ -92,24 +91,12 @@ class Column(
         var defaultColorContentText = 0
 
         fun reloadDefaultColor(activity: AppCompatActivity) {
-
-            defaultColorHeaderBg = PrefI.ipCcdHeaderBg.value.notZero()
-                ?: activity.attrColor(R.attr.color_column_header)
-
-            defaultColorHeaderName = PrefI.ipCcdHeaderFg.value.notZero()
-                ?: activity.attrColor(R.attr.colorColumnHeaderName)
-
-            defaultColorHeaderPageNumber = PrefI.ipCcdHeaderFg.value.notZero()
-                ?: activity.attrColor(R.attr.colorColumnHeaderPageNumber)
-
-            defaultColorContentBg = PrefI.ipCcdContentBg.value
-            // may zero
-
-            defaultColorContentAcct = PrefI.ipCcdContentAcct.value.notZero()
-                ?: activity.attrColor(R.attr.colorTimeSmall)
-
-            defaultColorContentText = PrefI.ipCcdContentText.value.notZero()
-                ?: activity.attrColor(R.attr.colorTextContent)
+            defaultColorHeaderBg = activity.attrColor(R.attr.color_column_header)
+            defaultColorHeaderName = activity.attrColor(R.attr.colorColumnHeaderName)
+            defaultColorHeaderPageNumber = activity.attrColor(R.attr.colorColumnHeaderPageNumber)
+            defaultColorContentBg = 0 // transparent, uses theme background
+            defaultColorContentAcct = activity.attrColor(R.attr.colorTimeSmall)
+            defaultColorContentText = activity.attrColor(R.attr.colorTextContent)
         }
 
         private val internalIdSeed = AtomicInteger(0)

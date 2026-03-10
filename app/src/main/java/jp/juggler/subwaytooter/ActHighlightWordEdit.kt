@@ -107,7 +107,7 @@ class ActHighlightWordEdit : ComponentActivity() {
 
         arNotificationSound.register(this)
         App1.setActivityTheme(this)
-        val stColorScheme = getStColorTheme()
+        val colorScheme = getStColorTheme()
 
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
         setResult(RESULT_CANCELED)
@@ -137,7 +137,7 @@ class ActHighlightWordEdit : ComponentActivity() {
 
             setContent {
                 StScreen(
-                    stColorScheme = stColorScheme,
+                    colorScheme = colorScheme,
                     title = stringResource(R.string.highlight_word),
                     onBack = { finish() },
                 ) { contentPadding ->

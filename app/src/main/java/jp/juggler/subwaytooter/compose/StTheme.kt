@@ -3,6 +3,7 @@ package jp.juggler.subwaytooter.compose
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -16,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import jp.juggler.subwaytooter.R
-import jp.juggler.subwaytooter.util.StColorScheme
 
 /**
  * Common themed screen wrapper.
@@ -25,13 +25,13 @@ import jp.juggler.subwaytooter.util.StColorScheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StScreen(
-    stColorScheme: StColorScheme,
+    colorScheme: ColorScheme,
     title: String = "",
     onBack: (() -> Unit)? = null,
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-    MaterialTheme(colorScheme = stColorScheme.materialColorScheme) {
+    MaterialTheme(colorScheme = colorScheme) {
         Scaffold(
             modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
             topBar = {
@@ -60,10 +60,10 @@ fun StScreen(
  */
 @Composable
 fun StThemedContent(
-    stColorScheme: StColorScheme,
+    colorScheme: ColorScheme,
     content: @Composable () -> Unit,
 ) {
-    MaterialTheme(colorScheme = stColorScheme.materialColorScheme) {
+    MaterialTheme(colorScheme = colorScheme) {
         content()
     }
 }

@@ -23,7 +23,6 @@ import jp.juggler.subwaytooter.column.ColumnType
 import jp.juggler.subwaytooter.column.isConversation
 import jp.juggler.subwaytooter.defaultColorIcon
 import jp.juggler.subwaytooter.pref.PrefB
-import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.subwaytooter.stylerBoostAlpha
 import jp.juggler.subwaytooter.table.daoContentWarning
 import jp.juggler.subwaytooter.table.daoMediaShown
@@ -56,12 +55,10 @@ fun ItemViewHolder.showStatusOrReply(
     when {
         reply != null -> {
             showReply(item.account, reply, R.drawable.ic_reply, R.string.reply_to)
-            if (colorBgArg == 0) colorBg = PrefI.ipEventBgColorMention.value
         }
 
         inReplyToId != null && inReplyToAccountId != null -> {
             showReply(null, item, inReplyToAccountId)
-            if (colorBgArg == 0) colorBg = PrefI.ipEventBgColorMention.value
         }
     }
     showStatus(item, colorBg, fadeText = fadeText)
@@ -75,9 +72,6 @@ fun ItemViewHolder.showStatus(
 
     val filteredWord = status.filteredWord
     if (filteredWord != null) {
-        PrefI.ipEventBgColorFiltered.value.notZero()?.let {
-            viewRoot.backgroundColor = it
-        }
         val text = StringBuilder().apply {
             append(activity.getString(R.string.filtered))
             if (PrefB.bpShowFilteredWord.value) {
@@ -96,11 +90,10 @@ fun ItemViewHolder.showStatus(
     llStatus.visibility = View.VISIBLE
 
     if (status.conversation_main) {
-        PrefI.ipConversationMainTootBgColor.value.notZero()
-            ?: activity.attrColor(R.attr.colorConversationMainTootBg)
+        activity.attrColor(R.attr.colorConversationMainTootBg)
     } else {
         colorBg.notZero() ?: when (status.bookmarked) {
-            true -> PrefI.ipEventBgColorBookmark.value
+            true -> 0
             false -> 0
         }.notZero() ?: when (status.getBackgroundColorType(accessInfo)) {
             TootVisibility.UnlistedHome -> ItemViewHolder.toot_color_unlisted

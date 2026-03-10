@@ -27,7 +27,6 @@ import jp.juggler.subwaytooter.column.getContentColor
 import jp.juggler.subwaytooter.columnviewholder.ItemListAdapter
 import jp.juggler.subwaytooter.drawable.PreviewCardBorder
 import jp.juggler.subwaytooter.pref.PrefB
-import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.subwaytooter.span.MyClickableSpan
 import jp.juggler.subwaytooter.table.*
 import jp.juggler.subwaytooter.util.DecodeOptions
@@ -213,14 +212,14 @@ fun ItemViewHolder.bind(
 
                     item.isQuoteToot -> {
                         // 引用Renote
-                        val colorBg = PrefI.ipEventBgColorBoost.value
+                        val colorBg = 0
                         showReply(item.account, reblog, R.drawable.ic_quote, R.string.quote_to)
                         showStatus(item, colorBg)
                     }
 
                     else -> {
                         // 引用なしブースト
-                        val colorBg = PrefI.ipEventBgColorBoost.value
+                        val colorBg = 0
                         showBoost(
                             item.accountRef,
                             item.time_created_at,
@@ -234,7 +233,7 @@ fun ItemViewHolder.bind(
             }
 
             is TootAggBoost -> {
-                val colorBg = PrefI.ipEventBgColorBoost.value
+                val colorBg = 0
                 val boosterCount = item.boosterStatuses.size
                 val headBoost = item.boosterStatuses.first()
                 if (item.boosterStatuses.size == 1) {
@@ -592,7 +591,7 @@ fun ItemViewHolder.showGap() {
     btnGapTail.vg(column.type.gapDirection(column, false))
         ?.imageTintList = contentColorCsl
 
-    val c = PrefI.ipEventBgColorGap.value
+    val c = 0
     if (c != 0) this.viewRoot.backgroundColor = c
 }
 

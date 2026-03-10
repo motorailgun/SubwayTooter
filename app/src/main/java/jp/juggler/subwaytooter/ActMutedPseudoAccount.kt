@@ -35,10 +35,10 @@ class ActMutedPseudoAccount : ComponentActivity() {
             finish()
         }
         App1.setActivityTheme(this)
-        val stColorScheme = getStColorTheme()
+        val colorScheme = getStColorTheme()
         setContent {
             StScreen(
-                stColorScheme = stColorScheme,
+                colorScheme = colorScheme,
                 title = getString(R.string.muted_users_from_pseudo_account),
                 onBack = {
                     setResult(RESULT_OK)

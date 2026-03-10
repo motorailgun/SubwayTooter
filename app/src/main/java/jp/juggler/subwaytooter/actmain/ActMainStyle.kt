@@ -22,7 +22,6 @@ import jp.juggler.subwaytooter.util.CustomShare
 import jp.juggler.subwaytooter.view.ListDivider
 import jp.juggler.util.data.clip
 import jp.juggler.util.data.notEmpty
-import jp.juggler.util.data.notZero
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.getAdaptiveRippleDrawableRound
@@ -200,42 +199,31 @@ fun reloadTimeZone() {
 // onStart時に呼ばれる
 // カラーカスタマイズを読み直す
 fun ActMain.reloadColors() {
-    ListDivider.color = PrefI.ipListDividerColor.value
-    TabletColumnDivider.color = PrefI.ipListDividerColor.value
-    ItemViewHolder.toot_color_unlisted = PrefI.ipTootColorUnlisted.value
-    ItemViewHolder.toot_color_follower = PrefI.ipTootColorFollower.value
-    ItemViewHolder.toot_color_direct_user = PrefI.ipTootColorDirectUser.value
-    ItemViewHolder.toot_color_direct_me = PrefI.ipTootColorDirectMe.value
+    ListDivider.color = 0
+    TabletColumnDivider.color = 0
+    ItemViewHolder.toot_color_unlisted = 0
+    ItemViewHolder.toot_color_follower = 0
+    ItemViewHolder.toot_color_direct_user = 0
+    ItemViewHolder.toot_color_direct_me = 0
     MyClickableSpan.showLinkUnderline = PrefB.bpShowLinkUnderline.value
-    MyClickableSpan.defaultLinkColor = PrefI.ipLinkColor.value.notZero()
-        ?: attrColor(R.attr.colorLink)
+    MyClickableSpan.defaultLinkColor = attrColor(R.attr.colorLink)
 
-    views.llFormRoot.backgroundColor = PrefI.ipCcdContentBg.value
-        .notZero() ?: attrColor(R.attr.colorMainBackground)
+    views.llFormRoot.backgroundColor = attrColor(R.attr.colorMainBackground)
 
     CustomShare.reloadCache(this)
 }
 
 fun ActMain.showFooterColor() {
-    val footerButtonBgColor = PrefI.ipFooterButtonBgColor.value
-    val footerButtonFgColor = PrefI.ipFooterButtonFgColor.value
-    val footerTabBgColor = PrefI.ipFooterTabBgColor.value
-    val footerTabDividerColor = PrefI.ipFooterTabDividerColor.value
-    val footerTabIndicatorColor = PrefI.ipFooterTabIndicatorColor.value
-
-    val colorColumnStripBackground = footerTabBgColor.notZero()
-        ?: attrColor(R.attr.colorColumnStripBackground)
+    val colorColumnStripBackground = attrColor(R.attr.colorColumnStripBackground)
 
     views.svColumnStrip.setBackgroundColor(colorColumnStripBackground)
     views.llQuickTootBar.setBackgroundColor(colorColumnStripBackground)
 
     views.vBottomPadding.setBackgroundColor(colorColumnStripBackground)
 
-    val colorButtonBg = footerButtonBgColor.notZero()
-        ?: colorColumnStripBackground
+    val colorButtonBg = colorColumnStripBackground
 
-    val colorButtonFg = footerButtonFgColor.notZero()
-        ?: attrColor(R.attr.colorRippleEffect)
+    val colorButtonFg = attrColor(R.attr.colorRippleEffect)
 
     views.btnMenu.backgroundDrawable =
         getAdaptiveRippleDrawableRound(this, colorButtonBg, colorButtonFg)
@@ -248,24 +236,20 @@ fun ActMain.showFooterColor() {
     views.btnQuickTootMenu.backgroundDrawable =
         getAdaptiveRippleDrawableRound(this, colorButtonBg, colorButtonFg)
 
-    var c = footerButtonFgColor.notZero() ?: attrColor(R.attr.colorTextContent)
+    val c = attrColor(R.attr.colorTextContent)
     val d = resDrawable(R.drawable.ic_question).wrapAndTint(color = c)
     views.ivQuickTootAccount.setDefaultImage(d)
 
-    val csl = ColorStateList.valueOf(
-        footerButtonFgColor.notZero() ?: attrColor(R.attr.colorTextContent)
-    )
+    val csl = ColorStateList.valueOf(attrColor(R.attr.colorTextContent))
     views.btnToot.imageTintList = csl
     views.btnMenu.imageTintList = csl
     views.btnQuickToot.imageTintList = csl
     views.btnQuickTootMenu.imageTintList = csl
 
-    c = footerTabDividerColor.notZero() ?: colorColumnStripBackground
-    views.vFooterDivider1.setBackgroundColor(c)
-    views.vFooterDivider2.setBackgroundColor(c)
+    views.vFooterDivider1.setBackgroundColor(colorColumnStripBackground)
+    views.vFooterDivider2.setBackgroundColor(colorColumnStripBackground)
 
-    views.llColumnStrip.indicatorColor =
-        footerTabIndicatorColor.notZero() ?: attrColor(R.attr.colorTextHelp)
+    views.llColumnStrip.indicatorColor = attrColor(R.attr.colorTextHelp)
 }
 
 fun ActMain.closePopup() {

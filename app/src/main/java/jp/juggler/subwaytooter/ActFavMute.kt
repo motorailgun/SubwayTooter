@@ -40,10 +40,10 @@ class ActFavMute : ComponentActivity() {
             finish()
         }
         App1.setActivityTheme(this)
-        val stColorScheme = getStColorTheme()
+        val colorScheme = getStColorTheme()
         setContent {
             StScreen(
-                stColorScheme = stColorScheme,
+                colorScheme = colorScheme,
                 title = getString(R.string.fav_muted_user),
                 onBack = {
                     setResult(RESULT_OK)

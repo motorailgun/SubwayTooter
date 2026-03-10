@@ -8,13 +8,11 @@ import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.actmain.closePopup
 import jp.juggler.subwaytooter.column.*
 import jp.juggler.subwaytooter.pref.PrefB
-import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.subwaytooter.util.endPadding
 import jp.juggler.subwaytooter.util.startPadding
 import jp.juggler.subwaytooter.view.ListDivider
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchMain
-import jp.juggler.util.data.notZero
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.media.createResizedBitmap
 import jp.juggler.util.ui.attrColor
@@ -219,8 +217,7 @@ fun ColumnViewHolder.onPageCreate(column: Column, pageIdx: Int, pageCount: Int) 
         fun dip(dp: Int): Int = (activity.density * dp + 0.5f).toInt()
         val context = activity
 
-        val searchBgColor = PrefI.ipSearchBgColor.value.notZero()
-            ?: context.attrColor(R.attr.colorSearchFormBackground)
+        val searchBgColor = context.attrColor(R.attr.colorSearchFormBackground)
 
         for (v in arrayOf(
             llSearch,
@@ -305,8 +302,7 @@ fun ColumnViewHolder.onPageCreate(column: Column, pageIdx: Int, pageCount: Int) 
 
         lastAnnouncementShown = -1L
 
-        val announcementsBgColor = PrefI.ipAnnouncementsBgColor.value.notZero()
-            ?: context.attrColor(R.attr.colorSearchFormBackground)
+        val announcementsBgColor = context.attrColor(R.attr.colorSearchFormBackground)
 
         btnAnnouncementsCutout.apply {
             color = announcementsBgColor

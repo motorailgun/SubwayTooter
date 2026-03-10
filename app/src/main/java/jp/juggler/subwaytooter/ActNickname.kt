@@ -84,7 +84,7 @@ class ActNickname : ComponentActivity() {
         }
         arNotificationSound.register(this)
         App1.setActivityTheme(this)
-        val stColorScheme = getStColorTheme()
+        val colorScheme = getStColorTheme()
 
         load()
 
@@ -96,7 +96,7 @@ class ActNickname : ComponentActivity() {
                 }
             )
             StScreen(
-                stColorScheme = stColorScheme,
+                colorScheme = colorScheme,
                 title = subtitle,
                 onBack = {
                     setResult(RESULT_OK)

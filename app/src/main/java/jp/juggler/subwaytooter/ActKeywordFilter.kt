@@ -153,13 +153,13 @@ class ActKeywordFilter : ComponentActivity() {
         backPressed { showBackDialog.value = true }
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        val stColorScheme = getStColorTheme()
+        val colorScheme = getStColorTheme()
 
         filterId = EntityId.entityId(intent, EXTRA_FILTER_ID)
 
         setContent {
             StScreen(
-                stColorScheme = stColorScheme,
+                colorScheme = colorScheme,
                 title = stringResource(
                     if (filterId == null) R.string.keyword_filter_new
                     else R.string.keyword_filter_edit

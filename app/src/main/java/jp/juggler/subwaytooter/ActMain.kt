@@ -102,7 +102,6 @@ import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.anyArrayOf
 import jp.juggler.util.data.notEmpty
-import jp.juggler.util.data.notZero
 import jp.juggler.util.int
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.benchmark
@@ -1003,8 +1002,7 @@ class ActMain : AppCompatActivity(),
             }"
         )
         if (Build.MANUFACTURER?.contains("samsung", ignoreCase = true) == true) {
-            val colorBarBg = PrefI.ipWindowInsetsColor.value.notZero()
-                ?: attrColor(R.attr.colorWindowInsetsBg)
+            val colorBarBg = attrColor(R.attr.colorWindowInsetsBg)
             // Window Insets の色を再設定する
             window.setBackgroundDrawable(ColorDrawable(colorBarBg))
             // 余計なオーバードローを一回追加する

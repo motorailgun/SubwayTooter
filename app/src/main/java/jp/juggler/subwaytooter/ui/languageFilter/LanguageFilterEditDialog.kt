@@ -8,12 +8,12 @@ import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AlertDialog
+import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.widget.addTextChangedListener
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootStatus
 import jp.juggler.subwaytooter.dialog.actionsDialog
-import jp.juggler.subwaytooter.util.StColorScheme
 import jp.juggler.util.coroutine.cancellationException
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.ui.dismissSafe
@@ -37,7 +37,7 @@ suspend fun ComponentActivity.dialogLanguageFilterEdit(
     // 言語コード→表示名のマップ
     nameMap: Map<String, LanguageInfo>,
     // 色スキーマ
-    stColorScheme: StColorScheme,
+    colorScheme: ColorScheme,
 ): LanguageFilterEditResult = suspendCancellableCoroutine { cont ->
     val dp12 = dp(12)
 
@@ -93,7 +93,7 @@ suspend fun ComponentActivity.dialogLanguageFilterEdit(
     btnPresets.setEnabledColor(
         btnPresets.context,
         R.drawable.ic_edit,
-        stColorScheme.colorTextContent.toArgb(),
+        colorScheme.onSurface.toArgb(),
         item == null
     )
 

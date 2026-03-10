@@ -39,11 +39,11 @@ class ActGlideTest : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        val stColorScheme = getStColorTheme()
+        val colorScheme = getStColorTheme()
 
         setContent {
             StScreen(
-                stColorScheme = stColorScheme,
+                colorScheme = colorScheme,
                 title = "Glide Test",
                 onBack = { finish() },
             ) { contentPadding ->

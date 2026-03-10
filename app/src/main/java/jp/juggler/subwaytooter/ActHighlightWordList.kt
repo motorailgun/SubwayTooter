@@ -102,11 +102,11 @@ class ActHighlightWordList : ComponentActivity() {
         super.onCreate(savedInstanceState)
         arEdit.register(this)
         App1.setActivityTheme(this)
-        val stColorScheme = getStColorTheme()
+        val colorScheme = getStColorTheme()
         loadData()
         setContent {
             StScreen(
-                stColorScheme = stColorScheme,
+                colorScheme = colorScheme,
                 title = stringResource(R.string.highlight_word),
                 onBack = { finish() },
             ) { contentPadding ->
