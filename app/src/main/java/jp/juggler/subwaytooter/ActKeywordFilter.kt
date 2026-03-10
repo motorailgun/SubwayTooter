@@ -3,28 +3,73 @@ package jp.juggler.subwaytooter
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.widget.ArrayAdapter
-import android.widget.CheckBox
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.children
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.api.ApiPath
 import jp.juggler.subwaytooter.api.TootApiResult
 import jp.juggler.subwaytooter.api.auth.AuthRepo
-import jp.juggler.subwaytooter.api.entity.*
+import jp.juggler.subwaytooter.api.entity.EntityId
+import jp.juggler.subwaytooter.api.entity.TootFilter
+import jp.juggler.subwaytooter.api.entity.TootFilterContext
+import jp.juggler.subwaytooter.api.entity.TootFilterKeyword
+import jp.juggler.subwaytooter.api.entity.TootInstance
+import jp.juggler.subwaytooter.api.entity.TootStatus
 import jp.juggler.subwaytooter.api.runApiTask
 import jp.juggler.subwaytooter.column.ColumnType
-import jp.juggler.subwaytooter.databinding.ActKeywordFilterBinding
-import jp.juggler.subwaytooter.databinding.LvKeywordFilterBinding
+import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.table.daoAcctColor
 import jp.juggler.subwaytooter.table.daoSavedAccount
-import jp.juggler.subwaytooter.view.wrapTitleTextView
+import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.launchMain
-import jp.juggler.util.data.*
-import jp.juggler.util.int
+import jp.juggler.util.data.JsonArray
+import jp.juggler.util.data.buildJsonArray
+import jp.juggler.util.data.buildJsonObject
+import jp.juggler.util.data.notEmpty
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
 import jp.juggler.util.long
@@ -32,10 +77,8 @@ import jp.juggler.util.network.toPostRequestBuilder
 import jp.juggler.util.network.toPut
 import jp.juggler.util.network.toRequestBody
 import jp.juggler.util.string
-import jp.juggler.util.ui.setContentViewAndInsets
-import jp.juggler.util.ui.setNavigationBack
 
-class ActKeywordFilter : AppCompatActivity() {
+class ActKeywordFilter : ComponentActivity() {
 
     companion object {
 
@@ -44,11 +87,6 @@ class ActKeywordFilter : AppCompatActivity() {
         private const val EXTRA_ACCOUNT_DB_ID = "account_db_id"
         private const val EXTRA_FILTER_ID = "filter_id"
         private const val EXTRA_INITIAL_PHRASE = "initial_phrase"
-
-        private const val STATE_EXPIRE_SPINNER = "expire_spinner"
-        private const val STATE_EXPIRE_AT = "expire_at"
-        private const val STATE_KEYWORDS = "keywords"
-        private const val STATE_DELETE_IDS = "deleteIds"
 
         fun open(
             activity: Activity,
@@ -63,8 +101,8 @@ class ActKeywordFilter : AppCompatActivity() {
             activity.startActivity(intent)
         }
 
-        private val expire_duration_list = intArrayOf(
-            -1, // dont change
+        private val expireDurationList = intArrayOf(
+            -1, // don't change
             0, // unlimited
             1800,
             3600,
@@ -75,50 +113,67 @@ class ActKeywordFilter : AppCompatActivity() {
         )
     }
 
-    private lateinit var account: SavedAccount
-
-    private val views by lazy {
-        ActKeywordFilterBinding.inflate(layoutInflater)
-    }
-
-//    private lateinit var tvAccount: TextView
-//    private lateinit var etPhrase: EditText
-//    private lateinit var cbContextHome: CheckBox
-//    private lateinit var cbContextNotification: CheckBox
-//    private lateinit var cbContextPublic: CheckBox
-//    private lateinit var cbContextThread: CheckBox
-//    private lateinit var cbContextProfile: CheckBox
-//
-//    private lateinit var cbFilterIrreversible: CheckBox
-//    private lateinit var cbFilterWordMatch: CheckBox
-//    private lateinit var tvExpire: TextView
-//    private lateinit var spExpire: Spinner
-
-    private var loading = false
-    private var density: Float = 1f
+    private var account: SavedAccount? = null
     private var filterId: EntityId? = null
     private var filterExpire: Long = 0L
+    private var loading = false
+    private val deleteIds = mutableSetOf<String>()
 
-    private val deleteIds = HashSet<String>()
+    val authRepo by lazy { AuthRepo(this) }
 
-    val authRepo by lazy {
-        AuthRepo(this)
+    // Compose state
+    private val accountText = mutableStateOf("")
+    private val titleText = mutableStateOf("")
+    private val keywords = mutableStateListOf<KeywordState>()
+    private val actionHide = mutableStateOf(false)
+    private val contextHome = mutableStateOf(true)
+    private val contextNotification = mutableStateOf(true)
+    private val contextPublic = mutableStateOf(true)
+    private val contextThread = mutableStateOf(true)
+    private val contextProfile = mutableStateOf(true)
+    private val expireSelection = mutableIntStateOf(0)
+    private val expireText = mutableStateOf("")
+    private val showBackDialog = mutableStateOf(false)
+
+    private var nextKeywordStateId = 0L
+
+    private class KeywordState(
+        val stateId: Long,
+        val serverKeywordId: String?,
+        keyword: String,
+        wholeWord: Boolean,
+    ) {
+        val keyword = mutableStateOf(keyword)
+        val wholeWord = mutableStateOf(wholeWord)
     }
 
     ///////////////////////////////////////////////////
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        backPressed { confirmBack() }
+        backPressed { showBackDialog.value = true }
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
-        initUI()
+        val stColorScheme = getStColorTheme()
+
+        filterId = EntityId.entityId(intent, EXTRA_FILTER_ID)
+
+        setContent {
+            StScreen(
+                stColorScheme = stColorScheme,
+                title = stringResource(
+                    if (filterId == null) R.string.keyword_filter_new
+                    else R.string.keyword_filter_edit
+                ),
+                onBack = { showBackDialog.value = true },
+            ) { innerPadding ->
+                FilterContent(modifier = Modifier.padding(innerPadding))
+            }
+            if (showBackDialog.value) {
+                ConfirmBackDialog()
+            }
+        }
 
         launchAndShowError {
-
-            // filter ID の有無はUIに影響するのでinitUIより先に初期化する
-            filterId = EntityId.entityId(intent, EXTRA_FILTER_ID)
-
             val a = intent.long(EXTRA_ACCOUNT_DB_ID)
                 ?.let { daoSavedAccount.loadAccount(it) }
             if (a == null) {
@@ -126,116 +181,279 @@ class ActKeywordFilter : AppCompatActivity() {
                 return@launchAndShowError
             }
             account = a
+            accountText.value =
+                daoAcctColor.getNicknameWithColor(a.acct).toString()
 
-            showAccount()
-
-            if (savedInstanceState == null) {
-                if (filterId != null) {
-                    startLoading()
-                } else {
-                    views.spExpire.setSelection(1)
-                    val initialText = intent.string(EXTRA_INITIAL_PHRASE)?.trim() ?: ""
-                    views.etTitle.setText(initialText)
-                    addKeywordArea(TootFilterKeyword(keyword = initialText))
-                }
+            if (filterId != null) {
+                startLoading()
             } else {
+                expireSelection.intValue = 1
+                val initialText = intent.string(EXTRA_INITIAL_PHRASE)?.trim() ?: ""
+                titleText.value = initialText
+                addKeyword(TootFilterKeyword(keyword = initialText))
+            }
+        }
+    }
 
-                savedInstanceState.getStringArrayList(STATE_DELETE_IDS)
-                    ?.let { deleteIds.addAll(it) }
+    @Composable
+    private fun ConfirmBackDialog() {
+        AlertDialog(
+            onDismissRequest = { showBackDialog.value = false },
+            text = { Text(stringResource(R.string.keyword_filter_quit_waring)) },
+            confirmButton = {
+                TextButton(onClick = { finish() }) {
+                    Text(stringResource(R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBackDialog.value = false }) {
+                    Text(stringResource(R.string.cancel))
+                }
+            },
+        )
+    }
 
-                savedInstanceState.getStringArrayList(STATE_KEYWORDS)
-                    ?.mapNotNull { it?.decodeJsonObject() }
-                    ?.forEach {
-                        try {
-                            addKeywordArea(TootFilterKeyword(it))
-                        } catch (ex: Throwable) {
-                            log.e(ex, "can't decode TootFilterKeyword")
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun FilterContent(modifier: Modifier) {
+        Column(modifier = modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                // Account
+                HorizontalDivider()
+                Text(
+                    stringResource(R.string.account),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                Text(accountText.value)
+
+                // Title
+                HorizontalDivider()
+                Text(
+                    stringResource(R.string.filter_title),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                OutlinedTextField(
+                    value = titleText.value,
+                    onValueChange = { titleText.value = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+
+                // Keywords
+                HorizontalDivider()
+                Text(
+                    stringResource(R.string.filter_phrase),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                keywords.forEach { ks ->
+                    KeywordRow(ks)
+                }
+                TextButton(onClick = { onAddKeyword() }) {
+                    Icon(Icons.Outlined.Add, contentDescription = null)
+                    Spacer(Modifier.width(4.dp))
+                    Text(stringResource(R.string.add_keyword_or_phrase))
+                }
+
+                // Filter action
+                HorizontalDivider()
+                Text(
+                    stringResource(R.string.filter_action),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = !actionHide.value,
+                        onClick = { actionHide.value = false },
+                    )
+                    Text(
+                        stringResource(R.string.filter_action_warn),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = actionHide.value,
+                        onClick = { actionHide.value = true },
+                    )
+                    Text(
+                        stringResource(R.string.filter_action_hide),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+
+                // Filter context
+                HorizontalDivider()
+                Text(
+                    stringResource(R.string.filter_context),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                ContextCheckbox(contextHome, R.string.filter_home)
+                ContextCheckbox(contextNotification, R.string.filter_notification)
+                ContextCheckbox(contextPublic, R.string.filter_public)
+                ContextCheckbox(contextThread, R.string.filter_thread)
+                ContextCheckbox(contextProfile, R.string.filter_profile)
+
+                // Expire
+                HorizontalDivider()
+                Text(
+                    stringResource(R.string.filter_expires_at),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                val currentExpireText = expireText.value
+                if (currentExpireText.isNotEmpty()) {
+                    Text(currentExpireText)
+                }
+
+                // Expire dropdown
+                val expireOptions = listOf(
+                    stringResource(R.string.dont_change),
+                    stringResource(R.string.filter_expire_unlimited),
+                    stringResource(R.string.filter_expire_30min),
+                    stringResource(R.string.filter_expire_1hour),
+                    stringResource(R.string.filter_expire_6hour),
+                    stringResource(R.string.filter_expire_12hour),
+                    stringResource(R.string.filter_expire_1day),
+                    stringResource(R.string.filter_expire_1week),
+                )
+                var expanded by remember { mutableStateOf(false) }
+                val selectedIndex = expireSelection.intValue
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = it },
+                ) {
+                    OutlinedTextField(
+                        value = expireOptions.getOrElse(selectedIndex) { "" },
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+                        trailingIcon = {
+                            ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                        },
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                    ) {
+                        expireOptions.forEachIndexed { index, label ->
+                            DropdownMenuItem(
+                                text = { Text(label) },
+                                onClick = {
+                                    expireSelection.intValue = index
+                                    expanded = false
+                                },
+                            )
                         }
                     }
+                }
 
-                savedInstanceState.int(STATE_EXPIRE_SPINNER)
-                    ?.let { views.spExpire.setSelection(it) }
+                HorizontalDivider()
+                Spacer(Modifier.height(128.dp))
+            }
 
-                savedInstanceState.long(STATE_EXPIRE_AT)
-                    ?.let { filterExpire = it }
+            // Save button
+            Button(
+                onClick = { save() },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+            ) {
+                Text(stringResource(R.string.save))
             }
         }
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        if (!loading) {
-            outState.putInt(STATE_EXPIRE_SPINNER, views.spExpire.selectedItemPosition)
-            outState.putLong(STATE_EXPIRE_AT, filterExpire)
-
-            outState.putStringArrayList(STATE_DELETE_IDS, ArrayList<String>(deleteIds))
-
-            views.llKeywords.children
-                .mapNotNull { (it.tag as? VhKeyword)?.encodeJson()?.toString() }
-                .toList()
-                .let { outState.putStringArrayList(STATE_KEYWORDS, ArrayList<String>(it)) }
+    @Composable
+    private fun KeywordRow(ks: KeywordState) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 2.dp),
+        ) {
+            Text(
+                stringResource(R.string.keyword_or_phrase),
+                style = MaterialTheme.typography.bodySmall,
+            )
+            OutlinedTextField(
+                value = ks.keyword.value,
+                onValueChange = { ks.keyword.value = it },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 8.dp),
+            ) {
+                Checkbox(
+                    checked = ks.wholeWord.value,
+                    onCheckedChange = { ks.wholeWord.value = it },
+                )
+                Text(
+                    stringResource(R.string.filter_word_match_long),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                IconButton(onClick = { deleteKeyword(ks) }) {
+                    Icon(
+                        Icons.Outlined.Delete,
+                        contentDescription = stringResource(R.string.delete),
+                    )
+                }
+            }
         }
     }
 
-    private fun initUI() {
-        setSupportActionBar(views.toolbar)
-        wrapTitleTextView()
-        setNavigationBack(views.toolbar)
-        fixHorizontalMargin(views.llContent)
+    @Composable
+    private fun ContextCheckbox(state: MutableState<Boolean>, labelRes: Int) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Checkbox(
+                checked = state.value,
+                onCheckedChange = { state.value = it },
+            )
+            Text(stringResource(labelRes))
+        }
+    }
 
-        this.density = resources.displayMetrics.density
-
-        title = getString(
-            when (filterId) {
-                null -> R.string.keyword_filter_new
-                else -> R.string.keyword_filter_edit
-            }
+    private fun addKeyword(fk: TootFilterKeyword) {
+        keywords.add(
+            KeywordState(
+                stateId = nextKeywordStateId++,
+                serverKeywordId = fk.id?.toString()?.notEmpty(),
+                keyword = fk.keyword.trim(),
+                wholeWord = fk.whole_word,
+            )
         )
+    }
 
-        views.btnSave.setOnClickListener { save() }
-        views.btnAddKeyword.setOnClickListener {
-            val ti = TootInstance.getCached(account)
-            when {
-                ti == null ->
-                    showToast(true, "can't get server information")
-                !ti.versionGE(TootInstance.VERSION_4_0_0) && views.llKeywords.childCount >= 1 ->
-                    showToast(true, "before mastodon 4.0, allowed 1 keyword per 1 filter.")
-                else -> addKeywordArea(TootFilterKeyword(keyword = ""))
-            }
+    private fun onAddKeyword() {
+        val a = account ?: return
+        val ti = TootInstance.getCached(a)
+        when {
+            ti == null ->
+                showToast(true, "can't get server information")
+            !ti.versionGE(TootInstance.VERSION_4_0_0) && keywords.size >= 1 ->
+                showToast(true, "before mastodon 4.0, allowed 1 keyword per 1 filter.")
+            else -> addKeyword(TootFilterKeyword(keyword = ""))
         }
-
-        val captionList = arrayOf(
-            getString(R.string.dont_change),
-            getString(R.string.filter_expire_unlimited),
-            getString(R.string.filter_expire_30min),
-            getString(R.string.filter_expire_1hour),
-            getString(R.string.filter_expire_6hour),
-            getString(R.string.filter_expire_12hour),
-            getString(R.string.filter_expire_1day),
-            getString(R.string.filter_expire_1week)
-        )
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, captionList)
-        adapter.setDropDownViewResource(R.layout.lv_spinner_dropdown)
-        views.spExpire.adapter = adapter
     }
 
-    private fun confirmBack() {
-        AlertDialog.Builder(this)
-            .setMessage(R.string.keyword_filter_quit_waring)
-            .setPositiveButton(R.string.ok) { _, _ -> finish() }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
-    }
-
-    private fun showAccount() {
-        views.tvAccount.text = daoAcctColor.getNicknameWithColor(account.acct)
+    private fun deleteKeyword(ks: KeywordState) {
+        keywords.remove(ks)
+        ks.serverKeywordId?.let { deleteIds.add(it) }
     }
 
     private fun startLoading() {
         loading = true
         launchMain {
             var resultFilter: TootFilter? = null
-            runApiTask(account) { client ->
+            runApiTask(account!!) { client ->
 
                 // try v2
                 var result = client.request("${ApiPath.PATH_FILTERS_V2}/$filterId")
@@ -278,58 +496,49 @@ class ActKeywordFilter : AppCompatActivity() {
 
     private fun onLoadComplete(filter: TootFilter) {
         loading = false
-
         filterExpire = filter.time_expires_at
 
-        setContextChecked(filter, views.cbContextHome, TootFilterContext.Home)
-        setContextChecked(filter, views.cbContextNotification, TootFilterContext.Notifications)
-        setContextChecked(filter, views.cbContextPublic, TootFilterContext.Public)
-        setContextChecked(filter, views.cbContextThread, TootFilterContext.Thread)
-        setContextChecked(filter, views.cbContextProfile, TootFilterContext.Account)
+        contextHome.value = filter.hasContext(TootFilterContext.Home)
+        contextNotification.value = filter.hasContext(TootFilterContext.Notifications)
+        contextPublic.value = filter.hasContext(TootFilterContext.Public)
+        contextThread.value = filter.hasContext(TootFilterContext.Thread)
+        contextProfile.value = filter.hasContext(TootFilterContext.Account)
 
-        views.rgAction.check(if (filter.hide) views.rbHide.id else views.rbWarn.id)
+        actionHide.value = filter.hide
 
-        if (filter.keywords.isEmpty()) {
-            filter.keywords = listOf(TootFilterKeyword(keyword = ""))
+        val kws = filter.keywords.ifEmpty {
+            listOf(TootFilterKeyword(keyword = ""))
         }
+        kws.forEach { addKeyword(it) }
 
-        filter.keywords.forEach { addKeywordArea(it) }
-
-        views.etTitle.setText(
+        titleText.value =
             filter.title.notEmpty() ?: filter.keywords.firstOrNull()?.keyword ?: ""
-        )
 
-        views.tvExpire.text = if (filter.time_expires_at == 0L) {
+        expireText.value = if (filter.time_expires_at == 0L) {
             getString(R.string.filter_expire_unlimited)
         } else {
             TootStatus.formatTime(this, filter.time_expires_at, false)
         }
     }
 
-    private fun setContextChecked(filter: TootFilter, cb: CheckBox, fc: TootFilterContext) {
-        cb.isChecked = filter.hasContext(fc)
-    }
-
     private fun save() {
         if (loading) return
 
-        val vhList = views.llKeywords.children.mapNotNull { it.tag as? VhKeyword }.toList()
-        if (vhList.isEmpty() || vhList.any { it.keyword.isEmpty() }) {
+        if (keywords.isEmpty() || keywords.any { it.keyword.value.trim().isEmpty() }) {
             showToast(true, R.string.filter_keyword_empty)
             return
         }
 
-        val title = views.etTitle.text.toString().trim()
+        val title = titleText.value.trim()
         if (title.isEmpty()) {
             showToast(true, R.string.filter_title_empty)
             return
         }
 
         launchMain {
-
-            var result = saveV2(vhList, title)
+            var result = saveV2(title)
             if (result?.response?.code == 404) {
-                result = saveV1(vhList)
+                result = saveV1()
             }
             result ?: return@launchMain // cancelled
 
@@ -349,23 +558,22 @@ class ActKeywordFilter : AppCompatActivity() {
     }
 
     private fun filterParamBase() = buildJsonObject {
-        fun JsonArray.putContextChecked(cb: CheckBox, fc: TootFilterContext) {
-            if (cb.isChecked) add(fc.apiName)
+        fun JsonArray.putContextChecked(checked: Boolean, fc: TootFilterContext) {
+            if (checked) add(fc.apiName)
         }
 
         put("context", JsonArray().apply {
-            putContextChecked(views.cbContextHome, TootFilterContext.Home)
-            putContextChecked(views.cbContextNotification, TootFilterContext.Notifications)
-            putContextChecked(views.cbContextPublic, TootFilterContext.Public)
-            putContextChecked(views.cbContextThread, TootFilterContext.Thread)
-            putContextChecked(views.cbContextProfile, TootFilterContext.Account)
+            putContextChecked(contextHome.value, TootFilterContext.Home)
+            putContextChecked(contextNotification.value, TootFilterContext.Notifications)
+            putContextChecked(contextPublic.value, TootFilterContext.Public)
+            putContextChecked(contextThread.value, TootFilterContext.Thread)
+            putContextChecked(contextProfile.value, TootFilterContext.Account)
         })
 
-        when (val seconds = expire_duration_list
-            .elementAtOrNull(views.spExpire.selectedItemPosition)
-            ?: -1
+        when (val seconds = expireDurationList
+            .elementAtOrNull(expireSelection.intValue) ?: -1
         ) {
-            // dont change
+            // don't change
             -1 -> Unit
 
             // unlimited
@@ -381,17 +589,17 @@ class ActKeywordFilter : AppCompatActivity() {
         }
     }
 
-    private suspend fun saveV1(vhList: List<VhKeyword>): TootApiResult? {
-        if (vhList.size != 1) return TootApiResult("V1 API allow only 1 keyword.")
+    private suspend fun saveV1(): TootApiResult? {
+        if (keywords.size != 1) return TootApiResult("V1 API allow only 1 keyword.")
 
         val params = filterParamBase().apply {
-            put("irreversible", views.rgAction.checkedRadioButtonId == views.rbHide.id)
-            val vh = vhList.first()
-            put("phrase", vh.keyword)
-            put("whole_word", vh.wholeWord)
+            put("irreversible", actionHide.value)
+            val ks = keywords.first()
+            put("phrase", ks.keyword.value.trim())
+            put("whole_word", ks.wholeWord.value)
         }
 
-        return runApiTask(account) { client ->
+        return runApiTask(account!!) { client ->
             if (filterId == null) {
                 client.request(
                     ApiPath.PATH_FILTERS_V1,
@@ -406,19 +614,19 @@ class ActKeywordFilter : AppCompatActivity() {
         }
     }
 
-    private suspend fun saveV2(vhList: List<VhKeyword>, title: String): TootApiResult? {
+    private suspend fun saveV2(title: String): TootApiResult? {
         val params = filterParamBase().apply {
             put("title", title)
             put(
                 "filter_action",
-                if (views.rbHide.isChecked) "hide" else "warn"
+                if (actionHide.value) "hide" else "warn"
             )
             put("keywords_attributes", buildJsonArray {
-                vhList.forEach { vh ->
+                keywords.forEach { ks ->
                     add(buildJsonObject {
-                        put("keyword", vh.keyword)
-                        put("whole_word", vh.wholeWord)
-                        vh.id?.let { put("id", it) }
+                        put("keyword", ks.keyword.value.trim())
+                        put("whole_word", ks.wholeWord.value)
+                        ks.serverKeywordId?.let { put("id", it) }
                     })
                 }
                 deleteIds.forEach { id ->
@@ -429,7 +637,7 @@ class ActKeywordFilter : AppCompatActivity() {
                 }
             })
         }
-        return runApiTask(account) { client ->
+        return runApiTask(account!!) { client ->
             if (filterId == null) {
                 client.request(
                     ApiPath.PATH_FILTERS_V2,
@@ -442,43 +650,5 @@ class ActKeywordFilter : AppCompatActivity() {
                 )
             }
         }
-    }
-
-    private fun addKeywordArea(keyword: TootFilterKeyword) {
-        views.llKeywords.addView(VhKeyword(fk = keyword).views.root)
-    }
-
-    private fun deleteKeywordArea(vh: VhKeyword) {
-        views.llKeywords.children.find { it.tag == vh }
-            ?.let { views.llKeywords.removeView(it) }
-        vh.id?.let { deleteIds.add(it) }
-    }
-
-    private inner class VhKeyword(
-        val fk: TootFilterKeyword,
-        val views: LvKeywordFilterBinding = LvKeywordFilterBinding.inflate(layoutInflater),
-    ) {
-        init {
-            views.root.tag = this
-            views.etKeyword.setText(fk.keyword.trim())
-            views.cbFilterWordMatch.isChecked = fk.whole_word
-
-            views.btnDelete.setOnClickListener {
-                deleteKeywordArea(this)
-            }
-        }
-
-        // onSaveInstanceや保存時に呼ばれる
-        fun encodeJson() =
-            fk.encodeNewParam(newKeyword = keyword, newWholeWord = wholeWord)
-
-        val keyword: String
-            get() = views.etKeyword.text.toString().trim()
-
-        val wholeWord: Boolean
-            get() = views.cbFilterWordMatch.isChecked
-
-        val id: String?
-            get() = fk.id?.toString()?.notEmpty()
     }
 }

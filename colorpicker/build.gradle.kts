@@ -6,6 +6,10 @@ android {
     namespace = "com.jrummyapps.android.colorpicker"
     resourcePrefix = "cpv_"
 
+    buildFeatures {
+        viewBinding = true
+    }
+
     lint {
         abortOnError = false
     }

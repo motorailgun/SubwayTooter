@@ -5,6 +5,10 @@ plugins {
 android {
     namespace = "jp.juggler.apng.sample"
 
+    buildFeatures {
+        viewBinding = true
+    }
+
     defaultConfig {
         versionCode = 1
         versionName = "1.0"

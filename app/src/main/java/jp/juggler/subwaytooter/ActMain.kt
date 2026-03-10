@@ -13,6 +13,11 @@ import android.view.KeyEvent
 import android.view.View
 import android.view.Window
 import android.view.WindowManager
+import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
+import android.widget.ImageButton
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.drawerlayout.widget.DrawerLayout
@@ -106,6 +111,7 @@ import jp.juggler.util.long
 import jp.juggler.util.string
 import jp.juggler.util.ui.ActivityResultHandler
 import jp.juggler.util.ui.attrColor
+import jp.juggler.util.ui.dp
 import jp.juggler.util.ui.isNotOk
 import jp.juggler.util.ui.setContentViewAndInsets
 import kotlinx.coroutines.Job
@@ -193,24 +199,220 @@ class ActMain : AppCompatActivity(),
     var quickPostVisibility: TootVisibility = TootVisibility.AccountSetting
 
     val views by lazy {
-        val root = layoutInflater.inflate(R.layout.act_main, null, false)
+        val ctx = this@ActMain
+
+        val tvEmpty = TextView(ctx).apply {
+            id = R.id.tvEmpty
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            gravity = android.view.Gravity.CENTER
+            setPadding(dp(12), dp(12), dp(12), dp(12))
+            setText(R.string.column_empty)
+            setTextColor(attrColor(R.attr.colorTextContent))
+            textSize = 16f
+        }
+
+        val viewPager = jp.juggler.subwaytooter.view.MyViewPager(ctx).apply {
+            id = R.id.viewPager
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        val rvPager = jp.juggler.subwaytooter.actmain.TabletModeRecyclerView(ctx).apply {
+            id = R.id.rvPager
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        val btnMenu = ImageButton(ctx).apply {
+            id = R.id.btnMenu
+            layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
+            contentDescription = getString(R.string.menu)
+            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+            setImageResource(R.drawable.ic_hamburger)
+        }
+
+        val vFooterDivider1 = View(ctx).apply {
+            id = R.id.vFooterDivider1
+            layoutParams = LinearLayout.LayoutParams(dp(1), LinearLayout.LayoutParams.MATCH_PARENT)
+            setBackgroundColor(attrColor(R.attr.colorColumnStripBackground))
+        }
+
+        val llColumnStrip = jp.juggler.subwaytooter.actmain.ColumnStripLinearLayout(ctx).apply {
+            id = R.id.llColumnStrip
+            layoutParams = android.view.ViewGroup.LayoutParams(
+                android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            orientation = LinearLayout.HORIZONTAL
+        }
+
+        val svColumnStrip = HorizontalScrollView(ctx).apply {
+            id = R.id.svColumnStrip
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+            setBackgroundColor(attrColor(R.attr.colorColumnStripBackground))
+            isFillViewport = true
+            isHorizontalScrollBarEnabled = false
+            isHorizontalFadingEdgeEnabled = true
+            setFadingEdgeLength(dp(20))
+            addView(llColumnStrip)
+        }
+
+        val vFooterDivider2 = View(ctx).apply {
+            id = R.id.vFooterDivider2
+            layoutParams = LinearLayout.LayoutParams(dp(1), LinearLayout.LayoutParams.MATCH_PARENT)
+            setBackgroundColor(attrColor(R.attr.colorColumnStripBackground))
+        }
+
+        val btnToot = ImageButton(ctx).apply {
+            id = R.id.btnToot
+            layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
+            contentDescription = getString(R.string.toot)
+            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+            setImageResource(R.drawable.ic_edit)
+        }
+
+        val btnQuickTootMenu = ImageButton(ctx).apply {
+            id = R.id.btnQuickTootMenu
+            layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
+            contentDescription = getString(R.string.quick_toot_menu)
+            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+        }
+
+        val etQuickToot = jp.juggler.subwaytooter.view.MyEditText(ctx).apply {
+            id = R.id.etQuickToot
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                marginStart = dp(4)
+                marginEnd = dp(4)
+            }
+            setHint(R.string.quick_toot_hint)
+            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_SEND
+            inputType = android.text.InputType.TYPE_CLASS_TEXT
+            isVerticalScrollBarEnabled = true
+        }
+
+        val ivQuickTootAccount = jp.juggler.subwaytooter.view.MyNetworkImageView(ctx).apply {
+            id = R.id.ivQuickTootAccount
+            layoutParams = LinearLayout.LayoutParams(dp(32), dp(32)).apply {
+                marginEnd = dp(2)
+            }
+            contentDescription = getString(R.string.quick_post_account)
+            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+        }
+
+        val btnQuickToot = ImageButton(ctx).apply {
+            id = R.id.btnQuickToot
+            layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
+            contentDescription = getString(R.string.post)
+            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+            setImageResource(R.drawable.ic_send)
+        }
+
+        val llQuickTootBar = LinearLayout(ctx).apply {
+            id = R.id.llQuickTootBar
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            isBaselineAligned = false
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            orientation = LinearLayout.HORIZONTAL
+            addView(btnQuickTootMenu)
+            addView(etQuickToot)
+            addView(ivQuickTootAccount)
+            addView(btnQuickToot)
+        }
+
+        val vBottomPadding = View(ctx).apply {
+            id = R.id.vBottomPadding
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(8)
+            )
+        }
+
+        val llFormRoot = LinearLayout(ctx).apply {
+            id = R.id.llFormRoot
+            layoutParams = DrawerLayout.LayoutParams(
+                DrawerLayout.LayoutParams.MATCH_PARENT,
+                DrawerLayout.LayoutParams.MATCH_PARENT
+            )
+            setBackgroundColor(attrColor(R.attr.colorMainBackground))
+            orientation = LinearLayout.VERTICAL
+
+            // Content area (weight=1)
+            addView(FrameLayout(ctx).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    0, 1f
+                )
+                addView(tvEmpty)
+                addView(viewPager)
+                addView(rvPager)
+            })
+
+            // Footer bar
+            addView(LinearLayout(ctx).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                orientation = LinearLayout.HORIZONTAL
+                addView(btnMenu)
+                addView(vFooterDivider1)
+                addView(svColumnStrip)
+                addView(vFooterDivider2)
+                addView(btnToot)
+            })
+
+            addView(llQuickTootBar)
+            addView(vBottomPadding)
+        }
+
+        val navView = com.google.android.material.navigation.NavigationView(ctx).apply {
+            id = R.id.nav_view
+            layoutParams = DrawerLayout.LayoutParams(
+                DrawerLayout.LayoutParams.WRAP_CONTENT,
+                DrawerLayout.LayoutParams.MATCH_PARENT
+            ).apply {
+                gravity = android.view.Gravity.START
+            }
+            setBackgroundColor(attrColor(R.attr.colorMainBackground))
+        }
+
+        val drawerLayout = jp.juggler.subwaytooter.view.MyDrawerLayout(ctx).apply {
+            id = R.id.drawer_layout
+            layoutParams = android.view.ViewGroup.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            addView(llFormRoot)
+            addView(navView)
+        }
+
         ActMainViews(
-            root = root,
-            drawerLayout = root.findViewById(R.id.drawer_layout),
-            llFormRoot = root.findViewById(R.id.llFormRoot),
-            tvEmpty = root.findViewById(R.id.tvEmpty),
-            btnMenu = root.findViewById(R.id.btnMenu),
-            svColumnStrip = root.findViewById(R.id.svColumnStrip),
-            llColumnStrip = root.findViewById(R.id.llColumnStrip),
-            btnToot = root.findViewById(R.id.btnToot),
-            llQuickTootBar = root.findViewById(R.id.llQuickTootBar),
-            btnQuickTootMenu = root.findViewById(R.id.btnQuickTootMenu),
-            etQuickToot = root.findViewById(R.id.etQuickToot),
-            ivQuickTootAccount = root.findViewById(R.id.ivQuickTootAccount),
-            btnQuickToot = root.findViewById(R.id.btnQuickToot),
-            vBottomPadding = root.findViewById(R.id.vBottomPadding),
-            vFooterDivider1 = root.findViewById(R.id.vFooterDivider1),
-            vFooterDivider2 = root.findViewById(R.id.vFooterDivider2),
+            root = drawerLayout,
+            drawerLayout = drawerLayout,
+            llFormRoot = llFormRoot,
+            tvEmpty = tvEmpty,
+            btnMenu = btnMenu,
+            svColumnStrip = svColumnStrip,
+            llColumnStrip = llColumnStrip,
+            btnToot = btnToot,
+            llQuickTootBar = llQuickTootBar,
+            btnQuickTootMenu = btnQuickTootMenu,
+            etQuickToot = etQuickToot,
+            ivQuickTootAccount = ivQuickTootAccount,
+            btnQuickToot = btnQuickToot,
+            vBottomPadding = vBottomPadding,
+            vFooterDivider1 = vFooterDivider1,
+            vFooterDivider2 = vFooterDivider2,
         )
     }
 

@@ -57,7 +57,6 @@ private fun Project.setupAndroidAppOrLib(androidAppOrLib: String) {
             isCoreLibraryDesugaringEnabled = true
         }
         buildFeatures {
-            viewBinding = true
         }
         lint {
             targetSdk = stTargetSdk

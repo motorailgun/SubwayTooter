@@ -207,7 +207,7 @@ class ActAccountSetting : AppCompatActivity(),
     }
 
     private val views by lazy {
-        val root = layoutInflater.inflate(R.layout.act_account_setting, null, false)
+        val root = buildAccountSettingView(this)
         ActAccountSettingViews(
             root = root,
             toolbar = root.findViewById(R.id.toolbar),
