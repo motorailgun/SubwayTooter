@@ -3,12 +3,14 @@ package jp.juggler.subwaytooter.dialog
 import android.app.AlertDialog
 import android.app.Dialog
 import android.view.Gravity
-import android.view.View
 import android.view.WindowManager
+import android.widget.Button
 import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
 import jp.juggler.subwaytooter.*
 import jp.juggler.subwaytooter.api.entity.TootVisibility
-import jp.juggler.subwaytooter.databinding.DlgQuickTootMenuBinding
 import jp.juggler.subwaytooter.pref.PrefS
 import jp.juggler.util.data.notEmpty
 import jp.juggler.util.ui.dismissSafe
@@ -34,9 +36,9 @@ class DlgQuickTootMenu(
         var visibility: TootVisibility
     }
 
-    private class MemoViews(
+    private data class MemoViews(
         val editText: EditText,
-        val btnUse: View,
+        val btnUse: Button,
     )
 
     private var refDialog: WeakReference<Dialog>? = null
@@ -51,61 +53,151 @@ class DlgQuickTootMenu(
     private fun show() {
         val strings = loadStrings()
         val dialog = Dialog(activity).also { refDialog = WeakReference(it) }
-        val views = DlgQuickTootMenuBinding.inflate(activity.layoutInflater).apply {
-            btnCancel.setOnClickListener { dialog.dismissSafe() }
-            val memoList = listOf(
-                MemoViews(etText0, btnText0),
-                MemoViews(etText1, btnText1),
-                MemoViews(etText2, btnText2),
-                MemoViews(etText3, btnText3),
-                MemoViews(etText4, btnText4),
-                MemoViews(etText5, btnText5),
+        val density = activity.resources.displayMetrics.density
+        val dp3 = (3 * density + 0.5f).toInt()
+        val dp6 = (6 * density + 0.5f).toInt()
+        val dp12 = (12 * density + 0.5f).toInt()
+        val dp48 = (48 * density + 0.5f).toInt()
+
+        val innerLayout = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp12, dp3, dp12, dp3)
+        }
+
+        // Visibility label
+        innerLayout.addView(
+            TextView(activity).apply { setText(R.string.visibility) },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        // Visibility button
+        val btnVisibility = Button(activity).apply {
+            gravity = Gravity.START or Gravity.CENTER_VERTICAL
+            isAllCaps = false
+        }
+        innerLayout.addView(
+            btnVisibility,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        // Fixed phrase label
+        innerLayout.addView(
+            TextView(activity).apply {
+                setText(R.string.fixed_phrase)
+                setPadding(0, dp6, 0, 0)
+            },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        // Create 6 memo rows
+        val memoList = (0..5).map { i ->
+            val et = EditText(activity).apply {
+                importantForAutofill = EditText.IMPORTANT_FOR_AUTOFILL_NO
+                inputType = android.text.InputType.TYPE_CLASS_TEXT
+                setText(strings.elementAtOrNull(i) ?: "")
+            }
+            val btn = Button(activity).apply {
+                setText(R.string.input)
+                minimumWidth = dp48
+            }
+            val row = LinearLayout(activity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                addView(et, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                    marginEnd = dp6
+                })
+                addView(btn, LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ))
+            }
+            innerLayout.addView(
+                row,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ),
             )
-            memoList.forEachIndexed { i, m ->
-                val initialText = strings.elementAtOrNull(i) ?: ""
-                m.editText.setText(initialText)
-                m.btnUse.setOnClickListener {
-                    m.editText.text?.toString()?.notEmpty()?.let {
-                        dialog.dismissSafe()
-                        callback.onMacro(it)
-                    }
+            MemoViews(et, btn)
+        }
+
+        memoList.forEach { m ->
+            m.btnUse.setOnClickListener {
+                m.editText.text?.toString()?.notEmpty()?.let {
+                    dialog.dismissSafe()
+                    callback.onMacro(it)
                 }
             }
-            dialog.setOnDismissListener {
-                saveStrings(
-                    memoList.map { it.editText.text?.toString()?.replace("\n", " ") ?: "" }
-                        .joinToString("\n")
-                )
-            }
-
-            fun showVisibility() {
-                btnVisibility.text = getVisibilityCaption(activity, false, callback.visibility)
-            }
-
-            fun changeVisivility(newVisibility: TootVisibility?) {
-                newVisibility ?: return
-                callback.visibility = newVisibility
-                showVisibility()
-            }
-
-            showVisibility()
-
-            btnVisibility.setOnClickListener {
-                val captionList = visibilityList
-                    .map { getVisibilityCaption(activity, false, it) }
-                    .toTypedArray()
-
-                AlertDialog.Builder(activity)
-                    .setTitle(R.string.choose_visibility)
-                    .setItems(captionList) { _, which ->
-                        changeVisivility(visibilityList.elementAtOrNull(which))
-                    }
-                    .setNegativeButton(R.string.cancel, null)
-                    .show()
-            }
         }
+
+        dialog.setOnDismissListener {
+            saveStrings(
+                memoList.map { it.editText.text?.toString()?.replace("\n", " ") ?: "" }
+                    .joinToString("\n")
+            )
+        }
+
+        fun showVisibility() {
+            btnVisibility.text = getVisibilityCaption(activity, false, callback.visibility)
+        }
+
+        fun changeVisivility(newVisibility: TootVisibility?) {
+            newVisibility ?: return
+            callback.visibility = newVisibility
+            showVisibility()
+        }
+
+        showVisibility()
+
+        btnVisibility.setOnClickListener {
+            val captionList = visibilityList
+                .map { getVisibilityCaption(activity, false, it) }
+                .toTypedArray()
+
+            AlertDialog.Builder(activity)
+                .setTitle(R.string.choose_visibility)
+                .setItems(captionList) { _, which ->
+                    changeVisivility(visibilityList.elementAtOrNull(which))
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+        }
+
+        val scrollView = ScrollView(activity).apply {
+            addView(innerLayout)
+        }
+
+        // Close button
+        val btnCancel = Button(activity, null, android.R.attr.buttonBarButtonStyle).apply {
+            setText(R.string.close)
+            setOnClickListener { dialog.dismissSafe() }
+        }
+        val buttonBar = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(btnCancel, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        }
+
+        val root = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(scrollView, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f,
+            ))
+            addView(buttonBar, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ))
+        }
+
         dialog.apply {
-            setContentView(views.root)
+            setContentView(root)
             setCanceledOnTouchOutside(true)
             window?.apply {
                 attributes = attributes.apply {

@@ -1,12 +1,12 @@
 package jp.juggler.subwaytooter.dialog
 
-import android.annotation.SuppressLint
 import android.app.Dialog
-import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import jp.juggler.subwaytooter.R
@@ -17,58 +17,166 @@ class DlgConfirmMail(
     val activity: AppCompatActivity,
     val accessInfo: SavedAccount,
     val onClickOk: (email: String?) -> Unit,
-) : View.OnClickListener {
-
-    @SuppressLint("InflateParams")
-    private val viewRoot = activity.layoutInflater
-        .inflate(R.layout.dlg_confirm_mail, null, false)
-
-    private val cbUpdateMailAddress: CheckBox = viewRoot.findViewById(R.id.cbUpdateMailAddress)
-    private val etEmail: EditText = viewRoot.findViewById(R.id.etEmail)
-
+) {
     private val dialog = Dialog(activity)
 
-    init {
-        viewRoot.findViewById<TextView>(R.id.tvUserName).text = accessInfo.acct.pretty
+    private val density = activity.resources.displayMetrics.density
+    private val dp12 = (12 * density + 0.5f).toInt()
+    private val dp8 = (8 * density + 0.5f).toInt()
 
-        viewRoot.findViewById<TextView>(R.id.tvInstance).text =
-            if (accessInfo.apiHost != accessInfo.apDomain) {
-                "${accessInfo.apiHost.pretty} (${accessInfo.apDomain.pretty})"
-            } else {
-                accessInfo.apiHost.pretty
-            }
+    private val cbUpdateMailAddress: CheckBox
+    private val etEmail: EditText
+
+    init {
+        val root = ScrollView(activity)
+        val ll = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+        root.addView(ll)
+
+        // Instance label
+        ll.addView(
+            TextView(activity).apply {
+                setText(R.string.instance)
+                setPadding(dp12, dp12, dp12, 0)
+            },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        // Instance value
+        ll.addView(
+            TextView(activity).apply {
+                text = if (accessInfo.apiHost != accessInfo.apDomain) {
+                    "${accessInfo.apiHost.pretty} (${accessInfo.apDomain.pretty})"
+                } else {
+                    accessInfo.apiHost.pretty
+                }
+                setPadding(dp12, 0, dp12, 0)
+            },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        // User name label
+        ll.addView(
+            TextView(activity).apply {
+                setText(R.string.user_name)
+                setPadding(dp12, dp12, dp12, 0)
+            },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        // User name value
+        ll.addView(
+            TextView(activity).apply {
+                text = accessInfo.acct.pretty
+                setPadding(dp12, 0, dp12, 0)
+            },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        // Update mail address checkbox
+        cbUpdateMailAddress = CheckBox(activity).apply {
+            setText(R.string.update_mail_address)
+            setPadding(dp12, dp8, dp12, 0)
+        }
+        ll.addView(
+            cbUpdateMailAddress,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        // Email label
+        ll.addView(
+            TextView(activity).apply {
+                setText(R.string.email)
+                setPadding(dp12, dp12, dp12, 0)
+            },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        // Email input
+        etEmail = EditText(activity).apply {
+            setHint(R.string.email_hint)
+            isEnabled = false
+            importantForAutofill = EditText.IMPORTANT_FOR_AUTOFILL_NO
+            inputType = android.text.InputType.TYPE_CLASS_TEXT
+            setPadding(dp12, 0, dp12, 0)
+        }
+        ll.addView(
+            etEmail,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
 
         cbUpdateMailAddress.setOnCheckedChangeListener { _, isChecked ->
             etEmail.isEnabledAlpha = isChecked
         }
 
-        intArrayOf(
-            R.id.btnCancel,
-            R.id.btnOk
-        ).forEach {
-            viewRoot.findViewById<Button>(it)?.setOnClickListener(this)
+        // Button bar
+        val btnCancel = Button(activity, null, android.R.attr.buttonBarButtonStyle).apply {
+            setText(R.string.cancel)
+            setOnClickListener { dialog.cancel() }
         }
+        val btnOk = Button(activity, null, android.R.attr.buttonBarButtonStyle).apply {
+            setText(R.string.ok)
+            setOnClickListener {
+                onClickOk(
+                    if (cbUpdateMailAddress.isChecked) etEmail.text.toString().trim() else null
+                )
+            }
+        }
+        val buttonBar = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(btnCancel, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(btnOk, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        }
+        ll.addView(
+            buttonBar,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        // Description text
+        ll.addView(
+            TextView(activity).apply {
+                setText(R.string.confirm_mail_description)
+                setPadding(dp12, dp12, dp12, 0)
+            },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        dialog.setContentView(root)
     }
 
     fun show() {
-        dialog.setContentView(viewRoot)
-
         dialog.window?.setLayout(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT
         )
         dialog.show()
-    }
-
-    override fun onClick(v: View?) {
-        when (v?.id) {
-            R.id.btnCancel ->
-                dialog.cancel()
-
-            R.id.btnOk ->
-                onClickOk(
-                    if (cbUpdateMailAddress.isChecked) etEmail.text.toString().trim() else null
-                )
-        }
     }
 }

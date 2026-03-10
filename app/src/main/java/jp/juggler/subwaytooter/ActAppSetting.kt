@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
+import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
@@ -11,8 +12,10 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.text.Editable
+import android.text.InputType
 import android.text.TextWatcher
 import android.util.JsonWriter
+import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
 import android.view.View.FOCUS_FORWARD
@@ -22,14 +25,20 @@ import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.BaseAdapter
+import android.widget.Button
+import android.widget.CheckBox
 import android.widget.CompoundButton
+import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.ImageButton
+import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.TextView.OnEditorActionListener
 import androidx.annotation.WorkerThread
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
@@ -41,8 +50,6 @@ import jp.juggler.subwaytooter.appsetting.AppDataExporter
 import jp.juggler.subwaytooter.appsetting.AppSettingItem
 import jp.juggler.subwaytooter.appsetting.SettingType
 import jp.juggler.subwaytooter.appsetting.appSettingRoot
-import jp.juggler.subwaytooter.databinding.ActAppSettingBinding
-import jp.juggler.subwaytooter.databinding.LvSettingItemBinding
 import jp.juggler.subwaytooter.dialog.DlgAppPicker
 import jp.juggler.subwaytooter.notification.restartAllWorker
 import jp.juggler.subwaytooter.pref.FILE_PROVIDER_AUTHORITY
@@ -76,6 +83,7 @@ import jp.juggler.util.log.withCaption
 import jp.juggler.util.queryIntentActivitiesCompat
 import jp.juggler.util.ui.ActivityResultHandler
 import jp.juggler.util.ui.attrColor
+import jp.juggler.util.ui.attrDrawable
 import jp.juggler.util.ui.dp
 import jp.juggler.util.ui.hideKeyboard
 import jp.juggler.util.ui.isEnabledAlpha
@@ -118,9 +126,104 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
 
     lateinit var handler: Handler
 
-    val views by lazy {
-        ActAppSettingBinding.inflate(layoutInflater)
+    class ActAppSettingViews(
+        val llContent: LinearLayout,
+        val btnBack: ImageButton,
+        val etSearch: EditText,
+        val btnSearchReset: ImageButton,
+        val lvList: RecyclerView,
+    ) {
+        val root get() = llContent
     }
+
+    private fun createActivityViews(): ActAppSettingViews {
+        val context = this@ActAppSetting
+        val btnBack: ImageButton
+        val etSearch: EditText
+        val btnSearchReset: ImageButton
+        val lvList: RecyclerView
+
+        val llContent = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            )
+
+            // Search bar
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                )
+                isBaselineAligned = false
+                gravity = Gravity.CENTER_VERTICAL
+                setBackgroundColor(context.attrColor(R.attr.colorSearchFormBackground))
+                val padV = context.dp(6)
+                val padH = context.dp(12)
+                setPadding(padH, padV, padH, padV)
+
+                // btnBack
+                btnBack = ImageButton(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(context.dp(48), context.dp(48))
+                    background = ContextCompat.getDrawable(context, R.drawable.btn_bg_transparent_round6dp)
+                    setImageDrawable(context.attrDrawable(android.R.attr.homeAsUpIndicator))
+                    imageTintList = ColorStateList.valueOf(context.attrColor(R.attr.colorTextContent))
+                    stateListAnimator = null
+                    contentDescription = context.getString(R.string.back)
+                }
+                addView(btnBack)
+
+                // etSearch
+                etSearch = EditText(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                    hint = context.getString(R.string.search)
+                    inputType = InputType.TYPE_CLASS_TEXT
+                    importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
+                }
+                addView(etSearch)
+
+                // btnSearchReset
+                btnSearchReset = ImageButton(context).apply {
+                    layoutParams = LinearLayout.LayoutParams(context.dp(40), context.dp(40)).apply {
+                        marginStart = context.dp(6)
+                    }
+                    background = ContextCompat.getDrawable(context, R.drawable.btn_bg_transparent_round6dp)
+                    setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_close))
+                    imageTintList = ColorStateList.valueOf(context.attrColor(R.attr.colorTextContent))
+                    contentDescription = context.getString(R.string.reset)
+                }
+                addView(btnSearchReset)
+            })
+
+            // lvList
+            lvList = RecyclerView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    0,
+                    1f,
+                )
+                setBackgroundColor(context.attrColor(R.attr.colorMainBackground))
+                isVerticalScrollBarEnabled = true
+                isScrollbarFadingEnabled = false
+                isVerticalFadingEdgeEnabled = true
+                setFadingEdgeLength(context.dp(20))
+                scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
+            }
+            addView(lvList)
+        }
+
+        return ActAppSettingViews(
+            llContent = llContent,
+            btnBack = btnBack,
+            etSearch = etSearch,
+            btnSearchReset = btnSearchReset,
+            lvList = lvList,
+        )
+    }
+
+    val views by lazy { createActivityViews() }
 
     private val itemsAdapter by lazy { ItemsAdapter() }
 
@@ -273,8 +376,8 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
     }
 
     override fun onClick(v: View) {
-        when (v.id) {
-            R.id.btnSearchReset -> {
+        when (v) {
+            views.btnSearchReset -> {
                 handler.removeCallbacks(delayedQuery)
                 views.etSearch.setText("")
                 views.etSearch.hideKeyboard()
@@ -512,16 +615,212 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
         }
     }
 
+    class SettingItemViews(
+        val root: LinearLayout,
+        val tvCaption: TextView,
+        val btnAction: Button,
+        val checkBox: CheckBox,
+        val swSwitch: SwitchCompat,
+        val spSpinner: Spinner,
+        val etEditText: EditText,
+        val tvError: TextView,
+        val textView1: TextView,
+        val llButtonBar: LinearLayout,
+        val btnEdit: Button,
+        val btnReset: Button,
+        val vColor: View,
+        val llExtra: LinearLayout,
+        val tvDesc: TextView,
+    )
+
     // not private
     class VhSettingItem(
         private val actAppSetting: ActAppSetting,
         parent: ViewGroup,
-        val views: LvSettingItemBinding = LvSettingItemBinding
-            .inflate(actAppSetting.layoutInflater, parent, false),
+        val views: SettingItemViews = createSettingItemViews(parent),
     ) : RecyclerView.ViewHolder(views.root),
         TextWatcher,
         AdapterView.OnItemSelectedListener,
         CompoundButton.OnCheckedChangeListener {
+
+        companion object {
+            private fun createSettingItemViews(parent: ViewGroup): SettingItemViews {
+                val context = parent.context
+                val marginStart32 = context.dp(32)
+
+                fun settingRowFormParams() = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ).apply {
+                    this.marginStart = marginStart32
+                }
+
+                val tvCaption: TextView
+                val btnAction: Button
+                val checkBox: CheckBox
+                val swSwitch: SwitchCompat
+                val spSpinner: Spinner
+                val etEditText: EditText
+                val tvError: TextView
+                val textView1: TextView
+                val llButtonBar: LinearLayout
+                val btnEdit: Button
+                val btnReset: Button
+                val vColor: View
+                val llExtra: LinearLayout
+                val tvDesc: TextView
+
+                val root = LinearLayout(context).apply {
+                    orientation = LinearLayout.VERTICAL
+                    layoutParams = RecyclerView.LayoutParams(
+                        RecyclerView.LayoutParams.MATCH_PARENT,
+                        RecyclerView.LayoutParams.WRAP_CONTENT,
+                    )
+
+                    // tvCaption (setting_row_label: match/wrap textSize=14sp)
+                    tvCaption = TextView(context).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        )
+                        textSize = 14f
+                        labelFor = View.NO_ID // will be set later if needed
+                    }
+                    addView(tvCaption)
+
+                    // btnAction
+                    btnAction = Button(context).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        )
+                        background = ContextCompat.getDrawable(context, R.drawable.btn_bg_transparent_round6dp)
+                        gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                        minimumHeight = context.dp(48)
+                        val pad = context.dp(6)
+                        setPadding(pad, pad, pad, pad)
+                        isAllCaps = false
+                    }
+                    addView(btnAction)
+
+                    // checkBox (setting_row_form)
+                    checkBox = CheckBox(context).apply {
+                        layoutParams = settingRowFormParams()
+                    }
+                    addView(checkBox)
+
+                    // swSwitch (setting_row_form + gravity=center minHeight=40dp)
+                    swSwitch = SwitchCompat(context).apply {
+                        layoutParams = settingRowFormParams()
+                        gravity = Gravity.CENTER
+                        minimumHeight = context.dp(40)
+                    }
+                    addView(swSwitch)
+
+                    // spSpinner (setting_row_form + minHeight=40dp)
+                    spSpinner = Spinner(context).apply {
+                        layoutParams = settingRowFormParams()
+                        minimumHeight = context.dp(40)
+                    }
+                    addView(spSpinner)
+
+                    // etEditText (setting_row_form + gravity=center inputType=text importantForAutofill=no)
+                    etEditText = EditText(context).apply {
+                        layoutParams = settingRowFormParams()
+                        gravity = Gravity.CENTER
+                        inputType = InputType.TYPE_CLASS_TEXT
+                        importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
+                    }
+                    addView(etEditText)
+
+                    // tvError (setting_row_form + textColor=?colorRegexFilterError)
+                    tvError = TextView(context).apply {
+                        layoutParams = settingRowFormParams()
+                        setTextColor(context.attrColor(R.attr.colorRegexFilterError))
+                    }
+                    addView(tvError)
+
+                    // textView1 (setting_row_form + gravity=start|center_vertical)
+                    textView1 = TextView(context).apply {
+                        layoutParams = settingRowFormParams()
+                        gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                    }
+                    addView(textView1)
+
+                    // llButtonBar (setting_row_form + horizontal gravity=center_vertical)
+                    llButtonBar = LinearLayout(context).apply {
+                        layoutParams = settingRowFormParams()
+                        orientation = LinearLayout.HORIZONTAL
+                        gravity = Gravity.CENTER_VERTICAL
+
+                        btnEdit = Button(context).apply {
+                            layoutParams = LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.WRAP_CONTENT,
+                                LinearLayout.LayoutParams.WRAP_CONTENT,
+                            )
+                            text = context.getString(R.string.edit)
+                            isAllCaps = false
+                        }
+                        addView(btnEdit)
+
+                        btnReset = Button(context).apply {
+                            layoutParams = LinearLayout.LayoutParams(
+                                LinearLayout.LayoutParams.WRAP_CONTENT,
+                                LinearLayout.LayoutParams.WRAP_CONTENT,
+                            )
+                            text = context.getString(R.string.reset)
+                            isAllCaps = false
+                        }
+                        addView(btnReset)
+
+                        vColor = View(context).apply {
+                            layoutParams = LinearLayout.LayoutParams(
+                                context.dp(32),
+                                context.dp(32),
+                            ).apply {
+                                this.marginStart = context.dp(8)
+                            }
+                        }
+                        addView(vColor)
+                    }
+                    addView(llButtonBar)
+
+                    // llExtra (setting_row_form + vertical)
+                    llExtra = LinearLayout(context).apply {
+                        layoutParams = settingRowFormParams()
+                        orientation = LinearLayout.VERTICAL
+                    }
+                    addView(llExtra)
+
+                    // tvDesc (setting_row_form)
+                    tvDesc = TextView(context).apply {
+                        layoutParams = settingRowFormParams()
+                    }
+                    addView(tvDesc)
+                }
+
+                // Set labelFor on tvCaption to point to etEditText
+                tvCaption.labelFor = etEditText.id
+
+                return SettingItemViews(
+                    root = root,
+                    tvCaption = tvCaption,
+                    btnAction = btnAction,
+                    checkBox = checkBox,
+                    swSwitch = swSwitch,
+                    spSpinner = spSpinner,
+                    etEditText = etEditText,
+                    tvError = tvError,
+                    textView1 = textView1,
+                    llButtonBar = llButtonBar,
+                    btnEdit = btnEdit,
+                    btnReset = btnReset,
+                    vColor = vColor,
+                    llExtra = llExtra,
+                    tvDesc = tvDesc,
+                )
+            }
+        }
 
         init {
             views.checkBox.setOnCheckedChangeListener(this)
@@ -625,11 +924,7 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
                     SettingType.Sample -> views.llExtra.run {
                         vg(true)
                         removeAllViews()
-                        actAppSetting.layoutInflater.inflate(
-                            item.sampleLayoutId,
-                            views.llExtra,
-                            true
-                        )
+                        item.sampleViewCreator?.invoke(this)
                         item.sampleUpdate(actAppSetting, this)
                     }
 
@@ -855,7 +1150,7 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
             android.R.layout.simple_spinner_item,
             captions.toTypedArray()
         ).apply {
-            setDropDownViewResource(R.layout.lv_spinner_dropdown)
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
     }
 
@@ -1117,11 +1412,16 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
         override fun getItem(position: Int) = if (position == 0) null else list[position - 1]
 
         override fun getView(position: Int, viewOld: View?, parent: ViewGroup): View {
-            val view = viewOld ?: layoutInflater.inflate(
-                R.layout.lv_spinner_wrap_text,
-                parent,
-                false
-            )
+            val view = viewOld ?: TextView(parent.context).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+                minimumHeight = parent.context.dp(48)
+                val pad = parent.context.dp(4)
+                setPadding(pad, pad, pad, pad)
+                id = android.R.id.text1
+            }
             view.findViewById<TextView>(android.R.id.text1).text = when (position) {
                 0 -> getString(R.string.default_post_account_default_action)
                 else -> daoAcctColor.getNickname(list[position - 1])
@@ -1131,7 +1431,7 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
 
         override fun getDropDownView(position: Int, viewOld: View?, parent: ViewGroup): View {
             val view =
-                viewOld ?: layoutInflater.inflate(R.layout.lv_spinner_dropdown, parent, false)
+                viewOld ?: layoutInflater.inflate(android.R.layout.simple_spinner_dropdown_item, parent, false)
             view.findViewById<TextView>(android.R.id.text1).text = when (position) {
                 0 -> getString(R.string.default_post_account_default_action)
                 else -> daoAcctColor.getNickname(list[position - 1])
@@ -1238,7 +1538,7 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
 
         override fun getDropDownView(position: Int, viewOld: View?, parent: ViewGroup): View {
             val view =
-                viewOld ?: layoutInflater.inflate(R.layout.lv_spinner_dropdown, parent, false)
+                viewOld ?: layoutInflater.inflate(android.R.layout.simple_spinner_dropdown_item, parent, false)
             val item = list[position]
             view.findViewById<TextView>(android.R.id.text1).text = item.caption
             return view

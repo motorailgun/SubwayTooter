@@ -3,9 +3,15 @@ package jp.juggler.subwaytooter.dialog
 import android.annotation.SuppressLint
 import android.app.Dialog
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
+import android.widget.Button
+import android.widget.CheckBox
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -16,14 +22,11 @@ import jp.juggler.subwaytooter.action.*
 import jp.juggler.subwaytooter.api.*
 import jp.juggler.subwaytooter.api.entity.*
 import jp.juggler.subwaytooter.calcIconRound
-import jp.juggler.subwaytooter.databinding.DlgListMemberBinding
-import jp.juggler.subwaytooter.databinding.LvListMemberButtonBinding
-import jp.juggler.subwaytooter.databinding.LvListMemberErrorBinding
-import jp.juggler.subwaytooter.databinding.LvListMemberListBinding
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.table.accountListNonPseudo
 import jp.juggler.subwaytooter.table.daoAcctColor
 import jp.juggler.subwaytooter.util.NetworkEmojiInvalidator
+import jp.juggler.subwaytooter.view.MyNetworkImageView
 import jp.juggler.util.coroutine.EmptyScope
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.launchMain
@@ -69,22 +72,39 @@ private class VhOwnerAndList(
     private val layoutInflater: LayoutInflater,
     private val parent: ViewGroup,
     private val handleCheckChange: (OwnerListStatus) -> Unit,
-    private val views: LvListMemberListBinding = LvListMemberListBinding.inflate(
-        layoutInflater,
-        parent,
-        false
-    ),
-) : RecyclerView.ViewHolder(views.root) {
+) : RecyclerView.ViewHolder(
+    FrameLayout(parent.context).apply {
+        layoutParams = RecyclerView.LayoutParams(
+            RecyclerView.LayoutParams.MATCH_PARENT,
+            RecyclerView.LayoutParams.WRAP_CONTENT,
+        )
+        val dp12 = (12 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
+        setPadding(dp12, 0, dp12, 0)
+    }
+) {
+    private val cbItem = CheckBox(parent.context).apply {
+        layoutParams = FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT,
+            FrameLayout.LayoutParams.WRAP_CONTENT,
+        )
+        gravity = android.view.Gravity.CENTER_VERTICAL
+        minimumHeight = (48 * context.resources.displayMetrics.density + 0.5f).toInt()
+        val dp4 = (4 * context.resources.displayMetrics.density + 0.5f).toInt()
+        setPadding(paddingLeft, dp4, paddingRight, dp4)
+    }
+
+    init {
+        (itemView as FrameLayout).addView(cbItem)
+    }
+
     fun bind(data: OwnerListStatus) {
-        views.apply {
-            // リスナを外してから値をセットする
-            cbItem.setOnCheckedChangeListener(null)
-            cbItem.isChecked = data.isRegistered
-            cbItem.text = data.list.title
-            // 最後にリスナをセットし直す
-            cbItem.setOnCheckedChangeListener { v, isChecked ->
-                handleCheckChange(data.copy(isRegistered = isChecked))
-            }
+        // リスナを外してから値をセットする
+        cbItem.setOnCheckedChangeListener(null)
+        cbItem.isChecked = data.isRegistered
+        cbItem.text = data.list.title
+        // 最後にリスナをセットし直す
+        cbItem.setOnCheckedChangeListener { v, isChecked ->
+            handleCheckChange(data.copy(isRegistered = isChecked))
         }
     }
 }
@@ -94,29 +114,47 @@ private class VhCreate(
     private val layoutInflater: LayoutInflater,
     private val parent: ViewGroup,
     private val handleCreate: () -> Unit,
-    views: LvListMemberButtonBinding = LvListMemberButtonBinding.inflate(
-        layoutInflater,
-        parent,
-        false
-    ),
-) : RecyclerView.ViewHolder(views.root) {
-    init {
-        views.button.setOnClickListener { handleCreate() }
+) : RecyclerView.ViewHolder(
+    FrameLayout(parent.context).apply {
+        layoutParams = RecyclerView.LayoutParams(
+            RecyclerView.LayoutParams.MATCH_PARENT,
+            RecyclerView.LayoutParams.WRAP_CONTENT,
+        )
+        val dp12 = (12 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
+        setPadding(dp12, 0, dp12, 0)
+        val btn = Button(parent.context).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+            )
+            text = parent.context.getString(R.string.list_create)
+            isAllCaps = false
+            setOnClickListener { handleCreate() }
+        }
+        addView(btn)
     }
+) {
 }
 
 // エラーテキストを表すViewHolder
 private class VhError(
     private val layoutInflater: LayoutInflater,
     private val parent: ViewGroup,
-    private val views: LvListMemberErrorBinding = LvListMemberErrorBinding.inflate(
-        layoutInflater,
-        parent,
-        false
-    ),
-) : RecyclerView.ViewHolder(views.root) {
+) : RecyclerView.ViewHolder(
+    TextView(parent.context).apply {
+        layoutParams = RecyclerView.LayoutParams(
+            RecyclerView.LayoutParams.MATCH_PARENT,
+            RecyclerView.LayoutParams.WRAP_CONTENT,
+        )
+        gravity = android.view.Gravity.CENTER_VERTICAL
+        minimumHeight = (48 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
+        val dp12 = (12 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
+        val dp4 = (4 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
+        setPadding(dp12, dp4, dp12, dp4)
+    }
+) {
     fun bind(data: Any?) {
-        views.tvError.text = data.toString()
+        (itemView as TextView).text = data.toString()
     }
 }
 
@@ -240,7 +278,125 @@ class DlgListMember(
     )
 
     private val dialog = Dialog(activity)
-    private val views = DlgListMemberBinding.inflate(activity.layoutInflater)
+
+    // Programmatic views
+    private val btnClose: Button
+    private val btnListOwner: Button
+    private val rvOwnedlists: RecyclerView
+    private val ivUser: MyNetworkImageView
+    private val tvUserAcct: TextView
+    private val tvUserName: TextView
+    private val root: LinearLayout
+
+    init {
+        val activity = this.activity
+        val dp3 = activity.dp(3)
+        val dp4 = activity.dp(4)
+        val dp6 = activity.dp(6)
+        val dp12 = activity.dp(12)
+        val dp48 = activity.dp(48)
+
+        ivUser = MyNetworkImageView(activity).apply {
+            contentDescription = activity.getString(R.string.thumbnail)
+            scaleType = android.widget.ImageView.ScaleType.FIT_END
+        }
+        tvUserName = TextView(activity)
+        tvUserAcct = TextView(activity).apply {
+            setTextColor(activity.attrColor(R.attr.colorTimeSmall))
+            textSize = 12f
+            setPadding(dp4, 0, dp4, 0)
+        }
+        btnListOwner = Button(activity).apply {
+            isAllCaps = false
+        }
+        rvOwnedlists = RecyclerView(activity).apply {
+            isScrollbarFadingEnabled = false
+            scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
+        }
+        btnClose = Button(activity).apply {
+            text = activity.getString(R.string.close)
+        }
+
+        root = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            // spacer
+            addView(View(activity), LinearLayout.LayoutParams(0, dp6))
+            // "Target user" label
+            addView(TextView(activity).apply {
+                text = activity.getString(R.string.target_user)
+                textSize = 14f
+            }, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { setMargins(dp12, 0, dp12, 0) })
+            // User info row
+            addView(LinearLayout(activity).apply {
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                addView(ivUser, LinearLayout.LayoutParams(dp48, (40 * activity.resources.displayMetrics.density + 0.5f).toInt()).apply {
+                    marginEnd = dp4
+                })
+                addView(LinearLayout(activity).apply {
+                    orientation = LinearLayout.VERTICAL
+                    addView(tvUserName, LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                    ))
+                    addView(tvUserAcct, LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                    ))
+                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            }, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { setMargins(dp12, dp3, dp12, 0) })
+            // divider
+            addView(View(activity).apply {
+                setBackgroundColor(activity.attrColor(R.attr.colorSettingDivider))
+            }, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, activity.dp(1)
+            ).apply { setMargins(0, dp6, 0, dp6) })
+            // "List owner" label
+            addView(TextView(activity).apply {
+                text = activity.getString(R.string.list_owner)
+                textSize = 14f
+            }, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { setMargins(dp12, 0, dp12, 0) })
+            // List owner button
+            addView(btnListOwner, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { setMargins(dp12, dp3, dp12, 0) })
+            // "List" label
+            addView(TextView(activity).apply {
+                text = activity.getString(R.string.list)
+                textSize = 14f
+            }, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { setMargins(dp12, 0, dp12, 0) })
+            // RecyclerView
+            addView(rvOwnedlists, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
+            ))
+            // divider
+            addView(View(activity).apply {
+                setBackgroundColor(activity.attrColor(R.attr.colorSettingDivider))
+            }, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, activity.dp(1)
+            ))
+            // Close button bar
+            addView(LinearLayout(activity).apply {
+                addView(btnClose, LinearLayout.LayoutParams(0,
+                    LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            }, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ))
+        }
+    }
 
     private fun openListCreator() {
         with(activity) {
@@ -404,22 +560,20 @@ class DlgListMember(
 
     private fun setListOwner(a: SavedAccount?) {
         // リストオーナボタンの文字列を更新する
-        views.apply {
-            if (a == null) {
-                btnListOwner.setText(R.string.not_selected_2)
-                btnListOwner.setTextColor(activity.attrColor(android.R.attr.textColorPrimary))
-                btnListOwner.setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+        if (a == null) {
+            btnListOwner.setText(R.string.not_selected_2)
+            btnListOwner.setTextColor(activity.attrColor(android.R.attr.textColorPrimary))
+            btnListOwner.setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+        } else {
+            val ac = daoAcctColor.load(a)
+            btnListOwner.text = ac.nickname
+            if (daoAcctColor.hasColorBackground(ac)) {
+                btnListOwner.setBackgroundColor(ac.colorBg)
             } else {
-                val ac = daoAcctColor.load(a)
-                btnListOwner.text = ac.nickname
-                if (daoAcctColor.hasColorBackground(ac)) {
-                    btnListOwner.setBackgroundColor(ac.colorBg)
-                } else {
-                    btnListOwner.setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
-                }
-                btnListOwner.textColor = ac.colorFg.notZero()
-                    ?: activity.attrColor(android.R.attr.textColorPrimary)
+                btnListOwner.setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
             }
+            btnListOwner.textColor = ac.colorFg.notZero()
+                ?: activity.attrColor(android.R.attr.textColorPrimary)
         }
         // リスト一覧を取得する
         listOwner = a
@@ -450,35 +604,34 @@ class DlgListMember(
     }
 
     fun show() {
-        views.apply {
-            btnClose.setOnClickListener { dialog.dismissSafe() }
-            btnListOwner.setOnClickListener {
-                launchMain {
-                    activity.pickAccount(
-                        bAllowPseudo = false,
-                        bAuto = false,
-                        accountListArg = accountList
-                    )?.let { setListOwner(it) }
-                }
+        btnClose.setOnClickListener { dialog.dismissSafe() }
+        btnListOwner.setOnClickListener {
+            launchMain {
+                activity.pickAccount(
+                    bAllowPseudo = false,
+                    bAuto = false,
+                    accountListArg = accountList
+                )?.let { setListOwner(it) }
             }
-            rvOwnedlists.apply {
-                layoutManager = LinearLayoutManager(context)
-                adapter = listsAdapter
-            }
-
-            ivUser.setImageUrl(
-                calcIconRound(ivUser.layoutParams),
-                who.avatar_static,
-                who.avatar
-            )
-            tvUserAcct.text = whoAcct.pretty
-
-            NetworkEmojiInvalidator(activity.handler, tvUserName)
-                .text = who.decodeDisplayName(activity)
         }
+        rvOwnedlists.apply {
+            layoutManager = LinearLayoutManager(context)
+            adapter = listsAdapter
+        }
+
+        ivUser.setImageUrl(
+            calcIconRound(ivUser.layoutParams),
+            who.avatar_static,
+            who.avatar
+        )
+        tvUserAcct.text = whoAcct.pretty
+
+        NetworkEmojiInvalidator(activity.handler, tvUserName)
+            .text = who.decodeDisplayName(activity)
+
         dialog.apply {
             setTitle(R.string.your_lists)
-            setContentView(views.root)
+            setContentView(root)
             setOnDismissListener { requestChannel.close() }
             window?.apply {
                 setFlags(0, Window.FEATURE_NO_TITLE)

@@ -2,14 +2,20 @@ package jp.juggler.subwaytooter.dialog
 
 import android.app.Dialog
 import android.content.Context
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.PictureDrawable
 import android.text.Editable
+import android.text.InputType
 import android.text.TextWatcher
 import android.util.TypedValue
 import android.view.*
+import android.widget.EditText
 import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageButton
 import android.widget.ImageView
+import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.appcompat.widget.AppCompatImageView
@@ -21,7 +27,6 @@ import com.bumptech.glide.Glide
 import com.google.android.flexbox.*
 import jp.juggler.subwaytooter.App1
 import jp.juggler.subwaytooter.R
-import jp.juggler.subwaytooter.databinding.EmojiPickerDialogBinding
 import jp.juggler.subwaytooter.emoji.*
 import jp.juggler.subwaytooter.pref.PrefB
 import jp.juggler.subwaytooter.pref.PrefS
@@ -29,12 +34,12 @@ import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.util.emojiSizeMode
 import jp.juggler.subwaytooter.util.minHeightCompat
 import jp.juggler.subwaytooter.util.minWidthCompat
+import jp.juggler.subwaytooter.view.GestureInterceptor
 import jp.juggler.subwaytooter.view.NetworkEmojiView
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.*
 import jp.juggler.util.log.*
 import jp.juggler.util.ui.*
-import org.jetbrains.anko.wrapContent
 import kotlin.math.abs
 import kotlin.math.sign
 
@@ -426,28 +431,121 @@ private class EmojiPicker(
 
     private val gridAdapter = GridAdapter()
 
-    private val views = EmojiPickerDialogBinding.inflate(activity.layoutInflater)
+    private val matchParent = LinearLayout.LayoutParams.MATCH_PARENT
+    private val wrapContent = LinearLayout.LayoutParams.WRAP_CONTENT
 
-    private val ibSkinTone = listOf(
-        Pair(R.id.btnSkinTone0, 0),
-        Pair(R.id.btnSkinTone1, 0x1F3FB),
-        Pair(R.id.btnSkinTone2, 0x1F3FC),
-        Pair(R.id.btnSkinTone3, 0x1F3FD),
-        Pair(R.id.btnSkinTone4, 0x1F3FE),
-        Pair(R.id.btnSkinTone5, 0x1F3FF),
-    ).map { (btnId, skinToneCode) ->
-        views.root.findViewById<ImageButton>(btnId).apply {
-            tag = SkinTone(skinToneCode)
-            setOnClickListener {
-                selectedTone = (it.tag as SkinTone)
-                showSkinTone()
-                @Suppress("NotifyDataSetChanged")
-                gridAdapter.notifyDataSetChanged()
+    private val density = activity.resources.displayMetrics.density
+    val cellMargin = (density * 1f + 0.5f).toInt()
+    val gridSize = (density * 48f + 0.5f).toInt()
+
+    private lateinit var etFilter: EditText
+    private lateinit var svCategories: HorizontalScrollView
+    private lateinit var llCategories: LinearLayout
+    private lateinit var giGrid: GestureInterceptor
+    private lateinit var rvGrid: RecyclerView
+
+    private val rootView: LinearLayout
+    private val ibSkinTone: List<ImageButton>
+
+    init {
+        val dp6 = (density * 6f + 0.5f).toInt()
+        val dp2 = (density * 2f + 0.5f).toInt()
+        val dp4 = (density * 4f + 0.5f).toInt()
+        val dp48 = (density * 48f + 0.5f).toInt()
+
+        val skinToneData = listOf(
+            Pair(0xFFfde12c.toInt(), 0),
+            Pair(0xFFf7dece.toInt(), 0x1F3FB),
+            Pair(0xFFf3d2a2.toInt(), 0x1F3FC),
+            Pair(0xFFd5ab88.toInt(), 0x1F3FD),
+            Pair(0xFFaf7e57.toInt(), 0x1F3FE),
+            Pair(0xFF7c533e.toInt(), 0x1F3FF),
+        )
+
+        val skinToneButtons = mutableListOf<ImageButton>()
+
+        rootView = LinearLayout(activity).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                (density * 320f + 0.5f).toInt(),
+                matchParent
+            )
+            orientation = LinearLayout.VERTICAL
+
+            // skin tone buttons row
+            addView(FlexboxLayout(context).apply {
+                layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent).apply {
+                    setMargins(dp6, dp6, dp6, 0)
+                }
+                flexDirection = FlexDirection.ROW
+
+                for ((bgColor, skinToneCode) in skinToneData) {
+                    val btn = ImageButton(context).apply {
+                        layoutParams = FlexboxLayout.LayoutParams(dp48, dp48).apply {
+                            marginStart = dp2
+                        }
+                        setBackgroundColor(bgColor)
+                        tag = SkinTone(skinToneCode)
+                        setOnClickListener {
+                            selectedTone = (it.tag as SkinTone)
+                            showSkinTone()
+                            @Suppress("NotifyDataSetChanged")
+                            gridAdapter.notifyDataSetChanged()
+                        }
+                    }
+                    skinToneButtons.add(btn)
+                    addView(btn)
+                }
+            })
+
+            // filter EditText
+            etFilter = EditText(this@EmojiPicker.activity).apply {
+                layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent).apply {
+                    setMargins(dp6, dp6, dp6, dp2)
+                }
+                hint = this@EmojiPicker.activity.getString(R.string.search_emojis)
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
+                inputType = InputType.TYPE_CLASS_TEXT
             }
-        }
-    }
+            addView(etFilter)
 
-    private val matchParent = RecyclerView.LayoutParams.MATCH_PARENT
+            // category scroll
+            svCategories = HorizontalScrollView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
+                isScrollbarFadingEnabled = false
+                setFadingEdgeLength((this@EmojiPicker.density * 32f + 0.5f).toInt())
+                isHorizontalFadingEdgeEnabled = true
+                isHorizontalScrollBarEnabled = true
+
+                llCategories = LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    layoutParams = FrameLayout.LayoutParams(wrapContent, wrapContent)
+                    setPadding(dp6, 0, dp6, dp4)
+                }
+                addView(llCategories)
+            }
+            addView(svCategories)
+
+            // grid area
+            giGrid = GestureInterceptor(this@EmojiPicker.activity).apply {
+                layoutParams = LinearLayout.LayoutParams(matchParent, 0, 1f)
+
+                rvGrid = RecyclerView(this@EmojiPicker.activity).apply {
+                    layoutParams = FrameLayout.LayoutParams(matchParent, matchParent)
+                    clipToPadding = false
+                    isScrollbarFadingEnabled = false
+                    minimumHeight = (this@EmojiPicker.density * 200f + 0.5f).toInt()
+                    setPadding(dp6, dp6, dp6, dp6)
+                    scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
+                    isVerticalScrollBarEnabled = true
+                }
+                addView(rvGrid)
+            }
+            addView(giGrid)
+        }
+
+        ibSkinTone = skinToneButtons
+    }
 
     private val useTwemoji = PrefB.bpUseTwemoji.value
     private val disableAnimation = PrefB.bpDisableEmojiAnimation.value
@@ -466,9 +564,6 @@ private class EmojiPicker(
     private var lastExpandCategory: PickerItemCategory? = null
     private var canCollapse = true
 
-    private val density = activity.resources.displayMetrics.density
-    val cellMargin = (density * 1f + 0.5f).toInt()
-    val gridSize = (density * 48f + 0.5f).toInt()
     private val cancelY = 16f
     private val interceptX = 40f
     private var tracker: VelocityTracker? = null
@@ -735,14 +830,14 @@ private class EmojiPicker(
 
         val targetCategory = lastExpandCategory
         if (scrollToCategory && targetCategory != null) {
-            views.root.handler?.postDelayed({
+            rootView.handler?.postDelayed({
                 gridAdapter.list.indexOfFirst { (it as? PickerItemCategory)?.original == targetCategory }
                     .takeIf { it != -1 }
-                    ?.let { views.rvGrid.smoothScrollToPosition(it) }
+                    ?.let { rvGrid.smoothScrollToPosition(it) }
             }, 100L)
         }
 
-        for (it in views.llCategories.children) {
+        for (it in llCategories.children) {
             val backgroundId = when (it.tag) {
                 selectedCategory -> R.drawable.bg_button_cw
                 else -> R.drawable.btn_bg_transparent_round6dp
@@ -750,15 +845,15 @@ private class EmojiPicker(
             it.background = ContextCompat.getDrawable(it.context, backgroundId)
 
             if (it.tag == selectedCategory && scrollCategoryTab) {
-                val oldScrollX = views.svCategories.scrollX
-                val visibleWidth = views.svCategories.width
+                val oldScrollX = svCategories.scrollX
+                val visibleWidth = svCategories.width
                 log.i("left=${it.left},r=${it.right},s=$oldScrollX")
                 when {
                     oldScrollX > it.left ->
-                        views.svCategories.smoothScrollTo(it.left, 0)
+                        svCategories.smoothScrollTo(it.left, 0)
 
                     oldScrollX + visibleWidth < it.right ->
-                        views.svCategories.smoothScrollTo(it.right - visibleWidth, 0)
+                        svCategories.smoothScrollTo(it.right - visibleWidth, 0)
                 }
             }
         }
@@ -780,12 +875,12 @@ private class EmojiPicker(
             setPadding(padLr, padTb, padLr, padTb)
             text = activity?.getString(category.titleId)
             setOnClickListener {
-                views.etFilter.removeTextChangedListener(textWatcher)
-                views.etFilter.setText("")
-                views.etFilter.addTextChangedListener(textWatcher)
+                etFilter.removeTextChangedListener(textWatcher)
+                etFilter.setText("")
+                etFilter.addTextChangedListener(textWatcher)
                 showFiltered(category, null)
             }
-        }.let { views.llCategories.addView(it) }
+        }.let { llCategories.addView(it) }
     }
 
     private fun movePage(delta: Int) {
@@ -905,14 +1000,14 @@ private class EmojiPicker(
             addCategoryButton(it)
         }
 
-        views.etFilter.addTextChangedListener(textWatcher)
+        etFilter.addTextChangedListener(textWatcher)
 
         showFiltered(null, null)
 
-        views.giGrid.intercept = { handleTouch(it, wasIntercept = false) }
-        views.giGrid.touch = { handleTouch(it, wasIntercept = true) }
+        giGrid.intercept = { handleTouch(it, wasIntercept = false) }
+        giGrid.touch = { handleTouch(it, wasIntercept = true) }
 
-        views.rvGrid.apply {
+        rvGrid.apply {
             layoutManager = FlexboxLayoutManagerWrapper(context).apply {
                 flexDirection = FlexDirection.ROW
                 flexWrap = FlexWrap.WRAP
@@ -924,7 +1019,7 @@ private class EmojiPicker(
         showSkinTone()
 
         this.dialog = Dialog(activity)
-        dialog.setContentView(views.root)
+        dialog.setContentView(rootView)
         dialog.setCancelable(true)
         dialog.setCanceledOnTouchOutside(true)
         dialog.setOnDismissListener {

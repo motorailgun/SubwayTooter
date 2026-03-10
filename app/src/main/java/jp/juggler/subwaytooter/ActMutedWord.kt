@@ -1,36 +1,44 @@
 package jp.juggler.subwaytooter
 
 import android.os.Bundle
-import android.view.View
-import android.view.ViewGroup
-import android.widget.BaseAdapter
-import androidx.appcompat.app.AppCompatActivity
-import jp.juggler.subwaytooter.databinding.ActWordListBinding
-import jp.juggler.subwaytooter.databinding.LvMuteAppBinding
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Delete
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.subwaytooter.table.MutedWord
 import jp.juggler.subwaytooter.table.daoMutedWord
-import jp.juggler.subwaytooter.view.wrapTitleTextView
+import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError
-import jp.juggler.util.data.cast
 import jp.juggler.util.log.LogCategory
-import jp.juggler.util.ui.setContentViewAndInsets
-import jp.juggler.util.ui.setNavigationBack
 import kotlinx.coroutines.withContext
 
-class ActMutedWord : AppCompatActivity() {
+class ActMutedWord : ComponentActivity() {
 
     companion object {
         private val log = LogCategory("ActMutedWord")
     }
 
-    private val views by lazy {
-        ActWordListBinding.inflate(layoutInflater)
-    }
-
-    private val listAdapter by lazy { MyListAdapter() }
+    private val items = mutableStateListOf<MutedWord>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,72 +47,73 @@ class ActMutedWord : AppCompatActivity() {
             finish()
         }
         App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
-        initUI()
+        val stColorScheme = getStColorTheme()
+        setContent {
+            StScreen(
+                stColorScheme = stColorScheme,
+                title = getString(R.string.muted_word),
+                onBack = {
+                    setResult(RESULT_OK)
+                    finish()
+                },
+            ) { innerPadding ->
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                ) {
+                    items(items, key = { it.name }) { item ->
+                        MuteItemRow(item.name) { delete(item) }
+                    }
+                    item {
+                        Text(
+                            text = stringResource(R.string.refresh_after_ummute),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp),
+                        )
+                    }
+                }
+            }
+        }
         loadData()
-    }
-
-    private fun initUI() {
-        setSupportActionBar(views.toolbar)
-        wrapTitleTextView()
-        setNavigationBack(views.toolbar)
-        fixHorizontalMargin(views.llContent)
-        views.listView.adapter = listAdapter
     }
 
     private fun loadData() {
         launchAndShowError {
-            listAdapter.items = withContext(AppDispatchers.IO) {
+            val list = withContext(AppDispatchers.IO) {
                 daoMutedWord.listAll()
             }
+            items.clear()
+            items.addAll(list)
         }
     }
 
-    private fun delete(item: MutedWord?) {
-        item ?: return
+    private fun delete(item: MutedWord) {
         launchAndShowError {
             confirm(R.string.delete_confirm, item.name)
             daoMutedWord.delete(item.name)
-            listAdapter.remove(item)
+            items.remove(item)
         }
     }
+}
 
-    // リスト要素のViewHolder
-    private inner class MyViewHolder(parent: ViewGroup?) {
-        val views = LvMuteAppBinding.inflate(layoutInflater, parent, false)
-        private var lastItem: MutedWord? = null
-
-        init {
-            views.root.tag = this
-            views.btnDelete.setOnClickListener { delete(lastItem) }
+@Composable
+internal fun MuteItemRow(name: String, onDelete: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = name,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = onDelete) {
+            Icon(
+                imageVector = Icons.Outlined.Delete,
+                contentDescription = "Delete",
+            )
         }
-
-        fun bind(item: MutedWord?) {
-            item ?: return
-            lastItem = item
-            views.tvName.text = item.name
-        }
-    }
-
-    private inner class MyListAdapter : BaseAdapter() {
-        var items: List<MutedWord> = emptyList()
-            set(value) {
-                field = value
-                notifyDataSetChanged()
-            }
-
-        fun remove(item: MutedWord?) {
-            items = items.filter { it != item }
-        }
-
-        override fun getCount() = items.size
-        override fun getItem(position: Int) = items.elementAtOrNull(position)
-        override fun getItemId(position: Int) = 0L
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup?) =
-            (convertView?.tag?.cast() ?: MyViewHolder(parent))
-                .also { it.bind(items.elementAtOrNull(position)) }
-                .views.root
-
-        override fun isEnabled(position: Int) = false
     }
 }

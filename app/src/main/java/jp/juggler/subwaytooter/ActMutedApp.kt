@@ -1,37 +1,35 @@
 package jp.juggler.subwaytooter
 
 import android.os.Bundle
-import android.view.View
-import android.view.ViewGroup
-import android.widget.BaseAdapter
-import androidx.appcompat.app.AppCompatActivity
-import jp.juggler.subwaytooter.databinding.ActWordListBinding
-import jp.juggler.subwaytooter.databinding.LvMuteAppBinding
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Text
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.subwaytooter.table.MutedApp
 import jp.juggler.subwaytooter.table.appDatabase
-import jp.juggler.subwaytooter.view.wrapTitleTextView
+import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
-import jp.juggler.util.data.cast
 import jp.juggler.util.log.LogCategory
-import jp.juggler.util.ui.setContentViewAndInsets
-import jp.juggler.util.ui.setNavigationBack
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-class ActMutedApp : AppCompatActivity() {
+class ActMutedApp : ComponentActivity() {
 
     companion object {
         private val log = LogCategory("ActMutedApp")
     }
 
-    private val views by lazy {
-        ActWordListBinding.inflate(layoutInflater)
-    }
-
-    private val listAdapter by lazy { MyListAdapter() }
-
+    private val items = mutableStateListOf<MutedApp>()
     private val daoMutedApp by lazy { MutedApp.Access(appDatabase) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,72 +39,45 @@ class ActMutedApp : AppCompatActivity() {
             finish()
         }
         App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
-        initUI()
+        val stColorScheme = getStColorTheme()
+        setContent {
+            StScreen(
+                stColorScheme = stColorScheme,
+                title = getString(R.string.muted_app),
+                onBack = {
+                    setResult(RESULT_OK)
+                    finish()
+                },
+            ) { innerPadding ->
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                ) {
+                    items(items, key = { it.name }) { item ->
+                        MuteItemRow(item.name) { delete(item) }
+                    }
+                }
+            }
+        }
         loadData()
-    }
-
-    private fun initUI() {
-        setSupportActionBar(views.toolbar)
-        wrapTitleTextView()
-        setNavigationBack(views.toolbar)
-        fixHorizontalMargin(views.llContent)
-        views.listView.adapter = listAdapter
     }
 
     private fun loadData() {
         launchAndShowError {
-            listAdapter.items = withContext(Dispatchers.IO) {
+            val list = withContext(Dispatchers.IO) {
                 daoMutedApp.listAll()
             }
+            items.clear()
+            items.addAll(list)
         }
     }
 
-    private fun delete(item: MutedApp?) {
-        item ?: return
+    private fun delete(item: MutedApp) {
         launchAndShowError {
             confirm(R.string.delete_confirm, item.name)
             daoMutedApp.delete(item.name)
-            listAdapter.remove(item)
+            items.remove(item)
         }
-    }
-
-    // リスト要素のViewHolder
-    private inner class MyViewHolder(parent: ViewGroup?) {
-        val views = LvMuteAppBinding.inflate(layoutInflater, parent, false)
-        var lastItem: MutedApp? = null
-
-        init {
-            views.root.tag = this
-            views.btnDelete.setOnClickListener { delete(lastItem) }
-        }
-
-        fun bind(item: MutedApp?) {
-            item ?: return
-            lastItem = item
-            views.tvName.text = item.name
-        }
-    }
-
-    private inner class MyListAdapter : BaseAdapter() {
-        var items: List<MutedApp> = emptyList()
-            set(value) {
-                field = value
-                notifyDataSetChanged()
-            }
-
-        fun remove(item: MutedApp) {
-            items = items.filter { it != item }
-        }
-
-        override fun getCount() = items.size
-        override fun getItem(position: Int) = items.elementAtOrNull(position)
-        override fun getItemId(position: Int) = 0L
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup?) =
-            (convertView?.tag?.cast() ?: MyViewHolder(parent))
-                .also { it.bind(items.elementAtOrNull(position)) }
-                .views.root
-
-        override fun isEnabled(position: Int) = false
     }
 }

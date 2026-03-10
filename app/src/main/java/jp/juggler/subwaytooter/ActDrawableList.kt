@@ -1,24 +1,32 @@
 package jp.juggler.subwaytooter
 
 import android.os.Bundle
-import android.view.View
-import android.view.ViewGroup
-import android.widget.BaseAdapter
-import android.widget.ImageView
-import android.widget.TextView
-import jp.juggler.subwaytooter.databinding.ActDrawableListBinding
-import jp.juggler.subwaytooter.view.wrapTitleTextView
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Text
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import jp.juggler.subwaytooter.compose.StScreen
+import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.util.coroutine.AppDispatchers
-import jp.juggler.util.coroutine.AsyncActivity
-import jp.juggler.util.data.asciiPattern
 import jp.juggler.util.log.LogCategory
-import jp.juggler.util.ui.setContentViewAndInsets
-import jp.juggler.util.ui.setNavigationBack
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class ActDrawableList : AsyncActivity(), CoroutineScope {
+class ActDrawableList : ComponentActivity() {
 
     companion object {
         private val log = LogCategory("ActDrawableList")
@@ -26,43 +34,66 @@ class ActDrawableList : AsyncActivity(), CoroutineScope {
 
     private class MyItem(val id: Int, val name: String)
 
-    private val drawableList = ArrayList<MyItem>()
-    private lateinit var adapter: MyAdapter
-
-    private val views by lazy {
-        ActDrawableListBinding.inflate(layoutInflater)
-    }
+    private val drawableList = mutableStateListOf<MyItem>()
+    private val job = Job()
+    private val scope = CoroutineScope(Dispatchers.Main + job)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
-        initUI()
+        val stColorScheme = getStColorTheme()
+        setContent {
+            StScreen(
+                stColorScheme = stColorScheme,
+                title = "Drawables",
+                onBack = { finish() },
+            ) { innerPadding ->
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                ) {
+                    items(drawableList) { item ->
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Image(
+                                painter = painterResource(item.id),
+                                contentDescription = item.name,
+                                modifier = Modifier.size(48.dp),
+                            )
+                            Text(
+                                text = item.name,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(start = 8.dp),
+                            )
+                        }
+                    }
+                }
+            }
+        }
         load()
     }
 
-    private fun initUI() {
-        setSupportActionBar(views.toolbar)
-        wrapTitleTextView()
-        fixHorizontalMargin(views.listView)
-        setNavigationBack(views.toolbar)
-
-        adapter = MyAdapter()
-        views.listView.adapter = adapter
+    override fun onDestroy() {
+        super.onDestroy()
+        job.cancel()
     }
 
-    private fun load() = launch {
+    private fun load() = scope.launch {
         try {
             val rePackageSpec = """.+/""".toRegex()
             val reSkipName =
                 """^(m3_|abc_|avd_|btn_checkbox_|btn_radio_|googleg_|ic_keyboard_arrow_|ic_menu_arrow_|notification_|common_|emj_|cpv_|design_|exo_|mtrl_|ic_mtrl_)"""
-                    .asciiPattern()
+                    .toRegex()
             val list = withContext(AppDispatchers.IO) {
                 R.drawable::class.java.fields
                     .mapNotNull {
                         val id = it.get(null) as? Int ?: return@mapNotNull null
                         val name = resources.getResourceName(id).replaceFirst(rePackageSpec, "")
-                        if (reSkipName.matcher(name).find()) return@mapNotNull null
+                        if (reSkipName.containsMatchIn(name)) return@mapNotNull null
                         MyItem(id, name)
                     }
                     .toMutableList()
@@ -70,42 +101,8 @@ class ActDrawableList : AsyncActivity(), CoroutineScope {
             }
             drawableList.clear()
             drawableList.addAll(list)
-            adapter.notifyDataSetChanged()
         } catch (ex: Throwable) {
             log.e(ex, "load failed.")
-        }
-    }
-
-    private class MyViewHolder(viewRoot: View) {
-
-        private val tvCaption: TextView = viewRoot.findViewById(R.id.tvCaption)
-        private val ivImage: ImageView = viewRoot.findViewById(R.id.ivImage)
-
-        fun bind(item: MyItem) {
-            tvCaption.text = item.name
-            ivImage.setImageResource(item.id)
-        }
-    }
-
-    private inner class MyAdapter : BaseAdapter() {
-
-        override fun getCount(): Int = drawableList.size
-        override fun getItemId(idx: Int): Long = 0L
-        override fun getItem(idx: Int): Any = drawableList[idx]
-
-        override fun getView(idx: Int, viewArg: View?, parent: ViewGroup?): View {
-            val view: View
-            val holder: MyViewHolder
-            if (viewArg == null) {
-                view = layoutInflater.inflate(R.layout.lv_drawable, parent, false)
-                holder = MyViewHolder(view)
-                view.tag = holder
-            } else {
-                view = viewArg
-                holder = view.tag as MyViewHolder
-            }
-            holder.bind(drawableList[idx])
-            return view
         }
     }
 }

@@ -14,12 +14,17 @@ import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.CompoundButton
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ScrollView
 import android.widget.Spinner
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SwitchCompat
+import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.jrummyapps.android.colorpicker.dialogColorPicker
@@ -39,8 +44,8 @@ import jp.juggler.subwaytooter.api.entity.parseItem
 import jp.juggler.subwaytooter.api.runApiTask
 import jp.juggler.subwaytooter.api.runApiTask2
 import jp.juggler.subwaytooter.api.showApiError
-import jp.juggler.subwaytooter.databinding.ActAccountSettingBinding
-import jp.juggler.subwaytooter.databinding.ActionBarCustomTitleBinding
+import jp.juggler.subwaytooter.view.ActionBarCustomTitle
+import jp.juggler.subwaytooter.view.MyNetworkImageView
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.subwaytooter.dialog.actionsDialog
 import jp.juggler.subwaytooter.notification.checkNotificationImmediate
@@ -91,13 +96,46 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
 import okio.BufferedSink
-import org.jetbrains.anko.backgroundColor
-import org.jetbrains.anko.textColor
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
 import kotlin.math.max
+
+class ActAccountSettingViews(
+    val root: View,
+    val toolbar: Toolbar,
+    val svContent: ScrollView,
+    val tvUserCustom: TextView,
+    val etDisplayName: EditText,
+    val etNote: EditText,
+    val ivProfileAvatar: MyNetworkImageView,
+    val ivProfileHeader: MyNetworkImageView,
+    val cbLocked: CheckBox,
+    val btnVisibility: Button,
+    val btnOpenBrowser: Button,
+    val swMarkSensitive: SwitchCompat,
+    val swNSFWOpen: SwitchCompat,
+    val swExpandCW: SwitchCompat,
+    val swNotificationPullEnabled: SwitchCompat,
+    val swNotificationPushEnabled: SwitchCompat,
+    val vNotificationAccentColorColor: View,
+    val btnAccessToken: View,
+    val btnInputAccessToken: View,
+    val btnAccountRemove: View,
+    val btnLoadPreference: View,
+    val btnPushSubscription: View,
+    val btnPushSubscriptionNotForce: View,
+    val btnResetNotificationTracking: View,
+    val btnUserCustom: View,
+    val btnProfileAvatar: View,
+    val btnProfileHeader: View,
+    val btnDisplayName: View,
+    val btnNote: View,
+    val btnFields: View,
+    val btnNotificationAccentColorEdit: View,
+    val btnNotificationAccentColorReset: View,
+)
 
 class ActAccountSetting : AppCompatActivity(),
     View.OnClickListener,
@@ -169,7 +207,41 @@ class ActAccountSetting : AppCompatActivity(),
     }
 
     private val views by lazy {
-        ActAccountSettingBinding.inflate(layoutInflater, null, false)
+        val root = layoutInflater.inflate(R.layout.act_account_setting, null, false)
+        ActAccountSettingViews(
+            root = root,
+            toolbar = root.findViewById(R.id.toolbar),
+            svContent = root.findViewById(R.id.svContent),
+            tvUserCustom = root.findViewById(R.id.tvUserCustom),
+            etDisplayName = root.findViewById(R.id.etDisplayName),
+            etNote = root.findViewById(R.id.etNote),
+            ivProfileAvatar = root.findViewById(R.id.ivProfileAvatar),
+            ivProfileHeader = root.findViewById(R.id.ivProfileHeader),
+            cbLocked = root.findViewById(R.id.cbLocked),
+            btnVisibility = root.findViewById(R.id.btnVisibility),
+            btnOpenBrowser = root.findViewById(R.id.btnOpenBrowser),
+            swMarkSensitive = root.findViewById(R.id.swMarkSensitive),
+            swNSFWOpen = root.findViewById(R.id.swNSFWOpen),
+            swExpandCW = root.findViewById(R.id.swExpandCW),
+            swNotificationPullEnabled = root.findViewById(R.id.swNotificationPullEnabled),
+            swNotificationPushEnabled = root.findViewById(R.id.swNotificationPushEnabled),
+            vNotificationAccentColorColor = root.findViewById(R.id.vNotificationAccentColorColor),
+            btnAccessToken = root.findViewById(R.id.btnAccessToken),
+            btnInputAccessToken = root.findViewById(R.id.btnInputAccessToken),
+            btnAccountRemove = root.findViewById(R.id.btnAccountRemove),
+            btnLoadPreference = root.findViewById(R.id.btnLoadPreference),
+            btnPushSubscription = root.findViewById(R.id.btnPushSubscription),
+            btnPushSubscriptionNotForce = root.findViewById(R.id.btnPushSubscriptionNotForce),
+            btnResetNotificationTracking = root.findViewById(R.id.btnResetNotificationTracking),
+            btnUserCustom = root.findViewById(R.id.btnUserCustom),
+            btnProfileAvatar = root.findViewById(R.id.btnProfileAvatar),
+            btnProfileHeader = root.findViewById(R.id.btnProfileHeader),
+            btnDisplayName = root.findViewById(R.id.btnDisplayName),
+            btnNote = root.findViewById(R.id.btnNote),
+            btnFields = root.findViewById(R.id.btnFields),
+            btnNotificationAccentColorEdit = root.findViewById(R.id.btnNotificationAccentColorEdit),
+            btnNotificationAccentColorReset = root.findViewById(R.id.btnNotificationAccentColorReset),
+        )
     }
 
     private lateinit var nameInvalidator: NetworkEmojiInvalidator
@@ -183,7 +255,6 @@ class ActAccountSetting : AppCompatActivity(),
     //    private lateinit var listEtFieldValue: List<EditText>
     private lateinit var listFieldNameInvalidator: List<NetworkEmojiInvalidator>
     private lateinit var listFieldValueInvalidator: List<NetworkEmojiInvalidator>
-    private lateinit var btnFields: View
 
     private class ResizeItem(val config: ResizeConfig, val caption: String)
 
@@ -195,7 +266,7 @@ class ActAccountSetting : AppCompatActivity(),
 
     internal var visibility = TootVisibility.Public
 
-    private var customTitleBar: ActionBarCustomTitleBinding? = null
+    private var customTitleBar: ActionBarCustomTitle? = null
 
     var density = 1f
 
@@ -272,6 +343,13 @@ class ActAccountSetting : AppCompatActivity(),
         this.handler = App1.getAppState(this).handler
 
         views.apply {
+            val spResizeImage = root.findViewById<Spinner>(R.id.spResizeImage)
+            val spLanguageCode = root.findViewById<Spinner>(R.id.spLanguageCode)
+            val spMovieTranscodeMode = root.findViewById<Spinner>(R.id.spMovieTranscodeMode)
+            val spPushPolicy = root.findViewById<Spinner>(R.id.spPushPolicy)
+            val etDefaultText = root.findViewById<EditText>(R.id.etDefaultText)
+            val etMaxTootChars = root.findViewById<EditText>(R.id.etMaxTootChars)
+
             btnPushSubscriptionNotForce.vg(ReleaseType.isDebug)
 
             imageResizeItems = SavedAccount.resizeConfigList.map {
@@ -299,7 +377,7 @@ class ActAccountSetting : AppCompatActivity(),
                 android.R.layout.simple_spinner_item,
                 imageResizeItems.map { it.caption }.toTypedArray()
             ).apply {
-                setDropDownViewResource(R.layout.lv_spinner_dropdown)
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
 
             spLanguageCode.adapter = ArrayAdapter(
@@ -307,7 +385,7 @@ class ActAccountSetting : AppCompatActivity(),
                 android.R.layout.simple_spinner_item,
                 languages.map { it.second }.toTypedArray()
             ).apply {
-                setDropDownViewResource(R.layout.lv_spinner_dropdown)
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
 
             spMovieTranscodeMode.adapter = ArrayAdapter(
@@ -319,7 +397,7 @@ class ActAccountSetting : AppCompatActivity(),
                     getString(R.string.always),
                 )
             ).apply {
-                setDropDownViewResource(R.layout.lv_spinner_dropdown)
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
 
             pushPolicyItems = listOf(
@@ -335,7 +413,7 @@ class ActAccountSetting : AppCompatActivity(),
                 android.R.layout.simple_spinner_item,
                 pushPolicyItems.map { it.caption }.toTypedArray()
             ).apply {
-                setDropDownViewResource(R.layout.lv_spinner_dropdown)
+                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             }
 
             listFieldNameInvalidator = intArrayOf(
@@ -410,6 +488,42 @@ class ActAccountSetting : AppCompatActivity(),
                 daoSavedAccount.save(a)
             }
             views.apply {
+                val tvInstance = root.findViewById<TextView>(R.id.tvInstance)
+                val tvUser = root.findViewById<TextView>(R.id.tvUser)
+                val cbConfirmBoost = root.findViewById<CheckBox>(R.id.cbConfirmBoost)
+                val cbConfirmFavourite = root.findViewById<CheckBox>(R.id.cbConfirmFavourite)
+                val cbConfirmFollow = root.findViewById<CheckBox>(R.id.cbConfirmFollow)
+                val cbConfirmFollowLockedUser = root.findViewById<CheckBox>(R.id.cbConfirmFollowLockedUser)
+                val cbConfirmReaction = root.findViewById<CheckBox>(R.id.cbConfirmReaction)
+                val cbConfirmToot = root.findViewById<CheckBox>(R.id.cbConfirmToot)
+                val cbConfirmUnbookmark = root.findViewById<CheckBox>(R.id.cbConfirmUnbookmark)
+                val cbConfirmUnboost = root.findViewById<CheckBox>(R.id.cbConfirmUnboost)
+                val cbConfirmUnfavourite = root.findViewById<CheckBox>(R.id.cbConfirmUnfavourite)
+                val cbConfirmUnfollow = root.findViewById<CheckBox>(R.id.cbConfirmUnfollow)
+                val cbNotificationBoost = root.findViewById<CheckBox>(R.id.cbNotificationBoost)
+                val cbNotificationFavourite = root.findViewById<CheckBox>(R.id.cbNotificationFavourite)
+                val cbNotificationFollow = root.findViewById<CheckBox>(R.id.cbNotificationFollow)
+                val cbNotificationFollowRequest = root.findViewById<CheckBox>(R.id.cbNotificationFollowRequest)
+                val cbNotificationMention = root.findViewById<CheckBox>(R.id.cbNotificationMention)
+                val cbNotificationPost = root.findViewById<CheckBox>(R.id.cbNotificationPost)
+                val cbNotificationReaction = root.findViewById<CheckBox>(R.id.cbNotificationReaction)
+                val cbNotificationUpdate = root.findViewById<CheckBox>(R.id.cbNotificationUpdate)
+                val cbNotificationVote = root.findViewById<CheckBox>(R.id.cbNotificationVote)
+                val cbNotificationSeveredRelationships = root.findViewById<CheckBox>(R.id.cbNotificationSeveredRelationships)
+                val cbNotificationStatusReference = root.findViewById<CheckBox>(R.id.cbNotificationStatusReference)
+                val swDontShowTimeout = root.findViewById<SwitchCompat>(R.id.swDontShowTimeout)
+                val etMaxTootChars = root.findViewById<EditText>(R.id.etMaxTootChars)
+                val etMediaSizeMax = root.findViewById<EditText>(R.id.etMediaSizeMax)
+                val etMovieSizeMax = root.findViewById<EditText>(R.id.etMovieSizeMax)
+                val spResizeImage = root.findViewById<Spinner>(R.id.spResizeImage)
+                val spPushPolicy = root.findViewById<Spinner>(R.id.spPushPolicy)
+                val spMovieTranscodeMode = root.findViewById<Spinner>(R.id.spMovieTranscodeMode)
+                val etMovieFrameRate = root.findViewById<EditText>(R.id.etMovieFrameRate)
+                val etMovieBitrate = root.findViewById<EditText>(R.id.etMovieBitrate)
+                val etMovieSquarePixels = root.findViewById<EditText>(R.id.etMovieSquarePixels)
+                val spLanguageCode = root.findViewById<Spinner>(R.id.spLanguageCode)
+                val etDefaultText = root.findViewById<EditText>(R.id.etDefaultText)
+
                 tvInstance.text = a.apiHost.pretty
                 tvUser.text = a.acct.pretty
                 cbConfirmBoost.isChecked = a.confirmBoost
@@ -556,15 +670,26 @@ class ActAccountSetting : AppCompatActivity(),
         val sa = this.account ?: return
         val ac = daoAcctColor.load(sa)
         views.tvUserCustom.apply {
-            backgroundColor = ac.colorBg
+            setBackgroundColor(ac.colorBg)
             text = ac.nickname
-            textColor = ac.colorFg.notZero()
-                ?: attrColor(R.attr.colorTimeSmall)
+            setTextColor(
+                ac.colorFg.notZero()
+                    ?: attrColor(R.attr.colorTimeSmall)
+            )
         }
     }
 
     private fun showPushSetting() {
         views.run {
+            val tvPushPolicyDesc = root.findViewById<View>(R.id.tvPushPolicyDesc)
+            val spPushPolicy = root.findViewById<View>(R.id.spPushPolicy)
+            val tvPushActions = root.findViewById<View>(R.id.tvPushActions)
+            val tvNotificationAccentColor = root.findViewById<View>(R.id.tvNotificationAccentColor)
+            val llNotificationAccentColor = root.findViewById<View>(R.id.llNotificationAccentColor)
+            val tvDontShowTimeout = root.findViewById<View>(R.id.tvDontShowTimeout)
+            val swDontShowTimeout = root.findViewById<View>(R.id.swDontShowTimeout)
+            val tvPullActions = root.findViewById<View>(R.id.tvPullActions)
+
             run {
                 val usePush = swNotificationPushEnabled.isChecked
                 tvPushPolicyDesc.vg(usePush)
@@ -592,6 +717,40 @@ class ActAccountSetting : AppCompatActivity(),
             if (loadingBusy) return@launchAndShowError
             account.visibility = visibility
             views.apply {
+                val cbConfirmBoost = root.findViewById<CheckBox>(R.id.cbConfirmBoost)
+                val cbConfirmFavourite = root.findViewById<CheckBox>(R.id.cbConfirmFavourite)
+                val cbConfirmFollow = root.findViewById<CheckBox>(R.id.cbConfirmFollow)
+                val cbConfirmFollowLockedUser = root.findViewById<CheckBox>(R.id.cbConfirmFollowLockedUser)
+                val cbConfirmToot = root.findViewById<CheckBox>(R.id.cbConfirmToot)
+                val cbConfirmReaction = root.findViewById<CheckBox>(R.id.cbConfirmReaction)
+                val cbConfirmUnbookmark = root.findViewById<CheckBox>(R.id.cbConfirmUnbookmark)
+                val cbConfirmUnboost = root.findViewById<CheckBox>(R.id.cbConfirmUnboost)
+                val cbConfirmUnfavourite = root.findViewById<CheckBox>(R.id.cbConfirmUnfavourite)
+                val cbConfirmUnfollow = root.findViewById<CheckBox>(R.id.cbConfirmUnfollow)
+                val swDontShowTimeout = root.findViewById<SwitchCompat>(R.id.swDontShowTimeout)
+                val cbNotificationBoost = root.findViewById<CheckBox>(R.id.cbNotificationBoost)
+                val cbNotificationFavourite = root.findViewById<CheckBox>(R.id.cbNotificationFavourite)
+                val cbNotificationFollow = root.findViewById<CheckBox>(R.id.cbNotificationFollow)
+                val cbNotificationFollowRequest = root.findViewById<CheckBox>(R.id.cbNotificationFollowRequest)
+                val cbNotificationMention = root.findViewById<CheckBox>(R.id.cbNotificationMention)
+                val cbNotificationPost = root.findViewById<CheckBox>(R.id.cbNotificationPost)
+                val cbNotificationReaction = root.findViewById<CheckBox>(R.id.cbNotificationReaction)
+                val cbNotificationUpdate = root.findViewById<CheckBox>(R.id.cbNotificationUpdate)
+                val cbNotificationVote = root.findViewById<CheckBox>(R.id.cbNotificationVote)
+                val cbNotificationStatusReference = root.findViewById<CheckBox>(R.id.cbNotificationStatusReference)
+                val cbNotificationSeveredRelationships = root.findViewById<CheckBox>(R.id.cbNotificationSeveredRelationships)
+                val etDefaultText = root.findViewById<EditText>(R.id.etDefaultText)
+                val etMaxTootChars = root.findViewById<EditText>(R.id.etMaxTootChars)
+                val etMovieSizeMax = root.findViewById<EditText>(R.id.etMovieSizeMax)
+                val etMediaSizeMax = root.findViewById<EditText>(R.id.etMediaSizeMax)
+                val spResizeImage = root.findViewById<Spinner>(R.id.spResizeImage)
+                val spPushPolicy = root.findViewById<Spinner>(R.id.spPushPolicy)
+                val spMovieTranscodeMode = root.findViewById<Spinner>(R.id.spMovieTranscodeMode)
+                val etMovieBitrate = root.findViewById<EditText>(R.id.etMovieBitrate)
+                val etMovieFrameRate = root.findViewById<EditText>(R.id.etMovieFrameRate)
+                val etMovieSquarePixels = root.findViewById<EditText>(R.id.etMovieSquarePixels)
+                val spLanguageCode = root.findViewById<Spinner>(R.id.spLanguageCode)
+
                 account.confirmBoost = cbConfirmBoost.isChecked
                 account.confirmFavourite = cbConfirmFavourite.isChecked
                 account.confirmFollow = cbConfirmFollow.isChecked
@@ -700,50 +859,40 @@ class ActAccountSetting : AppCompatActivity(),
 
     override fun onClick(v: View) {
         val account = account ?: return
-        when (v.id) {
-            R.id.btnAccessToken -> performAccessToken()
-            R.id.btnInputAccessToken -> inputAccessToken()
+        when (v) {
+            views.btnAccessToken -> performAccessToken()
+            views.btnInputAccessToken -> inputAccessToken()
 
-            R.id.btnAccountRemove -> performAccountRemove()
-            R.id.btnLoadPreference -> performLoadPreference()
-            R.id.btnVisibility -> performVisibility()
-            R.id.btnOpenBrowser -> openBrowser("https://${account.apiHost.ascii}/")
-            R.id.btnPushSubscription -> launchAndShowError {
+            views.btnAccountRemove -> performAccountRemove()
+            views.btnLoadPreference -> performLoadPreference()
+            views.btnVisibility -> performVisibility()
+            views.btnOpenBrowser -> openBrowser("https://${account.apiHost.ascii}/")
+            views.btnPushSubscription -> launchAndShowError {
                 updatePushSubscription(force = true)
             }
 
-            R.id.btnPushSubscriptionNotForce -> launchAndShowError {
+            views.btnPushSubscriptionNotForce -> launchAndShowError {
                 updatePushSubscription(force = false)
             }
 
-            R.id.btnResetNotificationTracking ->
+            views.btnResetNotificationTracking ->
                 resetNotificationTracking(account)
 
-            R.id.btnUserCustom -> arShowAcctColor.launch(
+            views.btnUserCustom -> arShowAcctColor.launch(
                 ActNickname.createIntent(this, account.acct, false),
             )
 
-            R.id.btnProfileAvatar -> pickAvatarImage()
+            views.btnProfileAvatar -> pickAvatarImage()
 
-            R.id.btnProfileHeader -> pickHeaderImage()
+            views.btnProfileHeader -> pickHeaderImage()
 
-            R.id.btnDisplayName -> sendDisplayName()
+            views.btnDisplayName -> sendDisplayName()
 
-            R.id.btnNote -> sendNote()
+            views.btnNote -> sendNote()
 
-            R.id.btnFields -> sendFields()
+            views.btnFields -> sendFields()
 
-//            R.id.btnNotificationStyleEdit ->
-//                PullNotification.openNotificationChannelSetting(
-//                    this
-//                )
-//
-//            R.id.btnNotificationStyleEditReply ->
-//                PullNotification.openNotificationChannelSetting(
-//                    this
-//                )
-
-            R.id.btnNotificationAccentColorEdit -> {
+            views.btnNotificationAccentColorEdit -> {
                 lifecycleScope.launch {
                     try {
                         account.notificationAccentColor = dialogColorPicker(
@@ -759,7 +908,7 @@ class ActAccountSetting : AppCompatActivity(),
                 }
             }
 
-            R.id.btnNotificationAccentColorReset -> {
+            views.btnNotificationAccentColorReset -> {
                 account.notificationAccentColor = 0
                 saveUIToData()
                 showNotificationColor()
@@ -1571,8 +1720,9 @@ class ActAccountSetting : AppCompatActivity(),
 
     private fun showNotificationColor() {
         val account = account ?: return
-        views.vNotificationAccentColorColor.backgroundColor =
+        views.vNotificationAccentColorColor.setBackgroundColor(
             account.notificationAccentColor.notZero()
                 ?: ContextCompat.getColor(this, R.color.colorOsNotificationAccent)
+        )
     }
 }

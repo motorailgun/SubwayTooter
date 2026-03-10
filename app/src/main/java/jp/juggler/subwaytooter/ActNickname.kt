@@ -5,16 +5,25 @@ import android.content.Intent
 import android.graphics.Color
 import android.media.RingtoneManager
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
-import android.view.View
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.jrummyapps.android.colorpicker.dialogColorPicker
 import jp.juggler.subwaytooter.api.entity.Acct
-import jp.juggler.subwaytooter.databinding.ActNicknameBinding
+import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.table.AcctColor
 import jp.juggler.subwaytooter.table.daoAcctColor
-import jp.juggler.subwaytooter.view.wrapTitleTextView
+import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.util.backPressed
 import jp.juggler.util.boolean
 import jp.juggler.util.coroutine.launchAndShowError
@@ -24,17 +33,9 @@ import jp.juggler.util.data.notZero
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.string
 import jp.juggler.util.ui.ActivityResultHandler
-import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.decodeRingtonePickerResult
-import jp.juggler.util.ui.hideKeyboard
-import jp.juggler.util.ui.isEnabledAlpha
-import jp.juggler.util.ui.setContentViewAndInsets
-import jp.juggler.util.ui.setNavigationBack
-import jp.juggler.util.ui.vg
-import org.jetbrains.anko.backgroundColor
-import org.jetbrains.anko.textColor
 
-class ActNickname : AppCompatActivity(), View.OnClickListener {
+class ActNickname : ComponentActivity() {
 
     companion object {
         private val log = LogCategory("ActNickname")
@@ -54,10 +55,6 @@ class ActNickname : AppCompatActivity(), View.OnClickListener {
         }
     }
 
-    private val views by lazy {
-        ActNicknameBinding.inflate(layoutInflater)
-    }
-
     private val acctAscii by lazy {
         intent?.string(EXTRA_ACCT_ASCII)!!
     }
@@ -68,10 +65,10 @@ class ActNickname : AppCompatActivity(), View.OnClickListener {
         intent?.boolean(EXTRA_SHOW_NOTIFICATION_SOUND) ?: false
     }
 
-    private var colorFg = 0
-    private var colorBg = 0
+    private val nicknameState = mutableStateOf("")
+    private val colorFgState = mutableIntStateOf(0)
+    private val colorBgState = mutableIntStateOf(0)
     private var notificationSoundUri: String? = null
-    private var loadingBusy = false
 
     private val arNotificationSound = ActivityResultHandler(log) { r ->
         r.decodeRingtonePickerResult?.let { uri ->
@@ -87,138 +84,178 @@ class ActNickname : AppCompatActivity(), View.OnClickListener {
         }
         arNotificationSound.register(this)
         App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
-        fixHorizontalMargin(views.llContent)
-        setSupportActionBar(views.toolbar)
-        setNavigationBack(views.toolbar)
-        wrapTitleTextView(
-            subtitle = getString(
+        val stColorScheme = getStColorTheme()
+
+        load()
+
+        setContent {
+            val subtitle = stringResource(
                 when {
                     showNotificationSound -> R.string.nickname_and_color_and_notification_sound
                     else -> R.string.nickname_and_color
                 }
             )
-        )
-        initUI()
-        load()
+            StScreen(
+                stColorScheme = stColorScheme,
+                title = subtitle,
+                onBack = {
+                    setResult(RESULT_OK)
+                    finish()
+                },
+            ) { contentPadding ->
+                NicknameContent(Modifier.padding(contentPadding))
+            }
+        }
     }
 
-    private fun initUI() {
-        views.btnTextColorEdit.setOnClickListener(this)
-        views.btnTextColorReset.setOnClickListener(this)
-        views.btnBackgroundColorEdit.setOnClickListener(this)
-        views.btnBackgroundColorReset.setOnClickListener(this)
-        views.btnSave.setOnClickListener(this)
-        views.btnDiscard.setOnClickListener(this)
-
-        views.btnNotificationSoundEdit.setOnClickListener(this)
-        views.btnNotificationSoundReset.setOnClickListener(this)
-
-        views.btnNotificationSoundEdit.isEnabledAlpha = false
-        views.btnNotificationSoundReset.isEnabledAlpha = false
-
-        views.etNickname.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(
-                s: CharSequence,
-                start: Int,
-                count: Int,
-                after: Int,
+    @Composable
+    private fun NicknameContent(modifier: Modifier) {
+        Column(modifier = modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                // Preview
+                Text(stringResource(R.string.preview))
+                val nickname by nicknameState
+                val fgColor = colorFgState.intValue
+                val bgColor = colorBgState.intValue
+                val previewText = nickname.trim().notEmpty() ?: acctPretty
+                val textColor = fgColor.notZero()
+                    ?.let { androidx.compose.ui.graphics.Color(it.toLong() or 0xFF000000L) }
+                    ?: MaterialTheme.colorScheme.onSurface
+                val bgComposeColor = when (bgColor) {
+                    0 -> androidx.compose.ui.graphics.Color.Transparent
+                    else -> androidx.compose.ui.graphics.Color(bgColor.toLong() or 0xFF000000L)
+                }
+                Text(
+                    text = previewText,
+                    fontSize = 20.sp,
+                    color = textColor,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                    style = LocalTextStyle.current.copy(background = bgComposeColor),
+                )
+
+                // Acct
+                HorizontalDivider()
+                Text(stringResource(R.string.acct))
+                Text(acctPretty)
+
+                // Nickname
+                HorizontalDivider()
+                Text(stringResource(R.string.nickname))
+                OutlinedTextField(
+                    value = nickname,
+                    onValueChange = { nicknameState.value = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                )
+
+                // Text color
+                HorizontalDivider()
+                Text(stringResource(R.string.text_color))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = {
+                        launchAndShowError {
+                            colorFgState.intValue = Color.BLACK or dialogColorPicker(
+                                colorInitial = colorFgState.intValue.notZero(),
+                                alphaEnabled = false,
+                            )
+                        }
+                    }) { Text(stringResource(R.string.edit)) }
+                    Button(onClick = {
+                        colorFgState.intValue = 0
+                    }) { Text(stringResource(R.string.reset)) }
+                }
+
+                // Background color
+                HorizontalDivider()
+                Text(stringResource(R.string.background_color))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = {
+                        launchAndShowError {
+                            colorBgState.intValue = Color.BLACK or dialogColorPicker(
+                                colorInitial = colorBgState.intValue.notZero(),
+                                alphaEnabled = false,
+                            )
+                        }
+                    }) { Text(stringResource(R.string.edit)) }
+                    Button(onClick = {
+                        colorBgState.intValue = 0
+                    }) { Text(stringResource(R.string.reset)) }
+                }
+
+                // Notification sound
+                if (showNotificationSound) {
+                    HorizontalDivider()
+                    Text(stringResource(R.string.notification_sound))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { openNotificationSoundPicker() }) {
+                            Text(stringResource(R.string.edit))
+                        }
+                        Button(onClick = { notificationSoundUri = "" }) {
+                            Text(stringResource(R.string.reset))
+                        }
+                    }
+                }
             }
 
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-            }
+            // Info text
+            Text(
+                text = stringResource(R.string.nickname_applied_after_reload),
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
 
-            override fun afterTextChanged(s: Editable) {
-                show()
+            // Bottom button bar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                TextButton(
+                    onClick = {
+                        setResult(Activity.RESULT_CANCELED)
+                        finish()
+                    },
+                    modifier = Modifier.weight(1f),
+                ) { Text(stringResource(R.string.discard)) }
+                TextButton(
+                    onClick = {
+                        save()
+                        setResult(Activity.RESULT_OK)
+                        finish()
+                    },
+                    modifier = Modifier.weight(1f),
+                ) { Text(stringResource(R.string.save)) }
             }
-        })
+        }
     }
 
     private fun load() {
-        loadingBusy = true
-
-        views.llNotificationSound.vg(showNotificationSound)
-
-        views.tvAcct.text = acctPretty
-
         val ac = daoAcctColor.load(acctAscii)
-        colorBg = ac.colorBg
-        colorFg = ac.colorFg
-        views.etNickname.setText(ac.nickname)
+        colorBgState.intValue = ac.colorBg
+        colorFgState.intValue = ac.colorFg
+        nicknameState.value = ac.nickname ?: ""
         notificationSoundUri = ac.notificationSound
-
-        loadingBusy = false
-        show()
     }
 
     private fun save() {
-        if (loadingBusy) return
         launchAndShowError {
             daoAcctColor.save(
                 System.currentTimeMillis(),
                 AcctColor(
                     acctAscii = acctAscii,
-                    nicknameSave = views.etNickname.text.toString().trim { it <= ' ' },
-                    colorFg = colorFg,
-                    colorBg = colorBg,
+                    nicknameSave = nicknameState.value.trim { it <= ' ' },
+                    colorFg = colorFgState.intValue,
+                    colorBg = colorBgState.intValue,
                     notificationSoundSaved = notificationSoundUri ?: "",
                 )
             )
-        }
-    }
-
-    private fun show() {
-        val s = views.etNickname.text.toString().trim { it <= ' ' }
-        views.tvPreview.text = s.notEmpty() ?: acctPretty
-        views.tvPreview.textColor = colorFg.notZero() ?: attrColor(R.attr.colorTimeSmall)
-        views.tvPreview.backgroundColor = colorBg
-    }
-
-    override fun onClick(v: View) {
-        when (v.id) {
-            R.id.btnTextColorEdit -> launchAndShowError {
-                views.etNickname.hideKeyboard()
-                colorFg = Color.BLACK or dialogColorPicker(
-                    colorInitial = colorFg.notZero(),
-                    alphaEnabled = false
-                )
-                show()
-            }
-
-            R.id.btnTextColorReset -> {
-                colorFg = 0
-                show()
-            }
-
-            R.id.btnBackgroundColorEdit -> launchAndShowError {
-                views.etNickname.hideKeyboard()
-                colorBg = Color.BLACK or dialogColorPicker(
-                    colorInitial = colorBg.notZero(),
-                    alphaEnabled = false,
-                )
-                show()
-            }
-
-            R.id.btnBackgroundColorReset -> {
-                colorBg = 0
-                show()
-            }
-
-            R.id.btnSave -> {
-                save()
-                setResult(Activity.RESULT_OK)
-                finish()
-            }
-
-            R.id.btnDiscard -> {
-                setResult(Activity.RESULT_CANCELED)
-                finish()
-            }
-
-            R.id.btnNotificationSoundEdit -> openNotificationSoundPicker()
-
-            R.id.btnNotificationSoundReset -> notificationSoundUri = ""
         }
     }
 

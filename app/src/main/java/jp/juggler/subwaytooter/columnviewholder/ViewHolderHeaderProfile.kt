@@ -5,8 +5,13 @@ import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.FrameLayout
+import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import jp.juggler.subwaytooter.*
@@ -20,7 +25,6 @@ import jp.juggler.subwaytooter.api.entity.TootAccountRef
 import jp.juggler.subwaytooter.api.entity.TootStatus
 import jp.juggler.subwaytooter.api.runApiTask
 import jp.juggler.subwaytooter.column.*
-import jp.juggler.subwaytooter.databinding.LvHeaderProfileBinding
 import jp.juggler.subwaytooter.dialog.showTextInputDialog
 import jp.juggler.subwaytooter.emoji.EmojiMap
 import jp.juggler.subwaytooter.itemviewholder.DlgContextMenu
@@ -36,6 +40,7 @@ import jp.juggler.subwaytooter.table.daoAcctColor
 import jp.juggler.subwaytooter.table.daoUserRelation
 import jp.juggler.subwaytooter.util.*
 import jp.juggler.subwaytooter.view.MyLinkMovementMethod
+import jp.juggler.subwaytooter.view.MyNetworkImageView
 import jp.juggler.subwaytooter.view.MyTextView
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.buildJsonObject
@@ -45,17 +50,26 @@ import jp.juggler.util.log.showToast
 import jp.juggler.util.network.toPostRequestBuilder
 import jp.juggler.util.ui.InputTypeEx
 import jp.juggler.util.ui.attrColor
+import jp.juggler.util.ui.dp
 import jp.juggler.util.ui.getSpannedString
 import jp.juggler.util.ui.setIconDrawableId
 import jp.juggler.util.ui.vg
-import org.jetbrains.anko.textColor
 
 internal class ViewHolderHeaderProfile(
     override val activity: ActMain,
     parent: ViewGroup,
-    val views: LvHeaderProfileBinding =
-        LvHeaderProfileBinding.inflate(activity.layoutInflater, parent, false),
-) : ViewHolderHeaderBase(views.root), View.OnClickListener, View.OnLongClickListener {
+) : ViewHolderHeaderBase(
+    LinearLayout(parent.context).apply {
+        layoutParams = ViewGroup.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        orientation = LinearLayout.VERTICAL
+        descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
+        val pad = context.dp(12)
+        setPaddingRelative(pad, 0, pad, 0)
+    }
+), View.OnClickListener, View.OnLongClickListener {
 
     companion object {
         private fun SpannableStringBuilder.appendSpan(text: String, span: Any) {
@@ -71,20 +85,40 @@ internal class ViewHolderHeaderProfile(
     }
 
     private var whoRef: TootAccountRef? = null
-
     private var movedRef: TootAccountRef? = null
 
-    private val nameInvalidator1 =
-        NetworkEmojiInvalidator(activity.handler, views.tvDisplayName)
+    private lateinit var tvMoved: TextView
+    private lateinit var llMoved: LinearLayout
+    private lateinit var ivMoved: MyNetworkImageView
+    private lateinit var tvMovedName: TextView
+    private lateinit var tvMovedAcct: TextView
+    private lateinit var btnMoved: ImageButton
+    private lateinit var ivMovedBy: ImageView
+    private lateinit var tvCreated: TextView
+    private lateinit var ivBackground: MyNetworkImageView
+    private lateinit var llProfile: LinearLayout
+    private lateinit var ivAvatar: MyNetworkImageView
+    private lateinit var tvDisplayName: TextView
+    private lateinit var tvAcct: TextView
+    private lateinit var tvNote: MyTextView
+    private lateinit var tvMisskeyExtra: MyTextView
+    private lateinit var btnFollow: ImageButton
+    private lateinit var ivFollowedBy: ImageView
+    private lateinit var llFields: LinearLayout
+    private lateinit var tvFeaturedTags: TextView
+    private lateinit var tvLastStatusAt: TextView
+    private lateinit var tvPersonalNotes: TextView
+    private lateinit var btnPersonalNotesEdit: ImageButton
+    private lateinit var tvRemoteProfileWarning: TextView
+    private lateinit var btnStatusCount: Button
+    private lateinit var btnFollowing: Button
+    private lateinit var btnFollowers: Button
+    private lateinit var btnMore: ImageButton
 
-    private val noteInvalidator =
-        NetworkEmojiInvalidator(activity.handler, views.tvNote)
-
-    private val movedCaptionInvalidator =
-        NetworkEmojiInvalidator(activity.handler, views.tvMoved)
-
-    private val movedNameInvalidator =
-        NetworkEmojiInvalidator(activity.handler, views.tvMovedName)
+    private val nameInvalidator1: NetworkEmojiInvalidator
+    private val noteInvalidator: NetworkEmojiInvalidator
+    private val movedCaptionInvalidator: NetworkEmojiInvalidator
+    private val movedNameInvalidator: NetworkEmojiInvalidator
 
     private val density: Float
 
@@ -93,36 +127,387 @@ internal class ViewHolderHeaderProfile(
     private var relation: UserRelation? = null
 
     init {
-        views.root.tag = this
+        val root = itemView as LinearLayout
+        root.tag = this
         val holder = this
-        views.run {
+        val ctx = activity
 
-            density = tvDisplayName.resources.displayMetrics.density
+        density = ctx.resources.displayMetrics.density
 
-            for (v in arrayOf(
-                ivBackground,
-                btnFollowing,
-                btnFollowers,
-                btnStatusCount,
-                btnMore,
-                btnFollow,
-                tvRemoteProfileWarning,
-                btnPersonalNotesEdit,
-
-                btnMoved,
-                llMoved,
-                btnPersonalNotesEdit
-            )) {
-                v.setOnClickListener(holder)
+        // tvMoved
+        tvMoved = TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                val m12 = ctx.dp(12)
+                setMargins(m12, ctx.dp(6), m12, ctx.dp(3))
             }
-
-            btnMoved.setOnLongClickListener(holder)
-            btnFollow.setOnLongClickListener(holder)
-
-            tvNote.movementMethod = MyLinkMovementMethod
-
-            ivBackground.measureProfileBg = true
+            compoundDrawablePadding = ctx.dp(4)
+            gravity = Gravity.CENTER
         }
+        root.addView(tvMoved)
+
+        // llMoved (horizontal)
+        llMoved = LinearLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                val m12 = ctx.dp(12)
+                setMargins(m12, 0, m12, 0)
+            }
+            orientation = LinearLayout.HORIZONTAL
+            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+            gravity = Gravity.CENTER_VERTICAL
+        }
+
+        ivMoved = MyNetworkImageView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(ctx.dp(48), ctx.dp(40)).apply {
+                marginEnd = ctx.dp(4)
+            }
+            scaleType = ImageView.ScaleType.FIT_END
+        }
+        llMoved.addView(ivMoved)
+
+        val llMovedInfo = LinearLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            orientation = LinearLayout.VERTICAL
+        }
+
+        tvMovedName = TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+        llMovedInfo.addView(tvMovedName)
+
+        tvMovedAcct = TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            val p4 = ctx.dp(4)
+            setPaddingRelative(p4, 0, p4, 0)
+            textSize = 12f
+        }
+        llMovedInfo.addView(tvMovedAcct)
+
+        llMoved.addView(llMovedInfo)
+
+        val flMovedFollow = FrameLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(ctx.dp(40), ctx.dp(40)).apply {
+                marginStart = ctx.dp(4)
+            }
+        }
+        btnMoved = ImageButton(ctx).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+            contentDescription = ctx.getString(R.string.follow)
+            scaleType = ImageView.ScaleType.CENTER
+        }
+        flMovedFollow.addView(btnMoved)
+
+        ivMovedBy = ImageView(ctx).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            scaleType = ImageView.ScaleType.CENTER
+            setImageResource(R.drawable.ic_follow_dot)
+        }
+        flMovedFollow.addView(ivMovedBy)
+
+        llMoved.addView(flMovedFollow)
+        root.addView(llMoved)
+
+        // tvCreated
+        tvCreated = TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            gravity = Gravity.END
+            textSize = 12f
+        }
+        root.addView(tvCreated)
+
+        // FrameLayout for background + profile + follow button
+        val flBgProfile = FrameLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        ivBackground = MyNetworkImageView(ctx).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            measureProfileBg = true
+        }
+        flBgProfile.addView(ivBackground)
+
+        llProfile = LinearLayout(ctx).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            )
+            gravity = Gravity.CENTER_HORIZONTAL
+            orientation = LinearLayout.VERTICAL
+            val p12 = ctx.dp(12)
+            setPadding(p12, p12, p12, p12)
+        }
+
+        ivAvatar = MyNetworkImageView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(ctx.dp(128), ctx.dp(128)).apply {
+                topMargin = ctx.dp(20)
+                gravity = Gravity.CENTER_HORIZONTAL
+            }
+            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+        }
+        llProfile.addView(ivAvatar)
+
+        tvDisplayName = TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = ctx.dp(8) }
+            gravity = Gravity.CENTER
+            textSize = 20f
+        }
+        llProfile.addView(tvDisplayName)
+
+        tvAcct = TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            compoundDrawablePadding = ctx.dp(4)
+            gravity = Gravity.CENTER
+            setTextColor(ctx.attrColor(R.attr.colorLink))
+        }
+        llProfile.addView(tvAcct)
+
+        tvNote = MyTextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            gravity = Gravity.CENTER_HORIZONTAL
+            movementMethod = MyLinkMovementMethod
+        }
+        llProfile.addView(tvNote)
+
+        tvMisskeyExtra = MyTextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            gravity = Gravity.CENTER_HORIZONTAL
+        }
+        llProfile.addView(tvMisskeyExtra)
+
+        flBgProfile.addView(llProfile)
+
+        // Follow button overlay
+        val flFollow = FrameLayout(ctx).apply {
+            layoutParams = FrameLayout.LayoutParams(ctx.dp(40), ctx.dp(40)).apply {
+                marginStart = ctx.dp(12)
+                topMargin = ctx.dp(12)
+            }
+        }
+        btnFollow = ImageButton(ctx).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+            contentDescription = ctx.getString(R.string.follow)
+            scaleType = ImageView.ScaleType.CENTER
+        }
+        flFollow.addView(btnFollow)
+
+        ivFollowedBy = ImageView(ctx).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            scaleType = ImageView.ScaleType.CENTER
+            setImageResource(R.drawable.ic_follow_dot)
+        }
+        flFollow.addView(ivFollowedBy)
+        flBgProfile.addView(flFollow)
+
+        root.addView(flBgProfile)
+
+        // llFields
+        llFields = LinearLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = ctx.dp(3) }
+            orientation = LinearLayout.VERTICAL
+        }
+        root.addView(llFields)
+
+        // tvFeaturedTags
+        tvFeaturedTags = TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = ctx.dp(3) }
+        }
+        root.addView(tvFeaturedTags)
+
+        // tvLastStatusAt
+        tvLastStatusAt = TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = ctx.dp(3) }
+            gravity = Gravity.CENTER
+            textSize = 12f
+        }
+        root.addView(tvLastStatusAt)
+
+        // Personal notes label
+        TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = ctx.dp(8) }
+            gravity = Gravity.START
+            text = ctx.getString(R.string.personal_notes)
+        }.also { root.addView(it) }
+
+        // Personal notes row
+        val llNotesRow = LinearLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            gravity = Gravity.START or Gravity.TOP
+            orientation = LinearLayout.HORIZONTAL
+        }
+
+        tvPersonalNotes = TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            gravity = Gravity.START
+            val p12 = ctx.dp(12)
+            setPadding(p12, p12, p12, p12)
+            text = ctx.getString(R.string.personal_notes)
+        }
+        llNotesRow.addView(tvPersonalNotes)
+
+        btnPersonalNotesEdit = ImageButton(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(ctx.dp(40), ctx.dp(40)).apply {
+                marginStart = ctx.dp(4)
+            }
+            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+            contentDescription = ctx.getString(R.string.edit)
+            setImageResource(R.drawable.ic_edit)
+        }
+        llNotesRow.addView(btnPersonalNotesEdit)
+        root.addView(llNotesRow)
+
+        // tvRemoteProfileWarning
+        tvRemoteProfileWarning = TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = ctx.dp(3) }
+            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+            gravity = Gravity.CENTER
+            val p12 = ctx.dp(12)
+            setPadding(p12, p12, p12, p12)
+            text = ctx.getString(R.string.remote_profile_warning)
+        }
+        root.addView(tvRemoteProfileWarning)
+
+        // Bottom button row
+        val llButtons = LinearLayout(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { topMargin = ctx.dp(3) }
+            gravity = Gravity.CENTER
+            orientation = LinearLayout.HORIZONTAL
+        }
+
+        btnStatusCount = Button(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+        }
+        llButtons.addView(btnStatusCount)
+
+        btnFollowing = Button(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+        }
+        llButtons.addView(btnFollowing)
+
+        btnFollowers = Button(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+        }
+        llButtons.addView(btnFollowers)
+
+        btnMore = ImageButton(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.MATCH_PARENT
+            )
+            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+            contentDescription = ctx.getString(R.string.more)
+            minimumWidth = ctx.dp(48)
+            val p4 = ctx.dp(4)
+            setPaddingRelative(p4, 0, p4, 0)
+            setImageResource(R.drawable.ic_more)
+        }
+        llButtons.addView(btnMore)
+
+        root.addView(llButtons)
+
+        // Set click listeners
+        for (v in arrayOf(
+            ivBackground,
+            btnFollowing,
+            btnFollowers,
+            btnStatusCount,
+            btnMore,
+            btnFollow,
+            tvRemoteProfileWarning,
+            btnPersonalNotesEdit,
+            btnMoved,
+            llMoved,
+        )) {
+            v.setOnClickListener(holder)
+        }
+
+        btnMoved.setOnLongClickListener(holder)
+        btnFollow.setOnLongClickListener(holder)
+
+        // Initialize invalidators
+        nameInvalidator1 = NetworkEmojiInvalidator(activity.handler, tvDisplayName)
+        noteInvalidator = NetworkEmojiInvalidator(activity.handler, tvNote)
+        movedCaptionInvalidator = NetworkEmojiInvalidator(activity.handler, tvMoved)
+        movedNameInvalidator = NetworkEmojiInvalidator(activity.handler, tvMovedName)
     }
 
     override fun getAccount(): TootAccountRef? = whoRef
@@ -141,12 +526,10 @@ internal class ViewHolderHeaderProfile(
         super.bindData(column)
         bindFonts()
         bindColors()
-        views.run {
-            llMoved.visibility = View.GONE
-            tvMoved.visibility = View.GONE
-            llFields.visibility = View.GONE
-            llFields.removeAllViews()
-        }
+        llMoved.visibility = View.GONE
+        tvMoved.visibility = View.GONE
+        llFields.visibility = View.GONE
+        llFields.removeAllViews()
         val whoRef = column.whoAccount
         this.whoRef = whoRef
         when (val who = whoRef?.get()) {
@@ -157,7 +540,7 @@ internal class ViewHolderHeaderProfile(
 
     // カラム設定から戻った際に呼ばれる
     override fun showColor() {
-        views.llProfile.setBackgroundColor(
+        llProfile.setBackgroundColor(
             when (val c = column.columnBgColor) {
                 0 -> activity.attrColor(R.attr.colorProfileBackgroundMask)
                 else -> -0x40000000 or (0x00ffffff and c)
@@ -170,67 +553,61 @@ internal class ViewHolderHeaderProfile(
         val contentColor = column.getContentColor()
         this.colorTextContent = contentColor
 
-        views.run {
+        tvPersonalNotes.setTextColor(contentColor)
+        tvMoved.setTextColor(contentColor)
+        tvMovedName.setTextColor(contentColor)
+        tvDisplayName.setTextColor(contentColor)
+        tvNote.setTextColor(contentColor)
+        tvRemoteProfileWarning.setTextColor(contentColor)
+        btnStatusCount.setTextColor(contentColor)
+        btnFollowing.setTextColor(contentColor)
+        btnFollowers.setTextColor(contentColor)
+        tvFeaturedTags.setTextColor(contentColor)
 
-            tvPersonalNotes.textColor = contentColor
-            tvMoved.textColor = contentColor
-            tvMovedName.textColor = contentColor
-            tvDisplayName.textColor = contentColor
-            tvNote.textColor = contentColor
-            tvRemoteProfileWarning.textColor = contentColor
-            btnStatusCount.textColor = contentColor
-            btnFollowing.textColor = contentColor
-            btnFollowers.textColor = contentColor
-            tvFeaturedTags.textColor = contentColor
+        setIconDrawableId(
+            activity,
+            btnMore,
+            R.drawable.ic_more,
+            color = contentColor,
+            alphaMultiplier = stylerBoostAlpha
+        )
 
-            setIconDrawableId(
-                activity,
-                btnMore,
-                R.drawable.ic_more,
-                color = contentColor,
-                alphaMultiplier = stylerBoostAlpha
-            )
+        setIconDrawableId(
+            activity,
+            btnPersonalNotesEdit,
+            R.drawable.ic_edit,
+            color = contentColor,
+            alphaMultiplier = stylerBoostAlpha
+        )
 
-            setIconDrawableId(
-                activity,
-                btnPersonalNotesEdit,
-                R.drawable.ic_edit,
-                color = contentColor,
-                alphaMultiplier = stylerBoostAlpha
-            )
+        val acctColor = column.getAcctColor()
+        tvCreated.setTextColor(acctColor)
+        tvMovedAcct.setTextColor(acctColor)
+        tvLastStatusAt.setTextColor(acctColor)
 
-            val acctColor = column.getAcctColor()
-            tvCreated.textColor = acctColor
-            tvMovedAcct.textColor = acctColor
-            tvLastStatusAt.textColor = acctColor
-
-            showColor()
-        }
+        showColor()
     }
 
     private fun bindFonts() {
-        views.run {
-            var f: Float
+        var f: Float
 
-            ActMain.timelineFontSizeSp.takeIf { it.isFinite() }?.let {
-                tvMovedName.textSize = it
-                tvMoved.textSize = it
-                tvPersonalNotes.textSize = it
-                tvFeaturedTags.textSize = it
-            }
+        ActMain.timelineFontSizeSp.takeIf { it.isFinite() }?.let {
+            tvMovedName.textSize = it
+            tvMoved.textSize = it
+            tvPersonalNotes.textSize = it
+            tvFeaturedTags.textSize = it
+        }
 
+        f = activity.acctFontSizeSp
+        if (!f.isNaN()) {
+            tvMovedAcct.textSize = f
+            tvCreated.textSize = f
+            tvLastStatusAt.textSize = f
+        }
 
-            f = activity.acctFontSizeSp
-            if (!f.isNaN()) {
-                tvMovedAcct.textSize = f
-                tvCreated.textSize = f
-                tvLastStatusAt.textSize = f
-            }
-
-            ActMain.timelineSpacing?.let {
-                tvMovedName.setLineSpacing(0f, it)
-                tvMoved.setLineSpacing(0f, it)
-            }
+        ActMain.timelineSpacing?.let {
+            tvMovedName.setLineSpacing(0f, it)
+            tvMoved.setLineSpacing(0f, it)
         }
     }
 
@@ -238,106 +615,102 @@ internal class ViewHolderHeaderProfile(
         relation = null
         nameInvalidator1.register(null)
         noteInvalidator.register(null)
-        views.run {
-            tvCreated.text = ""
-            tvLastStatusAt.vg(false)
-            tvFeaturedTags.vg(false)
-            ivBackground.setImageDrawable(null)
-            ivAvatar.setImageDrawable(null)
+        tvCreated.text = ""
+        tvLastStatusAt.vg(false)
+        tvFeaturedTags.vg(false)
+        ivBackground.setImageDrawable(null)
+        ivAvatar.setImageDrawable(null)
 
-            tvAcct.text = "@"
+        tvAcct.text = "@"
 
-            nameInvalidator1.text = ""
+        nameInvalidator1.text = ""
 
-            noteInvalidator.text = ""
-            tvMisskeyExtra.text = ""
+        noteInvalidator.text = ""
+        tvMisskeyExtra.text = ""
 
-            btnStatusCount.text = activity.getString(R.string.statuses) + "\n" + "?"
-            btnFollowing.text = activity.getString(R.string.following) + "\n" + "?"
-            btnFollowers.text = activity.getString(R.string.followers) + "\n" + "?"
+        btnStatusCount.text = activity.getString(R.string.statuses) + "\n" + "?"
+        btnFollowing.text = activity.getString(R.string.following) + "\n" + "?"
+        btnFollowers.text = activity.getString(R.string.followers) + "\n" + "?"
 
-            btnFollow.setImageDrawable(null)
-            tvRemoteProfileWarning.visibility = View.GONE
-        }
+        btnFollow.setImageDrawable(null)
+        tvRemoteProfileWarning.visibility = View.GONE
     }
 
     private fun bindAccount(who: TootAccount, whoRef: TootAccountRef) {
-        // Misskeyの場合はNote中のUserエンティティと /api/users/show の情報量がかなり異なる
         val whoDetail = MisskeyAccountDetailMap.get(accessInfo, who.id)
         val relation = daoUserRelation.load(accessInfo.db_id, who.id)
         this.relation = relation
-        views.run {
-            tvCreated.text =
-                TootStatus.formatTime(tvCreated.context, (whoDetail ?: who).time_created_at, true)
 
-            who.setAccountExtra(
-                accessInfo,
-                NetworkEmojiInvalidator(activity.handler, tvLastStatusAt),
-                fromProfileHeader = true
-            )
+        tvCreated.text =
+            TootStatus.formatTime(tvCreated.context, (whoDetail ?: who).time_created_at, true)
 
-            val featuredTagsText = formatFeaturedTags()
-            tvFeaturedTags.vg(featuredTagsText != null)?.let {
-                it.text = featuredTagsText!!
-                it.movementMethod = MyLinkMovementMethod
-            }
+        who.setAccountExtra(
+            accessInfo,
+            NetworkEmojiInvalidator(activity.handler, tvLastStatusAt),
+            fromProfileHeader = true
+        )
 
-            ivBackground.setImageUrl(0f, accessInfo.supplyBaseUrl(who.header_static))
-
-            ivAvatar.setImageUrl(
-                calcIconRound(ivAvatar.layoutParams),
-                accessInfo.supplyBaseUrl(who.avatar_static),
-                accessInfo.supplyBaseUrl(who.avatar)
-            )
-
-            val name = whoDetail?.decodeDisplayName(activity) ?: whoRef.decoded_display_name
-            nameInvalidator1.text = name
-
-            tvRemoteProfileWarning.vg(column.accessInfo.isRemoteUser(who))
-
-            tvAcct.text = encodeAcctText(who, whoDetail)
-
-            val note = whoRef.decoded_note
-            noteInvalidator.text = note
-
-            tvMisskeyExtra.text = encodeMisskeyExtra(whoDetail)
-            tvMisskeyExtra.vg(tvMisskeyExtra.text.isNotEmpty())
-
-            btnStatusCount.text =
-                "${activity.getString(R.string.statuses)}\n${
-                    whoDetail?.statuses_count ?: who.statuses_count
-                }"
-
-            val hideFollowCount = PrefB.bpHideFollowCount.value
-
-            var caption = activity.getString(R.string.following)
-            btnFollowing.text = when {
-                hideFollowCount -> caption
-                else -> "${caption}\n${whoDetail?.following_count ?: who.following_count}"
-            }
-
-            caption = activity.getString(R.string.followers)
-            btnFollowers.text = when {
-                hideFollowCount -> caption
-                else -> "${caption}\n${whoDetail?.followers_count ?: who.followers_count}"
-            }
-
-            setFollowIcon(
-                activity,
-                btnFollow,
-                ivFollowedBy,
-                relation,
-                who,
-                colorTextContent,
-                alphaMultiplier = stylerBoostAlpha
-            )
-
-            tvPersonalNotes.text = relation.note ?: ""
-
-            showMoved(who, who.movedRef)
-
-            (whoDetail?.fields ?: who.fields)?.notEmpty()?.let { showFields(who, it) }
+        val featuredTagsText = formatFeaturedTags()
+        tvFeaturedTags.vg(featuredTagsText != null)?.let {
+            it.text = featuredTagsText!!
+            it.movementMethod = MyLinkMovementMethod
         }
+
+        ivBackground.setImageUrl(0f, accessInfo.supplyBaseUrl(who.header_static))
+
+        ivAvatar.setImageUrl(
+            calcIconRound(ivAvatar.layoutParams),
+            accessInfo.supplyBaseUrl(who.avatar_static),
+            accessInfo.supplyBaseUrl(who.avatar)
+        )
+
+        val name = whoDetail?.decodeDisplayName(activity) ?: whoRef.decoded_display_name
+        nameInvalidator1.text = name
+
+        tvRemoteProfileWarning.vg(column.accessInfo.isRemoteUser(who))
+
+        tvAcct.text = encodeAcctText(who, whoDetail)
+
+        val note = whoRef.decoded_note
+        noteInvalidator.text = note
+
+        tvMisskeyExtra.text = encodeMisskeyExtra(whoDetail)
+        tvMisskeyExtra.vg(tvMisskeyExtra.text.isNotEmpty())
+
+        btnStatusCount.text =
+            "${activity.getString(R.string.statuses)}\n${
+                whoDetail?.statuses_count ?: who.statuses_count
+            }"
+
+        val hideFollowCount = PrefB.bpHideFollowCount.value
+
+        var caption = activity.getString(R.string.following)
+        btnFollowing.text = when {
+            hideFollowCount -> caption
+            else -> "${caption}\n${whoDetail?.following_count ?: who.following_count}"
+        }
+
+        caption = activity.getString(R.string.followers)
+        btnFollowers.text = when {
+            hideFollowCount -> caption
+            else -> "${caption}\n${whoDetail?.followers_count ?: who.followers_count}"
+        }
+
+        setFollowIcon(
+            activity,
+            btnFollow,
+            ivFollowedBy,
+            relation,
+            who,
+            colorTextContent,
+            alphaMultiplier = stylerBoostAlpha
+        )
+
+        tvPersonalNotes.text = relation.note ?: ""
+
+        showMoved(who, who.movedRef)
+
+        (whoDetail?.fields ?: who.fields)?.notEmpty()?.let { showFields(who, it) }
     }
 
     private fun showMoved(who: TootAccount, movedRef: TootAccountRef?) {
@@ -345,81 +718,75 @@ internal class ViewHolderHeaderProfile(
         this.movedRef = movedRef
         val moved = movedRef.get()
 
-        views.run {
+        llMoved.visibility = View.VISIBLE
+        tvMoved.visibility = View.VISIBLE
 
-            llMoved.visibility = View.VISIBLE
-            tvMoved.visibility = View.VISIBLE
+        val caption = activity.getSpannedString(
+            R.string.account_moved_to,
+            who.decodeDisplayName(activity),
+        )
 
-            val caption = activity.getSpannedString(
-                R.string.account_moved_to,
-                who.decodeDisplayName(activity),
-            )
+        movedCaptionInvalidator.text = caption
 
-            movedCaptionInvalidator.text = caption
+        ivMoved.layoutParams.width = activity.avatarIconSize
+        ivMoved.setImageUrl(
+            calcIconRound(ivMoved.layoutParams),
+            accessInfo.supplyBaseUrl(moved.avatar_static)
+        )
 
-            ivMoved.layoutParams.width = activity.avatarIconSize
-            ivMoved.setImageUrl(
-                calcIconRound(ivMoved.layoutParams),
-                accessInfo.supplyBaseUrl(moved.avatar_static)
-            )
+        movedNameInvalidator.text = movedRef.decoded_display_name
 
-            movedNameInvalidator.text = movedRef.decoded_display_name
+        setAcct(tvMovedAcct, accessInfo, moved)
 
-            setAcct(tvMovedAcct, accessInfo, moved)
-
-            val relation = daoUserRelation.load(accessInfo.db_id, moved.id)
-            setFollowIcon(
-                activity,
-                btnMoved,
-                ivMovedBy,
-                relation,
-                moved,
-                colorTextContent,
-                alphaMultiplier = stylerBoostAlpha
-            )
-        }
+        val relation = daoUserRelation.load(accessInfo.db_id, moved.id)
+        setFollowIcon(
+            activity,
+            btnMoved,
+            ivMovedBy,
+            relation,
+            moved,
+            colorTextContent,
+            alphaMultiplier = stylerBoostAlpha
+        )
     }
 
     override fun onClick(v: View) {
-
-        when (v.id) {
-
-            R.id.ivBackground, R.id.tvRemoteProfileWarning ->
+        when (v) {
+            ivBackground, tvRemoteProfileWarning ->
                 activity.openCustomTab(whoRef?.get()?.url)
 
-            R.id.btnFollowing -> {
+            btnFollowing -> {
                 column.profileTab = ProfileTab.Following
                 reloadBySettingChange()
             }
 
-            R.id.btnFollowers -> {
+            btnFollowers -> {
                 column.profileTab = ProfileTab.Followers
                 reloadBySettingChange()
             }
 
-            R.id.btnStatusCount -> {
+            btnStatusCount -> {
                 column.profileTab = ProfileTab.Status
                 reloadBySettingChange()
             }
 
-            R.id.btnMore -> whoRef?.let { whoRef ->
+            btnMore -> whoRef?.let { whoRef ->
                 DlgContextMenu(activity, column, whoRef, null, null, null).show()
             }
 
-            R.id.btnFollow -> whoRef?.let { whoRef ->
+            btnFollow -> whoRef?.let { whoRef ->
                 DlgContextMenu(activity, column, whoRef, null, null, null).show()
             }
 
-            R.id.btnMoved -> movedRef?.let { movedRef ->
+            btnMoved -> movedRef?.let { movedRef ->
                 DlgContextMenu(activity, column, movedRef, null, null, null).show()
             }
 
-            R.id.llMoved -> movedRef?.let { movedRef ->
+            llMoved -> movedRef?.let { movedRef ->
                 if (accessInfo.isPseudo) {
                     DlgContextMenu(activity, column, movedRef, null, null, null).show()
                 } else {
                     activity.userProfileLocal(
-
                         activity.nextPosition(column),
                         accessInfo,
                         movedRef.get()
@@ -427,7 +794,7 @@ internal class ViewHolderHeaderProfile(
                 }
             }
 
-            R.id.btnPersonalNotesEdit -> whoRef?.let { whoRef ->
+            btnPersonalNotesEdit -> whoRef?.let { whoRef ->
                 val who = whoRef.get()
                 val relation = this.relation
                 val lastColumn = column
@@ -480,9 +847,8 @@ internal class ViewHolderHeaderProfile(
     }
 
     override fun onLongClick(v: View): Boolean {
-        when (v.id) {
-
-            R.id.btnFollow -> {
+        when (v) {
+            btnFollow -> {
                 activity.followFromAnotherAccount(
                     activity.nextPosition(column),
                     accessInfo,
@@ -491,7 +857,7 @@ internal class ViewHolderHeaderProfile(
                 return true
             }
 
-            R.id.btnMoved -> {
+            btnMoved -> {
                 activity.followFromAnotherAccount(
                     activity.nextPosition(column),
                     accessInfo,
@@ -512,7 +878,7 @@ internal class ViewHolderHeaderProfile(
             else -> "@${ac.nickname}"
         }
 
-        tv.textColor = ac.colorFg.notZero() ?: column.getAcctColor()
+        tv.setTextColor(ac.colorFg.notZero() ?: column.getAcctColor())
 
         tv.setBackgroundColor(ac.colorBg) // may 0
         tv.setPaddingRelative(activity.acctPadLr, 0, activity.acctPadLr, 0)
@@ -620,7 +986,7 @@ internal class ViewHolderHeaderProfile(
     }
 
     private fun showFields(who: TootAccount, fields: List<TootAccount.Field>) {
-        views.llFields.visibility = View.VISIBLE
+        llFields.visibility = View.VISIBLE
 
         // fieldsのnameにはカスタム絵文字が適用されるようになった
         // https://github.com/tootsuite/mastodon/pull/11350
@@ -656,7 +1022,7 @@ internal class ViewHolderHeaderProfile(
             nameView.setTextColor(colorTextContent)
             nameView.typeface = nameTypeface
             nameView.movementMethod = MyLinkMovementMethod
-            views.llFields.addView(nameView)
+            llFields.addView(nameView)
 
             val nameInvalidator = NetworkEmojiInvalidator(activity.handler, nameView)
             nameInvalidator.text = nameText
@@ -705,7 +1071,7 @@ internal class ViewHolderHeaderProfile(
                 valueView.setBackgroundColor(linkBgColor)
             }
 
-            views.llFields.addView(valueView)
+            llFields.addView(valueView)
         }
     }
 }

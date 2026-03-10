@@ -26,7 +26,7 @@ import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
 import jp.juggler.util.ui.getAdaptiveRippleDrawableRound
 import jp.juggler.util.ui.vg
-import org.jetbrains.anko.backgroundDrawable
+import android.view.Gravity
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -163,23 +163,23 @@ fun ActMain.updateColumnStrip() {
     views.llColumnStrip.removeAllViews()
     appState.columnList.forEachIndexed { index, column ->
 
-        val viewRoot = layoutInflater.inflate(R.layout.lv_column_strip, views.llColumnStrip, false)
-        val ivIcon = viewRoot.findViewById<ImageView>(R.id.ivIcon)
-        val vAcctColor = viewRoot.findViewById<View>(R.id.vAcctColor)
-
-        // root: 48x48dp LinearLayout(vertical), gravity=center
-        viewRoot.layoutParams.width = rootW
-        viewRoot.layoutParams.height = rootH
-
-        // ivIcon: 32x32dp marginTop="4dp" 図柄が32x32dp、パディングなし
-        ivIcon.layoutParams.width = iconSize
-        ivIcon.layoutParams.height = iconSize
-        (ivIcon.layoutParams as? LinearLayout.LayoutParams)?.topMargin = iconTopMargin
-
-        // vAcctColor: 32x3dp marginTop="3dp"
-        vAcctColor.layoutParams.width = iconSize
-        vAcctColor.layoutParams.height = barHeight
-        (vAcctColor.layoutParams as? LinearLayout.LayoutParams)?.topMargin = barTopMargin
+        val ivIcon = ImageView(this).apply {
+            scaleType = ImageView.ScaleType.FIT_CENTER
+        }
+        val vAcctColor = View(this)
+        val viewRoot = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            layoutParams = LinearLayout.LayoutParams(rootW, rootH).apply {
+                weight = 1f
+            }
+            addView(ivIcon, LinearLayout.LayoutParams(iconSize, iconSize).apply {
+                topMargin = iconTopMargin
+            })
+            addView(vAcctColor, LinearLayout.LayoutParams(iconSize, barHeight).apply {
+                topMargin = barTopMargin
+            })
+        }
 
         viewRoot.tag = index
         viewRoot.setOnClickListener { v ->
@@ -192,7 +192,7 @@ fun ActMain.updateColumnStrip() {
         }
         viewRoot.contentDescription = column.getColumnName(true)
 
-        viewRoot.backgroundDrawable = getAdaptiveRippleDrawableRound(
+        viewRoot.background = getAdaptiveRippleDrawableRound(
             this,
             column.getHeaderBackgroundColor(),
             column.getHeaderNameColor()

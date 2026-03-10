@@ -4,15 +4,18 @@ import android.annotation.SuppressLint
 import android.app.Dialog
 import android.view.LayoutInflater
 import android.view.MotionEvent
+import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import jp.juggler.subwaytooter.R
-import jp.juggler.subwaytooter.databinding.AttachmentRearrangeDialogBinding
-import jp.juggler.subwaytooter.databinding.AttachmentsRearrangeItemBinding
 import jp.juggler.subwaytooter.defaultColorIcon
 import jp.juggler.subwaytooter.util.PostAttachment
 import jp.juggler.util.coroutine.cancellationException
@@ -34,9 +37,70 @@ private val log = LogCategory("DlgAttachmentRearrange")
 suspend fun AppCompatActivity.dialogAttachmentRearrange(
     initialList: List<PostAttachment>,
 ): List<PostAttachment> = suspendCancellableCoroutine { cont ->
-    val views = AttachmentRearrangeDialogBinding.inflate(layoutInflater)
+    val dp8 = dp(8)
+    val dp48 = dp(48)
+    val dp1 = dp(1)
+    val dividerColor = attrColor(R.attr.colorSettingDivider)
+    val textColor = attrColor(R.attr.colorTextContent)
+
+    val listView = RecyclerView(this).apply {
+        clipToPadding = false
+        isScrollbarFadingEnabled = false
+        scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
+        setPadding(dp48, dp8, dp48, dp8)
+    }
+    val btnCancel = Button(this).apply {
+        text = getString(R.string.cancel)
+        setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+        setTextColor(textColor)
+    }
+    val btnOk = Button(this).apply {
+        text = getString(R.string.ok)
+        setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+        setTextColor(textColor)
+    }
+    // header label
+    val tvDesc = TextView(this).apply {
+        text = getString(R.string.attachment_rearrange_desc)
+        setPadding(dp8, dp8, dp8, dp8)
+        gravity = android.view.Gravity.CENTER
+        includeFontPadding = false
+        setTextColor(textColor)
+    }
+    val root = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        addView(tvDesc, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        ))
+        addView(listView, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
+        ))
+        // divider
+        addView(View(this@dialogAttachmentRearrange).apply {
+            setBackgroundColor(dividerColor)
+        }, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, dp1
+        ))
+        // button bar
+        addView(LinearLayout(this@dialogAttachmentRearrange).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(btnCancel, LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(View(this@dialogAttachmentRearrange).apply {
+                setBackgroundColor(dividerColor)
+            }, LinearLayout.LayoutParams(dp1,
+                LinearLayout.LayoutParams.MATCH_PARENT))
+            addView(btnOk, LinearLayout.LayoutParams(0,
+                LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        }, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        ))
+    }
+
     val dialog = Dialog(this).apply {
-        setContentView(views.root)
+        setContentView(root)
         setOnDismissListener {
             if (cont.isActive) cont.resumeWithException(cancellationException())
         }
@@ -46,16 +110,16 @@ suspend fun AppCompatActivity.dialogAttachmentRearrange(
 
     val myAdapter = RearrangeAdapter(layoutInflater, initialList)
 
-    views.btnCancel.setOnClickListener {
+    btnCancel.setOnClickListener {
         dialog.dismissSafe()
     }
 
-    views.btnOk.setOnClickListener {
+    btnOk.setOnClickListener {
         if (cont.isActive) cont.resume(myAdapter.list) { _, _, _ -> }
         dialog.dismissSafe()
     }
 
-    views.listView.apply {
+    listView.apply {
         layoutManager = LinearLayoutManager(context)
         adapter = myAdapter
         myAdapter.itemTouchHelper.attachToRecyclerView(this)
@@ -126,15 +190,47 @@ private class RearrangeAdapter(
     @SuppressLint("ClickableViewAccessibility")
     inner class MyViewHolder(
         parent: ViewGroup,
-        val views: AttachmentsRearrangeItemBinding =
-            AttachmentsRearrangeItemBinding.inflate(inflater, parent, false),
-    ) : RecyclerView.ViewHolder(views.root) {
+    ) : RecyclerView.ViewHolder(
+        LinearLayout(parent.context).apply {
+            layoutParams = RecyclerView.LayoutParams(
+                RecyclerView.LayoutParams.MATCH_PARENT,
+                RecyclerView.LayoutParams.WRAP_CONTENT,
+            )
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            val dp6 = (6 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
+            val dp3 = (3 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
+            val dp4 = (4 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
+            val dp80 = (80 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
+            setPadding(dp6, dp3, dp6, dp3)
+        }
+    ) {
+        val ivThumbnail: ImageView
+        val tvText: TextView
+        val rootLayout = itemView as LinearLayout
 
         var lastItem: PostAttachment? = null
 
         init {
+            val context = parent.context
+            val dp80 = (80 * context.resources.displayMetrics.density + 0.5f).toInt()
+            val dp4 = (4 * context.resources.displayMetrics.density + 0.5f).toInt()
+            ivThumbnail = ImageView(context).apply {
+                setBackgroundColor(0x80808080.toInt())
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                scaleType = ImageView.ScaleType.FIT_CENTER
+            }
+            rootLayout.addView(ivThumbnail, LinearLayout.LayoutParams(dp80, dp80))
+            tvText = TextView(context).apply {
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setTextColor(context.attrColor(R.attr.colorTextContent))
+            }
+            rootLayout.addView(tvText, LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
+            ).apply { marginStart = dp4 })
+
             // リスト項目のタッチですぐにドラッグを開始する
-            views.root.setOnTouchListener { _, event ->
+            rootLayout.setOnTouchListener { _, event ->
                 if (event.actionMasked == MotionEvent.ACTION_DOWN) {
                     itemTouchHelper.startDrag(this)
                 }
@@ -146,10 +242,10 @@ private class RearrangeAdapter(
             item ?: return
             lastItem = item
 
-            val context = views.root.context
+            val context = rootLayout.context
 
             // ドラッグ中は背景色を変える
-            views.root.apply {
+            rootLayout.apply {
                 when {
                     draggingItem === item -> backgroundColor =
                         context.attrColor(R.attr.colorSearchFormBackground)
@@ -159,7 +255,7 @@ private class RearrangeAdapter(
             }
 
             // サムネイルのロード開始
-            views.ivThumbnail.apply {
+            ivThumbnail.apply {
                 when (val imageUrl = item.attachment?.preview_url) {
                     null, "" -> {
                         val iconDrawable = when (item.status) {
@@ -183,7 +279,7 @@ private class RearrangeAdapter(
             }
 
             // テキストの表示
-            views.tvText.text = item.attachment?.run {
+            tvText.text = item.attachment?.run {
                 "${type.id} ${description?.ellipsizeDot3(40) ?: ""}"
             } ?: ""
         }

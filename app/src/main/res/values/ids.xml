@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tag key used in EmojiPicker for associating emoji items with views -->
+    <item name="btnAbout" type="id" />
+</resources>

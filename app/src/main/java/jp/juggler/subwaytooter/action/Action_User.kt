@@ -1,9 +1,7 @@
 package jp.juggler.subwaytooter.action
 
-import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.view.Gravity
-import android.view.View
 import android.widget.*
 import androidx.appcompat.widget.AppCompatButton
 import jp.juggler.subwaytooter.*
@@ -26,7 +24,6 @@ import jp.juggler.util.log.showToast
 import jp.juggler.util.network.*
 import jp.juggler.util.ui.dismissSafe
 import jp.juggler.util.ui.getSpannedString
-import jp.juggler.util.ui.vg
 import kotlinx.coroutines.*
 import okhttp3.Request
 
@@ -269,22 +266,46 @@ fun ActMain.userMuteConfirm(
         Pair(604800, getString(R.string.duration_days_7)),
     )
 
-    @SuppressLint("InflateParams")
-    val view = layoutInflater.inflate(R.layout.dlg_confirm, null, false)
+    val density = resources.displayMetrics.density
+    val dp12 = (12 * density + 0.5f).toInt()
+    val dp8 = (8 * density + 0.5f).toInt()
 
-    val tvMessage = view.findViewById<TextView>(R.id.tvMessage)
-    tvMessage.text = getString(R.string.confirm_mute_user, who.username)
-    tvMessage.text = getString(R.string.confirm_mute_user, who.username)
+    val root = LinearLayout(activity).apply {
+        orientation = LinearLayout.VERTICAL
+    }
+
+    val tvMessage = TextView(activity).apply {
+        text = getString(R.string.confirm_mute_user, who.username)
+        textSize = 16f
+        setPadding(dp12, dp12, dp12, 0)
+    }
+    root.addView(
+        tvMessage,
+        LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+        ),
+    )
 
     // 「次回以降スキップ」のチェックボックスは「このユーザからの通知もミュート」に再利用する
     // このオプションはMisskeyや疑似アカウントにはない
-    val cbMuteNotification = view.findViewById<CheckBox>(R.id.cbSkipNext)
     val hasMuteNotification = !accessInfo.isMisskey && !accessInfo.isPseudo
-    cbMuteNotification.isChecked = hasMuteNotification
-    cbMuteNotification.vg(hasMuteNotification)
-        ?.setText(R.string.confirm_mute_notification_for_user)
+    val cbMuteNotification = CheckBox(activity).apply {
+        isChecked = hasMuteNotification
+        setText(R.string.confirm_mute_notification_for_user)
+        setPadding(dp12, dp8, dp12, 0)
+    }
+    if (hasMuteNotification) {
+        root.addView(
+            cbMuteNotification,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+    }
 
-    val spMuteDuration: Spinner = view.findViewById(R.id.spMuteDuration)
+    val spMuteDuration = Spinner(activity)
     val hasMuteDuration = try {
         when {
             accessInfo.isMisskey || accessInfo.isPseudo -> false
@@ -307,20 +328,43 @@ fun ActMain.userMuteConfirm(
     }
 
     if (hasMuteDuration) {
-        view.findViewById<View>(R.id.llMuteDuration).vg(true)
-        spMuteDuration.apply {
-            adapter = ArrayAdapter(
-                activity,
-                android.R.layout.simple_spinner_item,
-                choiceList.map { it.second }.toTypedArray(),
-            ).apply {
-                setDropDownViewResource(R.layout.lv_spinner_dropdown)
-            }
+        val llMuteDuration = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp12, dp8, dp12, 0)
         }
+        llMuteDuration.addView(
+            TextView(activity).apply { setText(R.string.duration) },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+        spMuteDuration.minimumHeight = (40 * density + 0.5f).toInt()
+        spMuteDuration.adapter = ArrayAdapter(
+            activity,
+            android.R.layout.simple_spinner_item,
+            choiceList.map { it.second }.toTypedArray(),
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        llMuteDuration.addView(
+            spMuteDuration,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+        root.addView(
+            llMuteDuration,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
     }
 
     AlertDialog.Builder(activity)
-        .setView(view)
+        .setView(root)
         .setNegativeButton(R.string.cancel, null)
         .setPositiveButton(R.string.ok) { _, _ ->
             userMute(

@@ -8,7 +8,9 @@ import android.text.SpannableStringBuilder
 import android.text.style.RelativeSizeSpan
 import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
@@ -17,9 +19,10 @@ import jp.juggler.subwaytooter.table.*
 import jp.juggler.util.data.notEmpty
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
+import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.dismissSafe
+import jp.juggler.util.ui.dp
 import jp.juggler.util.ui.getAdaptiveRippleDrawableRound
-import org.jetbrains.anko.textColor
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
@@ -92,7 +95,64 @@ suspend fun AppCompatActivity.pickAccount(
     }
 
     return suspendCoroutine { continuation ->
-        val viewRoot = layoutInflater.inflate(R.layout.dlg_account_picker, null, false)
+        val tvMessage = TextView(activity).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            )
+            setPadding(activity.dp(12), activity.dp(6), activity.dp(12), activity.dp(6))
+            setTextColor(activity.attrColor(android.R.attr.textColorPrimary))
+            textSize = 16f
+            visibility = View.GONE
+        }
+
+        val llAccounts = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            val pad = activity.dp(12)
+            setPadding(pad, pad, pad, pad)
+        }
+
+        val scrollView = ScrollView(activity).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0, 1f,
+            )
+            addView(llAccounts, ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            ))
+        }
+
+        val divider = View(activity).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                activity.dp(1),
+            )
+            setBackgroundColor(activity.attrColor(R.attr.colorSettingDivider))
+        }
+
+        val btnCancel = AppCompatButton(activity).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            )
+            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+            text = activity.getString(R.string.cancel)
+            isAllCaps = false
+        }
+
+        val viewRoot = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
+            addView(tvMessage)
+            addView(scrollView)
+            addView(divider)
+            addView(btnCancel)
+        }
+
         val dialog = Dialog(activity)
         val isResumed = AtomicBoolean(false)
 
@@ -105,12 +165,11 @@ suspend fun AppCompatActivity.pickAccount(
 
         dialog.setContentView(viewRoot)
         if (message != null && message.isNotEmpty()) {
-            val tv = viewRoot.findViewById<TextView>(R.id.tvMessage)
-            tv.visibility = View.VISIBLE
-            tv.text = message
+            tvMessage.visibility = View.VISIBLE
+            tvMessage.text = message
         }
 
-        viewRoot.findViewById<View>(R.id.btnCancel).setOnClickListener {
+        btnCancel.setOnClickListener {
             dialog.cancel()
         }
 
@@ -119,7 +178,6 @@ suspend fun AppCompatActivity.pickAccount(
 
         val density = activity.resources.displayMetrics.density
 
-        val llAccounts: LinearLayout = viewRoot.findViewById(R.id.llAccounts)
         val padX = (0.5f + 12f * density).toInt()
         val padY = (0.5f + 6f * density).toInt()
 
@@ -143,7 +201,7 @@ suspend fun AppCompatActivity.pickAccount(
                 b.setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
             }
             if (daoAcctColor.hasColorForeground(ac)) {
-                b.textColor = ac.colorFg
+                b.setTextColor(ac.colorFg)
             }
 
             b.setPaddingRelative(padX, padY, padX, padY)

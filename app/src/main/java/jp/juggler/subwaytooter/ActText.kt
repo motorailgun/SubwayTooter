@@ -10,14 +10,19 @@ import android.text.style.BackgroundColorSpan
 import android.view.Menu
 import android.view.MenuItem
 import android.view.WindowManager
+import android.widget.FrameLayout
+import android.widget.ImageButton
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.ToggleButton
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.core.view.get
 import androidx.core.view.size
 import androidx.core.widget.addTextChangedListener
 import androidx.lifecycle.lifecycleScope
 import jp.juggler.subwaytooter.api.entity.TootAccount
 import jp.juggler.subwaytooter.api.entity.TootStatus
-import jp.juggler.subwaytooter.databinding.ActTextBinding
 import jp.juggler.subwaytooter.dialog.pickAccount
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.table.daoMutedWord
@@ -26,6 +31,7 @@ import jp.juggler.subwaytooter.util.CustomShare
 import jp.juggler.subwaytooter.util.CustomShareTarget
 import jp.juggler.subwaytooter.util.TootTextEncoder
 import jp.juggler.subwaytooter.util.copyToClipboard
+import jp.juggler.subwaytooter.view.MyEditText
 import jp.juggler.subwaytooter.view.wrapTitleTextView
 import jp.juggler.util.*
 import jp.juggler.util.coroutine.AppDispatchers
@@ -141,9 +147,17 @@ class ActText : AppCompatActivity() {
         }
     }
 
-    private val views by lazy {
-        ActTextBinding.inflate(layoutInflater)
-    }
+    private lateinit var toolbar: Toolbar
+    private lateinit var etText: MyEditText
+    private lateinit var etSearch: MyEditText
+    private lateinit var btnSearchClear: ImageButton
+    private lateinit var btnSearchPrev: ImageButton
+    private lateinit var btnSearchNext: ImageButton
+    private lateinit var btnToggleRegex: ToggleButton
+    private lateinit var llSearchResult: LinearLayout
+    private lateinit var tvSearchCount: TextView
+    private lateinit var tvSearchError: TextView
+    private lateinit var rootView: LinearLayout
 
     private val searchTextChannel = Channel<Long>(capacity = Channel.CONFLATED)
 
@@ -151,21 +165,177 @@ class ActText : AppCompatActivity() {
 
     private var searchResult = SearchResult()
 
+    private fun createViews() {
+        val pad12 = dp(12)
+        val size48 = dp(48)
+
+        toolbar = Toolbar(this).apply {
+            val tv = android.util.TypedValue()
+            theme.resolveAttribute(android.R.attr.actionBarSize, tv, true)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                resources.getDimensionPixelSize(tv.resourceId)
+            )
+            setBackgroundResource(R.drawable.action_bar_bg)
+            elevation = dpFloat(4)
+        }
+
+        etSearch = MyEditText(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            )
+            setHint(R.string.search)
+            inputType = android.text.InputType.TYPE_CLASS_TEXT
+        }
+
+        btnToggleRegex = ToggleButton(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            minimumWidth = size48
+            minimumHeight = size48
+            elevation = 0f
+            stateListAnimator = null
+            textOn = getString(R.string.toggle_regexp)
+            textOff = getString(R.string.toggle_regexp)
+            setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 14f)
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        }
+
+        btnSearchClear = ImageButton(this).apply {
+            layoutParams = LinearLayout.LayoutParams(size48, size48)
+            contentDescription = getString(R.string.clear)
+            setImageDrawable(
+                resDrawable(R.drawable.ic_close).wrapAndTint(attrColor(R.attr.colorTextContent))
+            )
+        }
+
+        val searchRow = LinearLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            isBaselineAligned = false
+            addView(etSearch)
+            addView(btnToggleRegex)
+            addView(btnSearchClear)
+        }
+
+        tvSearchError = TextView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            setTextColor(attrColor(R.attr.colorRegexFilterError))
+        }
+
+        tvSearchCount = TextView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            )
+            gravity = android.view.Gravity.END
+            includeFontPadding = false
+        }
+
+        btnSearchPrev = ImageButton(this).apply {
+            layoutParams = LinearLayout.LayoutParams(size48, size48)
+            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+            contentDescription = getString(R.string.previous)
+            setImageDrawable(
+                resDrawable(R.drawable.ic_arrow_drop_up).wrapAndTint(attrColor(R.attr.colorTextContent))
+            )
+        }
+
+        btnSearchNext = ImageButton(this).apply {
+            layoutParams = LinearLayout.LayoutParams(size48, size48)
+            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+            contentDescription = getString(R.string.next)
+            setImageDrawable(
+                resDrawable(R.drawable.ic_arrow_drop_down).wrapAndTint(attrColor(R.attr.colorTextContent))
+            )
+        }
+
+        llSearchResult = LinearLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            isBaselineAligned = false
+            addView(tvSearchCount)
+            addView(btnSearchPrev)
+            addView(btnSearchNext)
+        }
+
+        val searchArea = LinearLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(attrColor(R.attr.colorSearchFormBackground))
+            setPadding(pad12, 0, pad12, 0)
+            addView(searchRow)
+            addView(tvSearchError)
+            addView(llSearchResult)
+        }
+
+        etText = MyEditText(this).apply {
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            inputType = android.text.InputType.TYPE_NULL
+            setPadding(pad12, pad12, pad12, pad12)
+            setTextColor(attrColor(R.attr.colorTextContent))
+        }
+
+        val contentFrame = FrameLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+            setBackgroundColor(attrColor(R.attr.colorMainBackground))
+            addView(etText)
+        }
+
+        rootView = LinearLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT
+            )
+            orientation = LinearLayout.VERTICAL
+            addView(toolbar)
+            addView(searchArea)
+            addView(contentFrame)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
-        setSupportActionBar(views.toolbar)
+        createViews()
+        setContentViewAndInsets(rootView)
+        setSupportActionBar(toolbar)
         wrapTitleTextView()
-        setNavigationBack(views.toolbar)
-        fixHorizontalMargin(views.etText)
+        setNavigationBack(toolbar)
+        fixHorizontalMargin(etText)
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
 
-        views.etSearch.addTextChangedListener { postSearchText() }
-        views.btnSearchClear.setOnClickListener { views.etSearch.setText("") }
-        views.btnSearchPrev.setOnClickListener { searchPrev() }
-        views.btnSearchNext.setOnClickListener { searchNext() }
-        views.btnToggleRegex.setOnCheckedChangeListener { _, _ -> postSearchText() }
+        etSearch.addTextChangedListener { postSearchText() }
+        btnSearchClear.setOnClickListener { etSearch.setText("") }
+        btnSearchPrev.setOnClickListener { searchPrev() }
+        btnSearchNext.setOnClickListener { searchNext() }
+        btnToggleRegex.setOnCheckedChangeListener { _, _ -> postSearchText() }
 
         lifecycleScope.launch {
             while (true) {
@@ -189,15 +359,15 @@ class ActText : AppCompatActivity() {
                 val sv = intent.string(EXTRA_TEXT) ?: ""
                 val contentStart = intent.int(EXTRA_CONTENT_START) ?: 0
                 val contentEnd = intent.int(EXTRA_CONTENT_END) ?: sv.length
-                views.etText.setText(sv)
+                etText.setText(sv)
 
                 // Android 9 以降ではフォーカスがないとsetSelectionできない
                 if (Build.VERSION.SDK_INT >= 28) {
-                    views.etText.requestFocus()
-                    views.etText.hideKeyboard()
+                    etText.requestFocus()
+                    etText.hideKeyboard()
                 }
 
-                views.etText.setSelection(contentStart, contentEnd)
+                etText.setSelection(contentStart, contentEnd)
             }
         }
     }
@@ -247,7 +417,7 @@ class ActText : AppCompatActivity() {
      */
     private val selectionOrAll: String
         get() {
-            val et = views.etText
+            val et = etText
             val s = et.selectionStart
             val e = et.selectionEnd
             val text = et.text.toString()
@@ -349,9 +519,9 @@ class ActText : AppCompatActivity() {
     }
 
     private suspend fun searchTextImpl() {
-        val keyword = views.etSearch.text?.toString() ?: ""
-        val content = views.etText.text?.toString() ?: ""
-        val useRegex = views.btnToggleRegex.isChecked
+        val keyword = etSearch.text?.toString() ?: ""
+        val content = etText.text?.toString() ?: ""
+        val useRegex = btnToggleRegex.isChecked
         this.searchResult = withContext(AppDispatchers.IO) {
             try {
                 val limit = 1000
@@ -403,21 +573,21 @@ class ActText : AppCompatActivity() {
             }
         }
         showSearchResult {
-            searchResult.findNext(views.etText.selectionStart, allowEqual = true)
+            searchResult.findNext(etText.selectionStart, allowEqual = true)
                 ?: searchResult.items.firstOrNull()
         }
     }
 
     private fun searchNext() {
         showSearchResult {
-            searchResult.findNext(views.etText.selectionStart, allowEqual = false)
+            searchResult.findNext(etText.selectionStart, allowEqual = false)
                 ?: searchResult.items.firstOrNull()
         }
     }
 
     private fun searchPrev() {
         showSearchResult {
-            searchResult.findPrev(views.etText.selectionStart, allowEqual = false)
+            searchResult.findPrev(etText.selectionStart, allowEqual = false)
                 ?: searchResult.items.lastOrNull()
         }
     }
@@ -429,24 +599,24 @@ class ActText : AppCompatActivity() {
             log.e(ex, "newPosFinder failed.")
             null
         }
-        val hasKeyword = !views.etSearch.text.isNullOrEmpty()
+        val hasKeyword = !etSearch.text.isNullOrEmpty()
 
-        views.btnSearchClear.isEnabledAlpha = hasKeyword
+        btnSearchClear.isEnabledAlpha = hasKeyword
 
-        views.llSearchResult.vg(hasKeyword)?.let {
-            views.btnSearchPrev.isEnabledAlpha = searchResult.size > 1
-            views.btnSearchNext.isEnabledAlpha = searchResult.size > 1
+        llSearchResult.vg(hasKeyword)?.let {
+            btnSearchPrev.isEnabledAlpha = searchResult.size > 1
+            btnSearchNext.isEnabledAlpha = searchResult.size > 1
 
             val idx = newPos?.let {
-                val end = views.etText.text?.length ?: 0
-                views.etText.setSelection(
+                val end = etText.text?.length ?: 0
+                etText.setSelection(
                     it.first.clip(0, end),
                     (it.last + 1).clip(0, end),
                 )
                 searchResult.index(it.first)
             }
 
-            views.tvSearchCount.text = getString(
+            tvSearchCount.text = getString(
                 R.string.search_result,
                 idx?.plus(1) ?: 0,
                 searchResult.size,
@@ -455,10 +625,10 @@ class ActText : AppCompatActivity() {
         }
 
         val error = searchResult.error
-        views.tvSearchError.vg(hasKeyword && !error.isNullOrBlank())
+        tvSearchError.vg(hasKeyword && !error.isNullOrBlank())
             ?.text = error
 
-        views.etText.text?.let { e ->
+        etText.text?.let { e ->
             for (span in e.getSpans(0, e.length, SearchResultSpan::class.java)) {
                 try {
                     e.removeSpan(span)

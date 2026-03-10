@@ -2,20 +2,32 @@ package jp.juggler.subwaytooter
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.Gravity
-import android.widget.Button
-import android.widget.LinearLayout
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.AppCompatButton
-import jp.juggler.subwaytooter.databinding.ActAboutBinding
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import jp.juggler.subwaytooter.compose.StScreen
+import jp.juggler.subwaytooter.util.StColorScheme
+import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.subwaytooter.util.openBrowser
-import jp.juggler.subwaytooter.view.wrapTitleTextView
 import jp.juggler.util.getPackageInfoCompat
 import jp.juggler.util.log.LogCategory
-import jp.juggler.util.ui.setContentViewAndInsets
-import jp.juggler.util.ui.setNavigationBack
 
-class ActAbout : AppCompatActivity() {
+class ActAbout : ComponentActivity() {
 
     class Translators(
         val name: String,
@@ -36,7 +48,6 @@ class ActAbout : AppCompatActivity() {
 
         const val url_weblate = "https://hosted.weblate.org/projects/subway-tooter/"
 
-        // git log --pretty=format:"%an %s" |grep "Translated using Weblate"|sort|uniq
         val translators = arrayOf(
             Translators("Allan Nordhøy", null, "English, Norwegian Bokmål"),
             Translators("ayiniho", null, "French"),
@@ -72,90 +83,108 @@ class ActAbout : AppCompatActivity() {
         )
     }
 
-    private val views by lazy {
-        ActAboutBinding.inflate(layoutInflater)
+    private fun searchAcct(acct: String) {
+        setResult(RESULT_OK, Intent().apply { putExtra(EXTRA_SEARCH, acct) })
+        finish()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
-        setSupportActionBar(views.toolbar)
-        wrapTitleTextView()
-        setNavigationBack(views.toolbar)
-        fixHorizontalMargin(views.svContent)
+        val stColorScheme = getStColorTheme()
 
-        try {
-            packageManager.getPackageInfoCompat(packageName)?.let { pInfo ->
-                views.tvVersion.text = getString(R.string.version_is, pInfo.versionName)
-            }
+        val versionName = try {
+            packageManager.getPackageInfoCompat(packageName)?.versionName ?: "?"
         } catch (ex: Throwable) {
             log.e(ex, "can't get app version.")
+            "?"
         }
 
-        fun setButton(b: Button, caption: String, onClick: () -> Unit) {
-            b.text = caption
-            b.setOnClickListener { onClick() }
+        setContent {
+            AboutScreen(stColorScheme, versionName)
         }
+    }
 
-        fun searchAcct(acct: String) {
-            setResult(RESULT_OK, Intent().apply { putExtra(EXTRA_SEARCH, acct) })
-            finish()
-        }
+    @Composable
+    private fun AboutScreen(stColorScheme: StColorScheme, versionName: String) {
+        StScreen(
+            stColorScheme = stColorScheme,
+            title = stringResource(R.string.app_name),
+            onBack = { finish() },
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(12.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.app_name),
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+                Text(
+                    text = getString(R.string.version_is, versionName),
+                )
+                Spacer(modifier = Modifier.height(12.dp))
 
-        setButton(
-            views.btnDeveloper,
-            getString(R.string.search_for, developer_acct)
-        ) { searchAcct(developer_acct) }
-
-        setButton(
-            views.btnOfficialAccount,
-            getString(R.string.search_for, official_acct)
-        ) { searchAcct(official_acct) }
-
-        setButton(
-            views.btnReleaseNote,
-            url_release
-        ) { openBrowser(url_release) }
-
-        // setButton(R.id.btnIconDesign, url_futaba)
-        //   { openUrl(url_futaba) }
-
-        setButton(views.btnWeblate, getString(R.string.please_help_translation)) {
-            openBrowser(url_weblate)
-        }
-
-        val ll = views.llContributors
-        val density = resources.displayMetrics.density
-        val marginTop = (0.5f + density * 8).toInt()
-        val padding = (0.5f + density * 8).toInt()
-
-        for (who in translators) {
-            AppCompatButton(this).apply {
-                //
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    if (ll.childCount != 0) topMargin = marginTop
+                Button(
+                    onClick = { searchAcct(developer_acct) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(getString(R.string.search_for, developer_acct))
                 }
-                //
-                setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
-                setPadding(padding, padding, padding, padding)
-                isAllCaps = false
 
-                //
-                val acct = who.acct ?: "@?@?"
-                text = "${who.name}\n$acct\n${getString(R.string.thanks_for, who.lang)}"
-                gravity = Gravity.START or Gravity.CENTER_VERTICAL
+                Spacer(modifier = Modifier.height(8.dp))
 
-                setOnClickListener {
-                    val data = Intent()
-                    data.putExtra(EXTRA_SEARCH, who.acct ?: who.name)
-                    setResult(RESULT_OK, data)
-                    finish()
+                Button(
+                    onClick = { searchAcct(official_acct) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(getString(R.string.search_for, official_acct))
                 }
-            }.let { ll.addView(it) }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = { openBrowser(url_release) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(url_release)
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = { openBrowser(url_weblate) },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(getString(R.string.please_help_translation))
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Contributors",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                for (who in translators) {
+                    val acct = who.acct ?: "@?@?"
+                    TextButton(
+                        onClick = {
+                            val data = Intent()
+                            data.putExtra(EXTRA_SEARCH, who.acct ?: who.name)
+                            setResult(RESULT_OK, data)
+                            finish()
+                        },
+                    ) {
+                        Text(
+                            text = "${who.name}\n$acct\n${getString(R.string.thanks_for, who.lang)}",
+                        )
+                    }
+                }
+            }
         }
     }
 }

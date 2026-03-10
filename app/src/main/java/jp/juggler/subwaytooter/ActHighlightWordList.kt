@@ -5,29 +5,39 @@ import android.media.Ringtone
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Bundle
-import android.view.View
-import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.BaseAdapter
-import androidx.appcompat.app.AppCompatActivity
-import jp.juggler.subwaytooter.databinding.ActHighlightListBinding
-import jp.juggler.subwaytooter.databinding.LvHighlightWordBinding
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.subwaytooter.table.HighlightWord
 import jp.juggler.subwaytooter.table.daoHighlightWord
-import jp.juggler.subwaytooter.view.wrapTitleTextView
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError
-import jp.juggler.util.data.cast
 import jp.juggler.util.data.mayUri
 import jp.juggler.util.data.notBlank
 import jp.juggler.util.data.notZero
 import jp.juggler.util.log.LogCategory
-import jp.juggler.util.ui.*
+import jp.juggler.util.ui.ActivityResultHandler
+import jp.juggler.util.ui.isNotOk
+import jp.juggler.subwaytooter.util.getStColorTheme
 import kotlinx.coroutines.withContext
 import java.lang.ref.WeakReference
 
-class ActHighlightWordList : AppCompatActivity() {
+class ActHighlightWordList : ComponentActivity() {
 
     companion object {
         private val log = LogCategory("ActHighlightWordList")
@@ -56,7 +66,6 @@ class ActHighlightWordList : AppCompatActivity() {
             } catch (ex: Throwable) {
                 log.e(ex, "tryRingTone failed.")
             }
-            // fall null case
             return false
         }
 
@@ -69,16 +78,11 @@ class ActHighlightWordList : AppCompatActivity() {
             item ?: return
             val soundType = item.sound_type
             when {
-                // サウンドなし
                 soundType == HighlightWord.SOUND_TYPE_NONE -> Unit
-
-                // カスタムサウンドを鳴らせた
                 soundType == HighlightWord.SOUND_TYPE_CUSTOM && tryRingTone(
                     context,
                     item.sound_uri.mayUri()
                 ) -> Unit
-
-                // 失敗した場合も通常の音を鳴らす
                 else -> tryRingTone(
                     context,
                     RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
@@ -87,29 +91,55 @@ class ActHighlightWordList : AppCompatActivity() {
         }
     }
 
-    private val views by lazy {
-        ActHighlightListBinding.inflate(layoutInflater)
-    }
-
-    private lateinit var listAdapter: MyListAdapter
+    private var items = mutableStateOf<List<HighlightWord>>(emptyList())
 
     private val arEdit = ActivityResultHandler(log) { r ->
         if (r.isNotOk) return@ActivityResultHandler
         loadData()
     }
 
-    //	@Override public void onBackPressed(){
-    //		setResult( RESULT_OK );
-    //		super.onBackPressed();
-    //	}
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arEdit.register(this)
         App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
-        initUI()
+        val stColorScheme = getStColorTheme()
         loadData()
+        setContent {
+            StScreen(
+                stColorScheme = stColorScheme,
+                title = stringResource(R.string.highlight_word),
+                onBack = { finish() },
+            ) { contentPadding ->
+                Column(modifier = Modifier.padding(contentPadding)) {
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        items(items.value, key = { it.id }) { item ->
+                            HighlightWordRow(item)
+                        }
+                    }
+                    // Footer
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.highlight_desc),
+                            fontSize = 12.sp,
+                            modifier = Modifier.weight(1f),
+                        )
+                        IconButton(onClick = { create() }) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_add),
+                                contentDescription = stringResource(R.string.new_item),
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 
     override fun onDestroy() {
@@ -117,25 +147,73 @@ class ActHighlightWordList : AppCompatActivity() {
         stopLastRingtone()
     }
 
-    private fun initUI() {
-        setSupportActionBar(views.toolbar)
-        wrapTitleTextView()
-        setNavigationBack(views.toolbar)
-        fixHorizontalMargin(views.llContent)
-
-        // リストのアダプター
-        listAdapter = MyListAdapter()
-
-        // ハンドル部分をドラッグで並べ替えできるRecyclerView
-
-        views.listView.adapter = listAdapter
-        views.listView.onItemClickListener = listAdapter
-        views.btnAdd.setOnClickListener { create() }
+    @Composable
+    private fun HighlightWordRow(item: HighlightWord) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { edit(item) }
+                .padding(horizontal = 12.dp, vertical = 3.dp)
+                .heightIn(min = 48.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            val textColor = item.color_fg.notZero()
+                ?.let { Color(it.toLong() or 0xFF000000L) }
+                ?: MaterialTheme.colorScheme.onSurface
+            val bgColor = when (item.color_bg) {
+                0 -> Color.Transparent
+                else -> Color(item.color_bg.toLong() or 0xFF000000L)
+            }
+            Text(
+                text = item.name ?: "",
+                fontSize = 20.sp,
+                color = textColor,
+                modifier = Modifier
+                    .weight(1f)
+                    .then(
+                        if (bgColor != Color.Transparent)
+                            Modifier.padding(4.dp)
+                        else Modifier
+                    ),
+                style = LocalTextStyle.current.copy(
+                    background = bgColor,
+                ),
+            )
+            IconButton(
+                onClick = { speech(item) },
+                enabled = item.speech != 0,
+                modifier = Modifier.size(40.dp),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_comment),
+                    contentDescription = stringResource(R.string.speech),
+                )
+            }
+            IconButton(
+                onClick = { sound(this@ActHighlightWordList, item) },
+                enabled = item.sound_type != HighlightWord.SOUND_TYPE_NONE,
+                modifier = Modifier.size(40.dp),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_volume_up),
+                    contentDescription = stringResource(R.string.check_sound),
+                )
+            }
+            IconButton(
+                onClick = { delete(item) },
+                modifier = Modifier.size(40.dp),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_delete),
+                    contentDescription = stringResource(R.string.delete),
+                )
+            }
+        }
     }
 
     private fun loadData() {
         launchAndShowError {
-            listAdapter.items = withContext(AppDispatchers.IO) {
+            items.value = withContext(AppDispatchers.IO) {
                 daoHighlightWord.listAll()
             }
         }
@@ -156,7 +234,7 @@ class ActHighlightWordList : AppCompatActivity() {
         launchAndShowError {
             confirm(getString(R.string.delete_confirm, item.name))
             daoHighlightWord.delete(applicationContext, item)
-            listAdapter.remove(item)
+            items.value = items.value.filter { it != item }
             App1.getAppState(activity).enableSpeech()
         }
     }
@@ -165,68 +243,6 @@ class ActHighlightWordList : AppCompatActivity() {
         item?.name?.notBlank()?.let {
             App1.getAppState(this@ActHighlightWordList)
                 .addSpeech(it, dedupMode = DedupMode.None)
-        }
-    }
-
-    // リスト要素のViewHolder
-    private inner class MyViewHolder(
-        parent: ViewGroup?,
-    ) {
-        val views = LvHighlightWordBinding.inflate(layoutInflater, parent, false)
-
-        private var lastItem: HighlightWord? = null
-
-        init {
-            views.root.tag = this
-            views.btnSound.setOnClickListener { sound(this@ActHighlightWordList, lastItem) }
-            views.btnSpeech.setOnClickListener { speech(lastItem) }
-            views.btnDelete.setOnClickListener { delete(lastItem) }
-        }
-
-        fun bind(item: HighlightWord?) {
-            item ?: return
-            lastItem = item
-
-            views.tvName.text = item.name
-            views.tvName.setBackgroundColor(item.color_bg)
-            views.tvName.setTextColor(
-                item.color_fg.notZero()
-                    ?: attrColor(android.R.attr.textColorPrimary)
-            )
-
-            views.btnSound.isEnabledAlpha = item.sound_type != HighlightWord.SOUND_TYPE_NONE
-            views.btnSpeech.isEnabledAlpha = item.speech != 0
-        }
-    }
-
-    private inner class MyListAdapter : BaseAdapter(), AdapterView.OnItemClickListener {
-
-        var items: List<HighlightWord> = emptyList()
-            set(value) {
-                field = value
-                notifyDataSetChanged()
-            }
-
-        fun remove(item: HighlightWord) {
-            items = items.filter { it != item }
-        }
-
-        override fun getCount() = items.size
-        override fun getItem(position: Int) = items.elementAtOrNull(position)
-        override fun getItemId(position: Int) = 0L
-
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup?) =
-            (convertView?.tag?.cast() ?: MyViewHolder(parent))
-                .also { it.bind(items.elementAtOrNull(position)) }
-                .views.root
-
-        override fun onItemClick(
-            parent: AdapterView<*>?,
-            view: View?,
-            position: Int,
-            id: Long,
-        ) {
-            edit(items.elementAtOrNull(position))
         }
     }
 }

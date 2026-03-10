@@ -9,11 +9,12 @@ import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
 import android.view.View
 import android.widget.EditText
+import android.widget.ScrollView
+import android.widget.TextView
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import jp.juggler.subwaytooter.ActPost
 import jp.juggler.subwaytooter.R
-import jp.juggler.subwaytooter.databinding.DlgPluginMissingBinding
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.attrColor
 
@@ -40,17 +41,28 @@ fun ActPost.showRecommendedPlugin(@StringRes titleId: Int) {
         }
     }
 
-    val views = DlgPluginMissingBinding.inflate(layoutInflater)
-    views.tvText.movementMethod = LinkMovementMethod.getInstance()
-    views.tvText.text = SpannableStringBuilder().apply {
-        val spanStart = length
-        append(linkCaption)
-        val spanEnd = length
-        setSpan(linkSpan, spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+    val density = resources.displayMetrics.density
+    val dp12 = (12 * density + 0.5f).toInt()
+
+    val tvText = TextView(this).apply {
+        movementMethod = LinkMovementMethod.getInstance()
+        textSize = 16f
+        setPadding(dp12, dp12, dp12, dp12)
+        text = SpannableStringBuilder().apply {
+            val spanStart = length
+            append(linkCaption)
+            val spanEnd = length
+            setSpan(linkSpan, spanStart, spanEnd, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
     }
+
+    val scrollView = ScrollView(this).apply {
+        addView(tvText)
+    }
+
     AlertDialog.Builder(this).apply {
         setTitle(titleId)
-        setView(views.root)
+        setView(scrollView)
         setCancelable(true)
         setPositiveButton(R.string.ok, null)
     }.show()

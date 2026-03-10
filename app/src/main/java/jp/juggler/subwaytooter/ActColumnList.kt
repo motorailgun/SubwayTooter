@@ -5,9 +5,16 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
+import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import com.woxthebox.draglistview.DragItem
 import com.woxthebox.draglistview.DragItemAdapter
 import com.woxthebox.draglistview.DragListView
@@ -17,8 +24,6 @@ import jp.juggler.subwaytooter.api.entity.Acct
 import jp.juggler.subwaytooter.api.showApiError
 import jp.juggler.subwaytooter.column.ColumnEncoder
 import jp.juggler.subwaytooter.column.ColumnType
-import jp.juggler.subwaytooter.databinding.ActColumnListBinding
-import jp.juggler.subwaytooter.databinding.LvColumnListBinding
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.subwaytooter.view.wrapTitleTextView
 import jp.juggler.util.backPressed
@@ -29,11 +34,11 @@ import jp.juggler.util.data.toJsonArray
 import jp.juggler.util.int
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.attrColor
+import jp.juggler.util.ui.attrDrawable
+import jp.juggler.util.ui.dp
 import jp.juggler.util.ui.setContentViewAndInsets
 import jp.juggler.util.ui.setNavigationBack
 import jp.juggler.util.ui.vg
-import org.jetbrains.anko.backgroundColor
-import org.jetbrains.anko.textColor
 
 class ActColumnList : AppCompatActivity() {
 
@@ -54,8 +59,54 @@ class ActColumnList : AppCompatActivity() {
             }
     }
 
-    private val views by lazy {
-        ActColumnListBinding.inflate(layoutInflater)
+    private lateinit var toolbar: Toolbar
+    private lateinit var listView: DragListView
+
+    private fun createViews(): View {
+        val tv = android.util.TypedValue()
+        theme.resolveAttribute(android.R.attr.actionBarSize, tv, true)
+        val actionBarHeight = resources.getDimensionPixelSize(tv.resourceId)
+
+        toolbar = Toolbar(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                actionBarHeight
+            )
+            background = resources.getDrawable(R.drawable.action_bar_bg, theme)
+            elevation = dp(4).toFloat()
+        }
+
+        listView = DragListView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0, 1f
+            )
+        }
+
+        val descText = TextView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = dp(4)
+                bottomMargin = dp(4)
+            }
+            gravity = Gravity.CENTER
+            setText(R.string.column_list_desc)
+            textSize = 12f
+        }
+
+        return LinearLayout(this).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(attrColor(R.attr.colorMainBackground))
+            addView(toolbar)
+            addView(listView)
+            addView(descText)
+        }
     }
 
     private val listAdapter by lazy { MyListAdapter() }
@@ -77,7 +128,7 @@ class ActColumnList : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
+        setContentViewAndInsets(createViews())
         initUI()
 
         if (savedInstanceState != null) {
@@ -96,25 +147,25 @@ class ActColumnList : AppCompatActivity() {
     }
 
     private fun initUI() {
-        setSupportActionBar(views.toolbar)
+        setSupportActionBar(toolbar)
         wrapTitleTextView()
-        setNavigationBack(views.toolbar)
-        fixHorizontalMargin(views.listView)
+        setNavigationBack(toolbar)
+        fixHorizontalMargin(listView)
 
         // ハンドル部分をドラッグで並べ替えできるRecyclerView
-        views.listView.setLayoutManager(androidx.recyclerview.widget.LinearLayoutManager(this))
-        views.listView.setAdapter(listAdapter, true)
-        views.listView.setCanDragHorizontally(false)
-        views.listView.setCustomDragItem(MyDragItem(this))
+        listView.setLayoutManager(androidx.recyclerview.widget.LinearLayoutManager(this))
+        listView.setAdapter(listAdapter, true)
+        listView.setCanDragHorizontally(false)
+        listView.setCustomDragItem(MyDragItem(this))
 
-        views.listView.recyclerView.isVerticalScrollBarEnabled = true
-        views.listView.setDragListListener(object : DragListView.DragListListenerAdapter() {
+        listView.recyclerView.isVerticalScrollBarEnabled = true
+        listView.setDragListListener(object : DragListView.DragListListenerAdapter() {
             override fun onItemDragStarted(position: Int) = Unit
             override fun onItemDragEnded(fromPosition: Int, toPosition: Int) = Unit
         })
 
         // リストを左右スワイプした
-        views.listView.setSwipeListener(object : ListSwipeHelper.OnSwipeListenerAdapter() {
+        listView.setSwipeListener(object : ListSwipeHelper.OnSwipeListenerAdapter() {
             override fun onItemSwipeStarted(item: ListSwipeItem) = Unit
             override fun onItemSwipeEnded(
                 item: ListSwipeItem,
@@ -133,7 +184,7 @@ class ActColumnList : AppCompatActivity() {
                             showApiError(ex)
                         } finally {
                             try {
-                                views.listView.resetSwipedViews(null)
+                                listView.resetSwipedViews(null)
                             } catch (_: Throwable) {
                             }
                         }
@@ -229,38 +280,43 @@ class ActColumnList : AppCompatActivity() {
     // リスト要素のViewHolder
     private inner class MyViewHolder(
         parent: ViewGroup?,
-        val views: LvColumnListBinding =
-            LvColumnListBinding.inflate(layoutInflater, parent, false),
+        val rootView: ListSwipeItem = LayoutInflater.from(parent?.context ?: this@ActColumnList)
+            .inflate(R.layout.lv_column_list, parent, false) as ListSwipeItem,
     ) : DragItemAdapter.ViewHolder(
-        views.root,
+        rootView,
         R.id.ivDragHandle, // View ID。 ここを押すとドラッグ操作をすぐに開始する
         true, // 長押しでドラッグ開始するなら真
     ) {
         var lastItem: MyItem? = null
-        val acctPadLr = (0.5f + 4f * views.root.resources.displayMetrics.density).toInt()
+        val acctPadLr = (0.5f + 4f * rootView.resources.displayMetrics.density).toInt()
+        val ivSelected: ImageView = rootView.findViewById(R.id.ivSelected)
+        val tvAccess: TextView = rootView.findViewById(R.id.tvAccess)
+        val llColumn: LinearLayout = rootView.findViewById(R.id.llColumn)
+        val tvColumnName: TextView = rootView.findViewById(R.id.tvColumnName)
+        val ivColumnIcon: ImageView = rootView.findViewById(R.id.ivColumnIcon)
 
         init {
-            views.root.tag = this
-            views.root.setSwipeInStyle(ListSwipeItem.SwipeInStyle.SLIDE)
-            views.root.supportedSwipeDirection = ListSwipeItem.SwipeDirection.LEFT
+            rootView.tag = this
+            rootView.setSwipeInStyle(ListSwipeItem.SwipeInStyle.SLIDE)
+            rootView.supportedSwipeDirection = ListSwipeItem.SwipeDirection.LEFT
         }
 
         fun bind(item: MyItem?) {
             item ?: return
             lastItem = item
-            views.ivSelected.vg(item.bOldSelection)
-            views.tvAccess.text = item.acctName
-            views.tvAccess.setTextColor(item.acctColorFg.notZero() ?: defaultAcctColorFg)
-            views.tvAccess.setBackgroundColor(item.acctColorBg)
-            views.tvAccess.setPaddingRelative(acctPadLr, 0, acctPadLr, 0)
+            ivSelected.vg(item.bOldSelection)
+            tvAccess.text = item.acctName
+            tvAccess.setTextColor(item.acctColorFg.notZero() ?: defaultAcctColorFg)
+            tvAccess.setBackgroundColor(item.acctColorBg)
+            tvAccess.setPaddingRelative(acctPadLr, 0, acctPadLr, 0)
 
             val columnColorFg = item.columnColorFg.notZero() ?: defaultColumnColorFg
-            views.llColumn.backgroundColor = item.columnColorBg
-            views.tvColumnName.text = item.name
-            views.tvColumnName.textColor = columnColorFg
-            views.ivColumnIcon.setImageResource(item.type.iconId(item.acct))
-            views.ivColumnIcon.imageTintList = ColorStateList.valueOf(columnColorFg)
-            views.ivSelected.imageTintList = ColorStateList.valueOf(columnColorFg)
+            llColumn.setBackgroundColor(item.columnColorBg)
+            tvColumnName.text = item.name
+            tvColumnName.setTextColor(columnColorFg)
+            ivColumnIcon.setImageResource(item.type.iconId(item.acct))
+            ivColumnIcon.imageTintList = ColorStateList.valueOf(columnColorFg)
+            ivSelected.imageTintList = ColorStateList.valueOf(columnColorFg)
 
             // 背景色がテーマ次第なので、カラム設定の色を反映するとアイコンが見えなくなる可能性がある
             // よってアイコンやテキストにカラム設定の色を反映しない
@@ -274,27 +330,31 @@ class ActColumnList : AppCompatActivity() {
     // ドラッグ操作中のデータ
     private inner class MyDragItem(context: Context) : DragItem(context, R.layout.lv_column_list) {
         override fun onBindDragView(clickedView: View, dragView: View) {
-            val dragViews = LvColumnListBinding.bind(dragView)
             val clickVh = clickedView.tag as MyViewHolder
-            val clickViews = clickVh.views
             val item = clickVh.lastItem!!
 
-            dragViews.tvAccess.run {
+            dragView.findViewById<TextView>(R.id.tvAccess).run {
                 text = item.acctName
-                textColor = item.acctColorFg.notZero() ?: defaultAcctColorFg
-                backgroundColor = item.acctColorBg
+                setTextColor(item.acctColorFg.notZero() ?: defaultAcctColorFg)
+                setBackgroundColor(item.acctColorBg)
             }
             val columnColorFg = item.columnColorFg.notZero() ?: defaultColumnColorFg
-            dragViews.tvColumnName.run {
+            dragView.findViewById<TextView>(R.id.tvColumnName).run {
                 text = item.name
-                textColor = columnColorFg
+                setTextColor(columnColorFg)
             }
-            dragViews.ivColumnIcon.imageTintList = ColorStateList.valueOf(columnColorFg)
-            dragViews.ivSelected.imageTintList = ColorStateList.valueOf(columnColorFg)
-            dragViews.llColumn.backgroundColor = item.columnColorBg
-            dragViews.ivColumnIcon.setImageResource(item.type.iconId(item.acct))
-            dragViews.ivSelected.visibility = clickViews.ivSelected.visibility
-            dragViews.itemLayout.setBackgroundColor(attrColor(R.attr.list_item_bg_pressed_dragged))
+            dragView.findViewById<ImageView>(R.id.ivColumnIcon).run {
+                imageTintList = ColorStateList.valueOf(columnColorFg)
+                setImageResource(item.type.iconId(item.acct))
+            }
+            dragView.findViewById<ImageView>(R.id.ivSelected).run {
+                imageTintList = ColorStateList.valueOf(columnColorFg)
+                visibility = clickVh.ivSelected.visibility
+            }
+            dragView.findViewById<LinearLayout>(R.id.llColumn)
+                .setBackgroundColor(item.columnColorBg)
+            dragView.findViewById<FrameLayout>(R.id.item_layout)
+                .setBackgroundColor(attrColor(R.attr.list_item_bg_pressed_dragged))
         }
     }
 

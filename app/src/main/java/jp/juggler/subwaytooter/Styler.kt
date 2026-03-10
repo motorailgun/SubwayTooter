@@ -36,7 +36,6 @@ import jp.juggler.util.ui.fixColor
 import jp.juggler.util.ui.mixColor
 import jp.juggler.util.ui.scan
 import jp.juggler.util.ui.setIconDrawableId
-import org.xmlpull.v1.XmlPullParser
 import kotlin.math.max
 import kotlin.math.min
 
@@ -466,13 +465,13 @@ fun Context.setSwitchColor(root: View?) {
 
 fun ViewGroup.generateLayoutParamsEx(): ViewGroup.LayoutParams? =
     try {
-        val parser = resources.getLayout(R.layout.generate_params)
-        // Skip everything until the view tag.
-        while (true) {
-            val token = parser.nextToken()
-            if (token == XmlPullParser.START_TAG) break
-        }
-        generateLayoutParams(parser)
+        // Create MarginLayoutParams with MATCH_PARENT dimensions.
+        // When added to a ViewGroup, Android will convert it to the correct
+        // LayoutParams subclass via checkLayoutParams/generateLayoutParams.
+        ViewGroup.MarginLayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.MATCH_PARENT,
+        )
     } catch (ex: Throwable) {
         log.e(ex, "generateLayoutParamsEx failed")
         null

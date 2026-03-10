@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.*
 import jp.juggler.subwaytooter.R
+import jp.juggler.util.ui.dp
 import jp.juggler.subwaytooter.util.CustomShare
 import jp.juggler.subwaytooter.util.cn
 import jp.juggler.util.*
@@ -79,9 +80,19 @@ class DlgAppPicker(
         }
 
         else -> {
-            @SuppressLint("InflateParams")
-            val listView: ListView =
-                activity.layoutInflater.inflate(R.layout.dlg_app_picker, null, false).cast()!!
+            val listView = ListView(activity).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                )
+                cacheColorHint = 0x00000000
+                divider = null
+                dividerHeight = 0
+                isScrollbarFadingEnabled = false
+                isVerticalFadingEdgeEnabled = true
+                setFadingEdgeLength(context.dp(20))
+                scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
+            }
             val adapter = MyAdapter()
             listView.adapter = adapter
             listView.onItemClickListener = adapter
@@ -115,8 +126,29 @@ class DlgAppPicker(
                 view = convertView
                 holder = view.tag?.cast()!!
             } else {
-                view = activity.layoutInflater.inflate(R.layout.lv_app_picker, parent, false)
-                holder = MyViewHolder(view)
+                val pad = activity.dp(12)
+                val itemView = LinearLayout(activity).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = android.view.Gravity.CENTER_VERTICAL
+                    setPadding(pad, pad, pad, pad)
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    )
+                }
+                val ivImage = ImageView(activity).apply {
+                    scaleType = ImageView.ScaleType.FIT_CENTER
+                }
+                val imgSize = activity.dp(32)
+                itemView.addView(ivImage, LinearLayout.LayoutParams(imgSize, imgSize).apply {
+                    marginEnd = pad
+                })
+                val tvText = TextView(activity)
+                itemView.addView(tvText, LinearLayout.LayoutParams(
+                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
+                ))
+                view = itemView
+                holder = MyViewHolder(ivImage, tvText)
                 view.tag = holder
             }
             holder.bind(list[idx])
@@ -129,10 +161,10 @@ class DlgAppPicker(
         }
     }
 
-    private inner class MyViewHolder(viewRoot: View) {
-
-        val ivImage: ImageView = viewRoot.findViewById(R.id.ivImage)
-        val tvText: TextView = viewRoot.findViewById(R.id.tvText)
+    private inner class MyViewHolder(
+        val ivImage: ImageView,
+        val tvText: TextView,
+    ) {
         var item: ListItem? = null
 
         fun bind(item: ListItem) {

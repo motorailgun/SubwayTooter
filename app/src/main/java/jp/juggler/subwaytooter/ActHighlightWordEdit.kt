@@ -7,13 +7,23 @@ import android.graphics.Color
 import android.media.RingtoneManager
 import android.os.Bundle
 import android.view.WindowManager
-import android.widget.CompoundButton
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import com.jrummyapps.android.colorpicker.dialogColorPicker
-import jp.juggler.subwaytooter.databinding.ActHighlightEditBinding
+import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.table.HighlightWord
 import jp.juggler.subwaytooter.table.daoHighlightWord
-import jp.juggler.subwaytooter.view.wrapTitleTextView
+import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.decodeJsonObject
@@ -25,23 +35,13 @@ import jp.juggler.util.log.showToast
 import jp.juggler.util.long
 import jp.juggler.util.string
 import jp.juggler.util.ui.ActivityResultHandler
-import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.decodeRingtonePickerResult
-import jp.juggler.util.ui.isEnabledAlpha
-import jp.juggler.util.ui.setContentViewAndInsets
-import jp.juggler.util.ui.setNavigationBack
-import org.jetbrains.anko.textColor
 
-class ActHighlightWordEdit
-    : AppCompatActivity(),
-    CompoundButton.OnCheckedChangeListener {
+class ActHighlightWordEdit : ComponentActivity() {
 
     companion object {
 
         internal val log = LogCategory("ActHighlightWordEdit")
-
-        private const val COLOR_DIALOG_ID_TEXT = 1
-        private const val COLOR_DIALOG_ID_BACKGROUND = 2
 
         private const val STATE_ITEM = "item"
         private const val EXTRA_ITEM_ID = "itemId"
@@ -60,17 +60,37 @@ class ActHighlightWordEdit
 
     internal lateinit var item: HighlightWord
 
-    private val views by lazy {
-        ActHighlightEditBinding.inflate(layoutInflater)
-    }
-
-    private var bBusy = false
+    private val nameState = mutableStateOf("")
+    private val colorFgState = mutableIntStateOf(0)
+    private val colorBgState = mutableIntStateOf(0)
+    private val soundEnabledState = mutableStateOf(false)
+    private val speechEnabledState = mutableStateOf(false)
 
     private val arNotificationSound = ActivityResultHandler(log) { r ->
         r.decodeRingtonePickerResult?.let { uri ->
             item.sound_uri = uri.toString()
             item.sound_type = HighlightWord.SOUND_TYPE_CUSTOM
-            showSound()
+            syncFromItem()
+        }
+    }
+
+    private fun syncFromItem() {
+        soundEnabledState.value = item.sound_type != HighlightWord.SOUND_TYPE_NONE
+        speechEnabledState.value = item.speech != 0
+        colorFgState.intValue = item.color_fg
+        colorBgState.intValue = item.color_bg
+    }
+
+    private fun syncToItem() {
+        item.name = nameState.value.trim { it <= ' ' || it == '　' }
+        item.sound_type = when {
+            !soundEnabledState.value -> HighlightWord.SOUND_TYPE_NONE
+            item.sound_uri?.notEmpty() == null -> HighlightWord.SOUND_TYPE_DEFAULT
+            else -> HighlightWord.SOUND_TYPE_CUSTOM
+        }
+        item.speech = when (speechEnabledState.value) {
+            false -> 0
+            else -> 1
         }
     }
 
@@ -87,10 +107,9 @@ class ActHighlightWordEdit
 
         arNotificationSound.register(this)
         App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
-        initUI()
-        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
+        val stColorScheme = getStColorTheme()
 
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
         setResult(RESULT_CANCELED)
 
         launchAndShowError {
@@ -98,13 +117,10 @@ class ActHighlightWordEdit
                 savedInstanceState?.getString(STATE_ITEM)
                     ?.decodeJsonObject()
                     ?.let { return HighlightWord(it) }
-
                 intent?.string(EXTRA_INITIAL_TEXT)
                     ?.let { return HighlightWord(it) }
-
                 intent?.long(EXTRA_ITEM_ID)
                     ?.let { return daoHighlightWord.load(it) }
-
                 return null
             }
 
@@ -116,106 +132,164 @@ class ActHighlightWordEdit
             }
 
             this@ActHighlightWordEdit.item = item
+            nameState.value = item.name ?: ""
+            syncFromItem()
 
-            views.etName.setText(item.name)
-            showSound()
-            showColor()
+            setContent {
+                StScreen(
+                    stColorScheme = stColorScheme,
+                    title = stringResource(R.string.highlight_word),
+                    onBack = { finish() },
+                ) { contentPadding ->
+                    HighlightEditContent(Modifier.padding(contentPadding))
+                }
+            }
         }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         try {
-            // ui may not initialized yet.
-            uiToData()
+            syncToItem()
         } catch (ex: Throwable) {
-            log.e(ex, "uiToData failed.")
+            log.e(ex, "syncToItem failed.")
         }
         item.encodeJson().toString().let { outState.putString(STATE_ITEM, it) }
     }
 
-    private fun initUI() {
-        setSupportActionBar(views.toolbar)
-        wrapTitleTextView()
-        setNavigationBack(views.toolbar)
-        fixHorizontalMargin(views.llContent)
-
-        views.swSound.setOnCheckedChangeListener(this)
-        views.swSpeech.setOnCheckedChangeListener(this)
-
-        setSwitchColor(views.swSound)
-        setSwitchColor(views.swSpeech)
-
-        views.btnDiscard.setOnClickListener { finish() }
-        views.btnSave.setOnClickListener { save() }
-        views.btnTextColorEdit.setOnClickListener {
-            launchAndShowError {
-                item.color_fg = Color.BLACK or dialogColorPicker(
-                    colorInitial = item.color_fg.notZero(),
-                    alphaEnabled = false,
+    @Composable
+    private fun HighlightEditContent(modifier: Modifier) {
+        Column(modifier = modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                // Keyword
+                HorizontalDivider()
+                Text(stringResource(R.string.keyword))
+                val name by nameState
+                val fgColor = colorFgState.intValue
+                val bgColor = colorBgState.intValue
+                val textColor = fgColor.notZero()
+                    ?.let { androidx.compose.ui.graphics.Color(it.toLong() or 0xFF000000L) }
+                    ?: MaterialTheme.colorScheme.onSurface
+                val bgComposeColor = when (bgColor) {
+                    0 -> androidx.compose.ui.graphics.Color.Transparent
+                    else -> androidx.compose.ui.graphics.Color(bgColor.toLong() or 0xFF000000L)
+                }
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { nameState.value = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = textColor,
+                        unfocusedTextColor = textColor,
+                        focusedContainerColor = bgComposeColor,
+                        unfocusedContainerColor = bgComposeColor,
+                    ),
                 )
-                showColor()
+
+                // Text color
+                HorizontalDivider()
+                Text(stringResource(R.string.text_color))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = {
+                        launchAndShowError {
+                            item.color_fg = Color.BLACK or dialogColorPicker(
+                                colorInitial = item.color_fg.notZero(),
+                                alphaEnabled = false,
+                            )
+                            colorFgState.intValue = item.color_fg
+                        }
+                    }) { Text(stringResource(R.string.edit)) }
+                    Button(onClick = {
+                        item.color_fg = 0
+                        colorFgState.intValue = 0
+                    }) { Text(stringResource(R.string.reset)) }
+                }
+
+                // Background color
+                HorizontalDivider()
+                Text(stringResource(R.string.background_color))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = {
+                        launchAndShowError {
+                            item.color_bg = dialogColorPicker(
+                                colorInitial = item.color_bg.notZero(),
+                                alphaEnabled = true,
+                            ).notZero() ?: 0x01000000
+                            colorBgState.intValue = item.color_bg
+                        }
+                    }) { Text(stringResource(R.string.edit)) }
+                    Button(onClick = {
+                        item.color_bg = 0
+                        colorBgState.intValue = 0
+                    }) { Text(stringResource(R.string.reset)) }
+                }
+
+                // Notification sound
+                HorizontalDivider()
+                Text(stringResource(R.string.notification_sound))
+                val soundEnabled by soundEnabledState
+                Switch(
+                    checked = soundEnabled,
+                    onCheckedChange = {
+                        soundEnabledState.value = it
+                        if (!it) {
+                            item.sound_type = HighlightWord.SOUND_TYPE_NONE
+                        } else if (item.sound_uri?.notEmpty() == null) {
+                            item.sound_type = HighlightWord.SOUND_TYPE_DEFAULT
+                        } else {
+                            item.sound_type = HighlightWord.SOUND_TYPE_CUSTOM
+                        }
+                    },
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { openNotificationSoundPicker() }) {
+                        Text(stringResource(R.string.edit))
+                    }
+                    Button(onClick = {
+                        item.sound_uri = null
+                        item.sound_type = when {
+                            soundEnabled -> HighlightWord.SOUND_TYPE_DEFAULT
+                            else -> HighlightWord.SOUND_TYPE_NONE
+                        }
+                        syncFromItem()
+                    }) { Text(stringResource(R.string.reset)) }
+                    Button(onClick = {
+                        ActHighlightWordList.sound(this@ActHighlightWordEdit, item)
+                    }) { Text(stringResource(R.string.test)) }
+                }
+
+                // Speech
+                HorizontalDivider()
+                Text(stringResource(R.string.enable_speech))
+                val speechEnabled by speechEnabledState
+                Switch(
+                    checked = speechEnabled,
+                    onCheckedChange = { speechEnabledState.value = it },
+                )
             }
-        }
-        views.btnTextColorReset.setOnClickListener {
-            item.color_fg = 0
-            showColor()
-        }
-        views.btnBackgroundColorEdit.setOnClickListener {
-            launchAndShowError {
-                item.color_bg = dialogColorPicker(
-                    colorInitial = item.color_bg.notZero(),
-                    alphaEnabled = true,
-                ).notZero() ?: 0x01000000
-                showColor()
+
+            // Bottom button bar
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                TextButton(
+                    onClick = { finish() },
+                    modifier = Modifier.weight(1f),
+                ) { Text(stringResource(R.string.discard)) }
+                TextButton(
+                    onClick = { save() },
+                    modifier = Modifier.weight(1f),
+                ) { Text(stringResource(R.string.save)) }
             }
-        }
-        views.btnBackgroundColorReset.setOnClickListener {
-            item.color_bg = 0
-            showColor()
-        }
-        views.btnNotificationSoundEdit.setOnClickListener { openNotificationSoundPicker() }
-        views.btnNotificationSoundReset.setOnClickListener {
-            item.sound_uri = null
-            item.sound_type = when {
-                views.swSound.isChecked -> HighlightWord.SOUND_TYPE_DEFAULT
-                else -> HighlightWord.SOUND_TYPE_NONE
-            }
-            showSound()
-        }
-        views.btnNotificationSoundTest.setOnClickListener {
-            ActHighlightWordList.sound(this, item)
-        }
-    }
-
-    override fun onCheckedChanged(buttonView: CompoundButton, isChecked: Boolean) {
-        if (bBusy) return
-        uiToData()
-        showSound()
-    }
-
-    //////////////////////////////////////////////////////////////////
-
-    private fun showSound() {
-        bBusy = true
-        try {
-            val isSoundEnabled = item.sound_type != HighlightWord.SOUND_TYPE_NONE
-            views.btnNotificationSoundTest.isEnabledAlpha = isSoundEnabled
-            views.swSound.isChecked = isSoundEnabled
-            views.swSpeech.isChecked = item.speech != 0
-        } finally {
-            bBusy = false
-        }
-    }
-
-    private fun showColor() {
-        bBusy = true
-        try {
-            views.etName.setBackgroundColor(item.color_bg) // may 0
-            views.etName.textColor =
-                item.color_fg.notZero() ?: attrColor(android.R.attr.textColorPrimary)
-        } finally {
-            bBusy = false
         }
     }
 
@@ -234,24 +308,9 @@ class ActHighlightWordEdit
         arNotificationSound.launch(chooser)
     }
 
-    private fun uiToData() {
-        item.name = views.etName.text.toString().trim { it <= ' ' || it == '　' }
-
-        item.sound_type = when {
-            !views.swSound.isChecked -> HighlightWord.SOUND_TYPE_NONE
-            item.sound_uri?.notEmpty() == null -> HighlightWord.SOUND_TYPE_DEFAULT
-            else -> HighlightWord.SOUND_TYPE_CUSTOM
-        }
-
-        item.speech = when (views.swSpeech.isChecked) {
-            false -> 0
-            else -> 1
-        }
-    }
-
     private fun save() {
         launchAndShowError {
-            uiToData()
+            syncToItem()
             val name = item.name
 
             if (name.isNullOrBlank()) {

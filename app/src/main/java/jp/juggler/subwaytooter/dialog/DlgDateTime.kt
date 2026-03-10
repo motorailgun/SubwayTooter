@@ -1,13 +1,13 @@
 package jp.juggler.subwaytooter.dialog
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Dialog
 import android.provider.Settings
-import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.DatePicker
+import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TimePicker
 import jp.juggler.subwaytooter.R
 import jp.juggler.util.ui.dismissSafe
@@ -15,26 +15,65 @@ import java.util.*
 
 class DlgDateTime(
     val activity: Activity,
-) : DatePicker.OnDateChangedListener, View.OnClickListener {
+) {
 
     private lateinit var datePicker: DatePicker
     private lateinit var timePicker: TimePicker
-    private lateinit var btnCancel: Button
-    private lateinit var btnOk: Button
     private lateinit var dialog: Dialog
 
     private lateinit var callback: (Long) -> Unit
 
-    @SuppressLint("InflateParams")
     fun open(initialValue: Long, callback: (Long) -> Unit) {
         this.callback = callback
 
-        val view = activity.layoutInflater.inflate(R.layout.dlg_date_time, null, false)
+        datePicker = DatePicker(activity).apply {
+            calendarViewShown = false
+        }
+        timePicker = TimePicker(activity)
 
-        datePicker = view.findViewById(R.id.datePicker)
-        timePicker = view.findViewById(R.id.timePicker)
-        btnCancel = view.findViewById(R.id.btnCancel)
-        btnOk = view.findViewById(R.id.btnOk)
+        val innerLayout = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(datePicker, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply {
+                gravity = android.view.Gravity.CENTER_HORIZONTAL
+            })
+            addView(timePicker, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply {
+                gravity = android.view.Gravity.CENTER_HORIZONTAL
+            })
+        }
+
+        val scrollView = ScrollView(activity).apply {
+            addView(innerLayout)
+        }
+
+        val btnCancel = Button(activity, null, android.R.attr.buttonBarButtonStyle).apply {
+            setText(R.string.cancel)
+        }
+        val btnOk = Button(activity, null, android.R.attr.buttonBarButtonStyle).apply {
+            setText(R.string.ok)
+        }
+
+        val buttonBar = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(btnCancel, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(btnOk, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        }
+
+        val root = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(scrollView, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f,
+            ))
+            addView(buttonBar, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ))
+        }
 
         val c = GregorianCalendar.getInstance(TimeZone.getDefault())
         c.timeInMillis = when (initialValue) {
@@ -46,7 +85,7 @@ class DlgDateTime(
             c.get(Calendar.YEAR),
             c.get(Calendar.MONTH),
             c.get(Calendar.DAY_OF_MONTH),
-            this
+            null
         )
 
         timePicker.hour = c.get(Calendar.HOUR_OF_DAY)
@@ -59,36 +98,19 @@ class DlgDateTime(
             }
         )
 
-        btnCancel.setOnClickListener(this)
-        btnOk.setOnClickListener(this)
+        btnCancel.setOnClickListener { dialog.cancel() }
+        btnOk.setOnClickListener {
+            dialog.dismissSafe()
+            this.callback(getTime())
+        }
 
         dialog = Dialog(activity)
-        dialog.setContentView(view)
+        dialog.setContentView(root)
         dialog.window?.setLayout(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT
         )
         dialog.show()
-    }
-
-    override fun onClick(v: View) {
-        when (v.id) {
-            R.id.btnCancel -> dialog.cancel()
-
-            R.id.btnOk -> {
-                dialog.dismissSafe()
-                callback(getTime())
-            }
-        }
-    }
-
-    override fun onDateChanged(
-        view: DatePicker,
-        year: Int,
-        monthOfYear: Int,
-        dayOfMonth: Int,
-    ) {
-        // nothing to do
     }
 
     private fun getTime(): Long {

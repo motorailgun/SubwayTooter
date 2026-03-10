@@ -6,13 +6,24 @@ import android.content.ClipData
 import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.*
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.os.SystemClock
+import android.util.TypedValue
+import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.view.Window
+import android.webkit.WebView
+import android.widget.CheckBox
+import android.widget.FrameLayout
+import android.widget.ImageButton
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.TextView
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
@@ -27,10 +38,15 @@ import androidx.media3.exoplayer.source.LoadEventInfo
 import androidx.media3.exoplayer.source.MediaLoadData
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.MediaSourceEventListener
+import androidx.media3.ui.PlayerView
+import com.google.android.flexbox.AlignItems
+import com.google.android.flexbox.FlexDirection
+import com.google.android.flexbox.FlexWrap
+import com.google.android.flexbox.FlexboxLayout
+import com.google.android.flexbox.JustifyContent
 import jp.juggler.subwaytooter.api.*
 import jp.juggler.subwaytooter.api.entity.*
 import jp.juggler.subwaytooter.api.entity.TootAttachment.Companion.tootAttachmentJson
-import jp.juggler.subwaytooter.databinding.ActMediaViewerBinding
 import jp.juggler.subwaytooter.dialog.actionsDialog
 import jp.juggler.subwaytooter.drawable.MediaBackgroundDrawable
 import jp.juggler.subwaytooter.itemviewholder.reUrlGif
@@ -61,6 +77,141 @@ import java.util.*
 import javax.net.ssl.HttpsURLConnection
 import kotlin.math.max
 import kotlin.math.min
+
+data class ActMediaViewerViews(
+    val root: LinearLayout,
+    val svDescription: ScrollView,
+    val tvDescription: TextView,
+    val wvOther: WebView,
+    val pbvImage: PinchBitmapView,
+    val pvVideo: PlayerView,
+    val tvError: TextView,
+    val btnMore: ImageButton,
+    val btnDownload: ImageButton,
+    val btnNext: ImageButton,
+    val btnPrevious: ImageButton,
+    val tvStatus: TextView,
+    val cbMute: CheckBox,
+)
+
+fun createActMediaViewerViews(context: android.content.Context): ActMediaViewerViews {
+    val matchParent = ViewGroup.LayoutParams.MATCH_PARENT
+    val wrapContent = ViewGroup.LayoutParams.WRAP_CONTENT
+    val tintColor = ColorStateList.valueOf(context.attrColor(R.attr.colorTextContent))
+
+    val tvDescription = TextView(context).apply {
+        layoutParams = ViewGroup.LayoutParams(matchParent, wrapContent)
+        val padH = context.dp(12)
+        val padV = context.dp(6)
+        setPadding(padH, padV, padH, padV)
+    }
+
+    val svDescription = ScrollView(context).apply {
+        layoutParams = LinearLayout.LayoutParams(matchParent, context.dp(64))
+        isScrollbarFadingEnabled = false
+        isVerticalFadingEdgeEnabled = true
+        setFadingEdgeLength(context.dp(14))
+        addView(tvDescription)
+    }
+
+    val wvOther = WebView(context).apply {
+        layoutParams = FrameLayout.LayoutParams(matchParent, matchParent)
+    }
+
+    val pbvImage = PinchBitmapView(context).apply {
+        layoutParams = FrameLayout.LayoutParams(matchParent, matchParent)
+    }
+
+    val pvVideo = PlayerView(context).apply {
+        layoutParams = FrameLayout.LayoutParams(matchParent, matchParent)
+    }
+
+    val tvError = TextView(context).apply {
+        layoutParams = FrameLayout.LayoutParams(matchParent, matchParent)
+        gravity = Gravity.CENTER
+        val pad = context.dp(12)
+        setPadding(pad, pad, pad, pad)
+    }
+
+    val contentFrame = FrameLayout(context).apply {
+        layoutParams = LinearLayout.LayoutParams(matchParent, 0, 1f)
+        addView(wvOther)
+        addView(pbvImage)
+        addView(pvVideo)
+        addView(tvError)
+    }
+
+    fun makeImageButton48(iconRes: Int, contentDescRes: Int) = ImageButton(context).apply {
+        layoutParams = ViewGroup.LayoutParams(context.dp(48), context.dp(48))
+        minimumWidth = context.dp(48)
+        setImageResource(iconRes)
+        imageTintList = tintColor
+        contentDescription = context.getString(contentDescRes)
+    }
+
+    val btnMore = makeImageButton48(R.drawable.ic_more, R.string.more)
+    val btnDownload = makeImageButton48(R.drawable.ic_download, R.string.download)
+    val btnNext = makeImageButton48(R.drawable.ic_arrow_end, R.string.next)
+    val btnPrevious = makeImageButton48(R.drawable.ic_arrow_start, R.string.previous)
+
+    val tvStatus = TextView(context).apply {
+        layoutParams = FlexboxLayout.LayoutParams(wrapContent, context.dp(48)).apply {
+            marginStart = context.dp(12)
+        }
+        alpha = 0.5f
+        gravity = Gravity.END or Gravity.CENTER_VERTICAL
+        setTextColor(0xffffffff.toInt())
+        setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12f)
+    }
+
+    val cbMute = CheckBox(context).apply {
+        layoutParams = FlexboxLayout.LayoutParams(wrapContent, context.dp(48)).apply {
+            marginStart = context.dp(12)
+        }
+        setText(R.string.mute)
+        visibility = View.GONE
+    }
+
+    FlexboxLayout(context).apply {
+        layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
+        flexDirection = FlexDirection.ROW_REVERSE
+        flexWrap = FlexWrap.WRAP
+        alignItems = AlignItems.FLEX_START
+        justifyContent = JustifyContent.FLEX_START
+        addView(btnMore)
+        addView(btnDownload)
+        addView(btnNext)
+        addView(btnPrevious)
+        addView(tvStatus)
+        addView(cbMute)
+    }
+
+    (tvStatus.layoutParams as FlexboxLayout.LayoutParams).flexGrow = 1f
+
+    val root = LinearLayout(context).apply {
+        layoutParams = ViewGroup.LayoutParams(matchParent, matchParent)
+        orientation = LinearLayout.VERTICAL
+        addView(svDescription)
+        addView(contentFrame)
+        addView(tvStatus.parent as ViewGroup) // flFooter
+    }
+
+    return ActMediaViewerViews(
+        root = root,
+        svDescription = svDescription,
+        tvDescription = tvDescription,
+        wvOther = wvOther,
+        pbvImage = pbvImage,
+        pvVideo = pvVideo,
+        tvError = tvError,
+        btnMore = btnMore,
+        btnDownload = btnDownload,
+        btnNext = btnNext,
+        btnPrevious = btnPrevious,
+        tvStatus = tvStatus,
+        cbMute = cbMute,
+    )
+}
 
 class ActMediaViewer : AppCompatActivity(), View.OnClickListener {
 
@@ -153,7 +304,7 @@ class ActMediaViewer : AppCompatActivity(), View.OnClickListener {
     private var showDescription = true
 
     private val views by lazy {
-        ActMediaViewerBinding.inflate(layoutInflater)
+        createActMediaViewerViews(this)
     }
 
     private lateinit var exoPlayer: ExoPlayer
@@ -367,8 +518,8 @@ class ActMediaViewer : AppCompatActivity(), View.OnClickListener {
 
         views.btnPrevious.setOnClickListener(this)
         views.btnNext.setOnClickListener(this)
-        findViewById<View>(R.id.btnDownload).setOnClickListener(this)
-        findViewById<View>(R.id.btnMore).setOnClickListener(this)
+        views.btnDownload.setOnClickListener(this)
+        views.btnMore.setOnClickListener(this)
 
         views.cbMute.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {

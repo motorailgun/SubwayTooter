@@ -3,9 +3,13 @@ package jp.juggler.subwaytooter
 import android.annotation.SuppressLint
 import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.view.Gravity
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DiffUtil
@@ -14,8 +18,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import jp.juggler.subwaytooter.api.entity.NotificationType.Companion.toNotificationType
-import jp.juggler.subwaytooter.databinding.ActPushMessageListBinding
-import jp.juggler.subwaytooter.databinding.LvPushMessageBinding
 import jp.juggler.subwaytooter.dialog.actionsDialog
 import jp.juggler.subwaytooter.dialog.runInProgress
 import jp.juggler.subwaytooter.push.PushMessageIconColor
@@ -37,10 +39,7 @@ import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.dialogOrToast
 import jp.juggler.util.os.saveToDownload
 import jp.juggler.util.time.formatLocalTime
-import jp.juggler.util.ui.resDrawable
-import jp.juggler.util.ui.setContentViewAndInsets
-import jp.juggler.util.ui.setNavigationBack
-import jp.juggler.util.ui.wrapAndTint
+import jp.juggler.util.ui.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -51,9 +50,9 @@ class ActPushMessageList : AppCompatActivity() {
         private val log = LogCategory("ActPushMessageList")
     }
 
-    private val views by lazy {
-        ActPushMessageListBinding.inflate(layoutInflater)
-    }
+    private lateinit var toolbar: Toolbar
+    private lateinit var rvMessages: RecyclerView
+    private lateinit var rootView: LinearLayout
 
     private val listAdapter = MyAdapter()
 
@@ -68,17 +67,52 @@ class ActPushMessageList : AppCompatActivity() {
         daoSavedAccount.loadRealAccounts().associateBy { it.acct }
     }
 
+    private fun createViews() {
+        val tv = android.util.TypedValue()
+        theme.resolveAttribute(android.R.attr.actionBarSize, tv, true)
+
+        toolbar = Toolbar(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                resources.getDimensionPixelSize(tv.resourceId)
+            )
+            setBackgroundResource(R.drawable.action_bar_bg)
+            elevation = dpFloat(4)
+        }
+
+        rvMessages = RecyclerView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0, 1f
+            )
+            setBackgroundColor(attrColor(R.attr.colorMainBackground))
+            isScrollbarFadingEnabled = false
+            scrollBarStyle = RecyclerView.SCROLLBARS_OUTSIDE_OVERLAY
+        }
+
+        rootView = LinearLayout(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.MATCH_PARENT
+            )
+            orientation = LinearLayout.VERTICAL
+            addView(toolbar)
+            addView(rvMessages)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         prNotification.register(this)
         prNotification.checkOrLaunch()
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
-        setSupportActionBar(views.toolbar)
+        createViews()
+        setContentViewAndInsets(rootView)
+        setSupportActionBar(toolbar)
         wrapTitleTextView()
-        setNavigationBack(views.toolbar)
+        setNavigationBack(toolbar)
 
-        views.rvMessages.also {
+        rvMessages.also {
             val dividerItemDecoration = DividerItemDecoration(
                 this,
                 LinearLayout.VERTICAL,
@@ -180,15 +214,62 @@ class ActPushMessageList : AppCompatActivity() {
     @SuppressLint("SetTextI18n")
     private inner class MyViewHolder(
         parent: ViewGroup,
-        val views: LvPushMessageBinding =
-            LvPushMessageBinding.inflate(layoutInflater, parent, false),
-    ) : RecyclerView.ViewHolder(views.root) {
-
-        var lastItem: PushMessage? = null
+    ) : RecyclerView.ViewHolder(
+        LinearLayout(parent.context).apply {
+            layoutParams = RecyclerView.LayoutParams(
+                RecyclerView.LayoutParams.MATCH_PARENT,
+                RecyclerView.LayoutParams.WRAP_CONTENT
+            )
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.TOP
+            isBaselineAligned = false
+            val pad4 = dp(4)
+            val pad12 = dp(12)
+            setPadding(pad12, pad4, pad12, pad4)
+        }
+    ) {
+        val ivSmall: ImageView
+        val ivLarge: ImageView
+        val tvText: TextView
 
         init {
-            views.root.setOnClickListener { lastItem?.let { itemActions(it) } }
+            val context = parent.context
+            val size48 = context.dp(48)
+
+            val iconColumn = LinearLayout(context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                orientation = LinearLayout.VERTICAL
+            }
+            ivSmall = ImageView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(size48, size48)
+                importantForAccessibility = ImageView.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }
+            ivLarge = ImageView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(size48, size48)
+                importantForAccessibility = ImageView.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }
+            iconColumn.addView(ivSmall)
+            iconColumn.addView(ivLarge)
+
+            val pad12 = context.dp(12)
+            val pad4 = context.dp(4)
+            tvText = TextView(context).apply {
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                gravity = Gravity.CENTER_VERTICAL
+                minimumHeight = context.dp(40)
+                setPadding(pad12, pad4, pad12, pad4)
+            }
+
+            (itemView as LinearLayout).addView(iconColumn)
+            (itemView as LinearLayout).addView(tvText)
+
+            itemView.setOnClickListener { lastItem?.let { itemActions(it) } }
         }
+
+        var lastItem: PushMessage? = null
 
         fun bind(pm: PushMessage?) {
             pm ?: return
@@ -196,16 +277,16 @@ class ActPushMessageList : AppCompatActivity() {
             val type = pm.notificationType?.toNotificationType()
             val iconColor = type.pushMessageIconAndColor()
 
-            Glide.with(views.ivSmall)
+            Glide.with(ivSmall)
                 .load(pm.iconSmall)
                 .error(tintIcon(pm, iconColor))
-                .into(views.ivSmall)
+                .into(ivSmall)
 
-            Glide.with(views.ivLarge)
+            Glide.with(ivLarge)
                 .load(pm.iconLarge)
-                .into(views.ivLarge)
+                .into(ivLarge)
 
-            views.tvText.text = arrayOf(
+            tvText.text = arrayOf(
                 "when: ${pm.timestamp.formatLocalTime()}",
                 pm.timeDismiss.takeIf { it > 0L }?.let { "既読: ${it.formatLocalTime()}" },
                 "to: ${pm.loginAcct}",
@@ -245,7 +326,7 @@ class ActPushMessageList : AppCompatActivity() {
                 if (oldScrollPos == 0) {
                     launchAndShowError {
                         delay(50L)
-                        views.rvMessages.smoothScrollToPosition(0)
+                        rvMessages.smoothScrollToPosition(0)
                     }
                 }
             }

@@ -7,10 +7,10 @@ import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.view.Gravity
 import android.view.View
-import android.widget.CheckedTextView
-import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.PopupWindow
+import android.widget.ScrollView
+import android.widget.TextView
 import androidx.core.content.ContextCompat
 import jp.juggler.subwaytooter.App1
 import jp.juggler.subwaytooter.R
@@ -20,6 +20,8 @@ import jp.juggler.util.*
 import jp.juggler.util.data.*
 import jp.juggler.util.log.*
 import jp.juggler.util.ui.*
+import android.view.ViewGroup
+import android.widget.EditText
 import java.util.*
 
 @SuppressLint("InflateParams")
@@ -61,8 +63,24 @@ internal class PopupAutoCompleteAcct(
 
         popupWidth = (0.5f + 240f * density).toInt()
 
-        val viewRoot = activity.layoutInflater.inflate(R.layout.acct_complete_popup, null, false)
-        llItems = viewRoot.findViewById(R.id.llItems)
+        llItems = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
+        }
+        val viewRoot = ScrollView(activity).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT,
+            )
+            isScrollbarFadingEnabled = false
+            isVerticalFadingEdgeEnabled = true
+            setFadingEdgeLength((14f * density + 0.5f).toInt())
+            scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
+            addView(llItems)
+        }
         //
         acctPopup = PopupWindow(activity)
         acctPopup.setBackgroundDrawable(
@@ -73,6 +91,21 @@ internal class PopupAutoCompleteAcct(
         )
         acctPopup.contentView = viewRoot
         acctPopup.isTouchable = true
+    }
+
+    private fun createDropdownItem(): TextView {
+        val minH = (48f * density + 0.5f).toInt()
+        return TextView(activity).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
+            minHeight = minH
+            gravity = Gravity.CENTER_VERTICAL
+            val pad = (8f * density + 0.5f).toInt()
+            setPadding(pad, pad, pad, pad)
+            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
+        }
     }
 
     fun setList(
@@ -89,8 +122,7 @@ internal class PopupAutoCompleteAcct(
         popupRows = 0
 
         run {
-            val v = activity.layoutInflater
-                .inflate(R.layout.lv_spinner_dropdown, llItems, false) as CheckedTextView
+            val v = createDropdownItem()
             v.setTextColor(activity.attrColor(android.R.attr.textColorPrimary))
             v.setText(R.string.close)
             v.setOnClickListener { acctPopup.dismiss() }
@@ -99,8 +131,7 @@ internal class PopupAutoCompleteAcct(
         }
 
         if (pickerCaption != null && pickerCallback != null) {
-            val v = activity.layoutInflater
-                .inflate(R.layout.lv_spinner_dropdown, llItems, false) as CheckedTextView
+            val v = createDropdownItem()
             v.setTextColor(activity.attrColor(android.R.attr.textColorPrimary))
             v.text = pickerCaption
             v.setOnClickListener {
@@ -112,8 +143,7 @@ internal class PopupAutoCompleteAcct(
         }
 
         acctList?.forEach { acct ->
-            val v = activity.layoutInflater
-                .inflate(R.layout.lv_spinner_dropdown, llItems, false) as CheckedTextView
+            val v = createDropdownItem()
             v.setTextColor(activity.attrColor(android.R.attr.textColorPrimary))
             v.text = acct
             if (acct is Spannable) {

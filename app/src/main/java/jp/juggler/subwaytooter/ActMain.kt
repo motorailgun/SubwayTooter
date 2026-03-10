@@ -78,7 +78,6 @@ import jp.juggler.subwaytooter.column.removeColumnViewHolderByActivity
 import jp.juggler.subwaytooter.column.saveScrollPosition
 import jp.juggler.subwaytooter.column.startLoading
 import jp.juggler.subwaytooter.column.viewHolder
-import jp.juggler.subwaytooter.databinding.ActMainBinding
 import jp.juggler.subwaytooter.dialog.DlgQuickTootMenu
 import jp.juggler.subwaytooter.itemviewholder.StatusButtonsPopup
 import jp.juggler.subwaytooter.notification.checkNotificationImmediateAll
@@ -194,7 +193,25 @@ class ActMain : AppCompatActivity(),
     var quickPostVisibility: TootVisibility = TootVisibility.AccountSetting
 
     val views by lazy {
-        ActMainBinding.inflate(layoutInflater)
+        val root = layoutInflater.inflate(R.layout.act_main, null, false)
+        ActMainViews(
+            root = root,
+            drawerLayout = root.findViewById(R.id.drawer_layout),
+            llFormRoot = root.findViewById(R.id.llFormRoot),
+            tvEmpty = root.findViewById(R.id.tvEmpty),
+            btnMenu = root.findViewById(R.id.btnMenu),
+            svColumnStrip = root.findViewById(R.id.svColumnStrip),
+            llColumnStrip = root.findViewById(R.id.llColumnStrip),
+            btnToot = root.findViewById(R.id.btnToot),
+            llQuickTootBar = root.findViewById(R.id.llQuickTootBar),
+            btnQuickTootMenu = root.findViewById(R.id.btnQuickTootMenu),
+            etQuickToot = root.findViewById(R.id.etQuickToot),
+            ivQuickTootAccount = root.findViewById(R.id.ivQuickTootAccount),
+            btnQuickToot = root.findViewById(R.id.btnQuickToot),
+            vBottomPadding = root.findViewById(R.id.vBottomPadding),
+            vFooterDivider1 = root.findViewById(R.id.vFooterDivider1),
+            vFooterDivider2 = root.findViewById(R.id.vFooterDivider2),
+        )
     }
 
     lateinit var completionHelper: CompletionHelper

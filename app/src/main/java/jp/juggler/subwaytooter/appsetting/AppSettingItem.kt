@@ -4,9 +4,14 @@ import android.content.Context
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Build
+import android.text.TextUtils
+import android.view.Gravity
 import android.view.View
 import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.annotation.StringRes
@@ -40,6 +45,7 @@ import jp.juggler.subwaytooter.util.CustomShareTarget
 import jp.juggler.subwaytooter.util.openBrowser
 import jp.juggler.subwaytooter.util.reNotAllowedInUserAgent
 import jp.juggler.subwaytooter.util.userAgentDefault
+import jp.juggler.subwaytooter.view.MyTextView
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.cast
 import jp.juggler.util.data.intentOpenDocument
@@ -47,10 +53,10 @@ import jp.juggler.util.data.notZero
 import jp.juggler.util.log.showToast
 import jp.juggler.util.ui.InputTypeEx
 import jp.juggler.util.ui.attrColor
+import jp.juggler.util.ui.dp
 import jp.juggler.util.ui.getAdaptiveRippleDrawable
 import jp.juggler.util.ui.getAdaptiveRippleDrawableRound
 import kotlinx.coroutines.delay
-import org.jetbrains.anko.backgroundDrawable
 import java.util.concurrent.atomic.AtomicInteger
 
 enum class SettingType(val id: Int) {
@@ -102,7 +108,7 @@ class AppSettingItem(
     // used for EditText
     var inputType = InputTypeEx.text
 
-    var sampleLayoutId: Int = 0
+    var sampleViewCreator: ((LinearLayout) -> Unit)? = null
     var sampleUpdate: (ActAppSetting, View) -> Unit = { _, _ -> }
 
     var spinnerArgs: IntArray? = null
@@ -222,11 +228,11 @@ class AppSettingItem(
     }
 
     fun sample(
-        sampleLayoutId: Int = 0,
+        sampleViewCreator: ((LinearLayout) -> Unit)? = null,
         sampleUpdate: (ActAppSetting, View) -> Unit = { _, _ -> },
         // ,initializer : AppSettingItem.() -> Unit = {}
     ) = item(SettingType.Sample, pref, caption) {
-        this.sampleLayoutId = sampleLayoutId
+        this.sampleViewCreator = sampleViewCreator
         this.sampleUpdate = sampleUpdate
     }
 
@@ -253,6 +259,19 @@ class AppSettingItem(
         var SAMPLE_CCD_HEADER: AppSettingItem? = null
         var SAMPLE_CCD_BODY: AppSettingItem? = null
         var SAMPLE_FOOTER: AppSettingItem? = null
+
+        val idLlColumnHeader = View.generateViewId()
+        val idIvColumnHeader = View.generateViewId()
+        val idTvColumnName = View.generateViewId()
+        val idFlColumnBackground = View.generateViewId()
+        val idTvSampleAcct = View.generateViewId()
+        val idTvSampleContent = View.generateViewId()
+        val idLlFooterBG = View.generateViewId()
+        val idIvFooterMenu = View.generateViewId()
+        val idVFooterDivider1 = View.generateViewId()
+        val idVFooterDivider2 = View.generateViewId()
+        val idIvFooterToot = View.generateViewId()
+        val idVIndicator = View.generateViewId()
 
         var TIMELINE_FONT: AppSettingItem? = null
         var TIMELINE_FONT_BOLD: AppSettingItem? = null
@@ -284,7 +303,15 @@ val appSettingRoot = AppSettingItem(null, SettingType.Section, R.string.app_sett
 
         // sw(PrefB.bpMisskeyNotificationCheck, R.string.enable_misskey_notification_check)
 
-        sample(R.layout.setting_sample_notification_desc)
+        sample(sampleViewCreator = { parent ->
+            TextView(parent.context).apply {
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                )
+                setText(R.string.notification_on_off_desc)
+            }.let { parent.addView(it) }
+        })
     }
 
     section(R.string.behavior) {
@@ -910,7 +937,40 @@ val appSettingRoot = AppSettingItem(null, SettingType.Section, R.string.app_sett
 
         group(R.string.column_color_default) {
             AppSettingItem.SAMPLE_CCD_HEADER =
-                sample(R.layout.setting_sample_column_header) { activity, viewRoot ->
+                sample(sampleViewCreator = { parent ->
+                    val ctx = parent.context
+                    LinearLayout(ctx).apply {
+                        id = AppSettingItem.idLlColumnHeader
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        ).apply {
+                            bottomMargin = ctx.dp(6)
+                        }
+                        gravity = Gravity.CENTER_VERTICAL
+                        orientation = LinearLayout.HORIZONTAL
+                        setPadding(ctx.dp(12), ctx.dp(3), ctx.dp(12), ctx.dp(3))
+
+                        addView(ImageView(ctx).apply {
+                            id = AppSettingItem.idIvColumnHeader
+                            layoutParams = LinearLayout.LayoutParams(
+                                ctx.dp(32), ctx.dp(32)
+                            ).apply {
+                                marginEnd = ctx.dp(4)
+                            }
+                            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                            setImageResource(R.drawable.ic_bike)
+                        })
+
+                        addView(TextView(ctx).apply {
+                            id = AppSettingItem.idTvColumnName
+                            layoutParams = LinearLayout.LayoutParams(
+                                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
+                            )
+                            setText(R.string.federate_timeline)
+                        })
+                    }.let { parent.addView(it) }
+                }) { activity, viewRoot ->
                     showSampleCcdHeader(activity, viewRoot)
                 }
 
@@ -922,7 +982,54 @@ val appSettingRoot = AppSettingItem(null, SettingType.Section, R.string.app_sett
             }
 
             AppSettingItem.SAMPLE_CCD_BODY =
-                sample(R.layout.setting_sample_column_body) { activity, viewRoot ->
+                sample(sampleViewCreator = { parent ->
+                    val ctx = parent.context
+                    FrameLayout(ctx).apply {
+                        id = AppSettingItem.idFlColumnBackground
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        )
+
+                        addView(LinearLayout(ctx).apply {
+                            layoutParams = FrameLayout.LayoutParams(
+                                FrameLayout.LayoutParams.MATCH_PARENT,
+                                FrameLayout.LayoutParams.WRAP_CONTENT,
+                            )
+                            orientation = LinearLayout.VERTICAL
+                            val pad = ctx.dp(12)
+                            setPadding(pad, pad, pad, pad)
+
+                            addView(TextView(ctx).apply {
+                                id = AppSettingItem.idTvSampleAcct
+                                layoutParams = LinearLayout.LayoutParams(
+                                    LinearLayout.LayoutParams.MATCH_PARENT,
+                                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                                )
+                                ellipsize = TextUtils.TruncateAt.END
+                                gravity = Gravity.START
+                                maxLines = 1
+                                setText(R.string.acct_sample)
+                                setTextColor(ctx.attrColor(R.attr.colorTimeSmall))
+                                textSize = 12f
+                            })
+
+                            addView(MyTextView(ctx).apply {
+                                id = AppSettingItem.idTvSampleContent
+                                layoutParams = LinearLayout.LayoutParams(
+                                    LinearLayout.LayoutParams.MATCH_PARENT,
+                                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                                ).apply {
+                                    topMargin = ctx.dp(3)
+                                }
+                                gravity = Gravity.START
+                                setLineSpacing(0f, 1.1f)
+                                setText(R.string.content_sample)
+                                setTextColor(ctx.attrColor(R.attr.colorTextContent))
+                            })
+                        })
+                    }.let { parent.addView(it) }
+                }) { activity, viewRoot ->
                     showSampleColumnBody(activity, viewRoot)
                 }
 
@@ -941,7 +1048,89 @@ val appSettingRoot = AppSettingItem(null, SettingType.Section, R.string.app_sett
 
         group(R.string.footer_color) {
             AppSettingItem.SAMPLE_FOOTER =
-                sample(R.layout.setting_sample_footer) { activity, viewRoot ->
+                sample(sampleViewCreator = { parent ->
+                    val ctx = parent.context
+                    FrameLayout(ctx).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                        )
+
+                        addView(LinearLayout(ctx).apply {
+                            id = AppSettingItem.idLlFooterBG
+                            layoutParams = FrameLayout.LayoutParams(
+                                FrameLayout.LayoutParams.MATCH_PARENT,
+                                ctx.dp(48),
+                            )
+                            orientation = LinearLayout.HORIZONTAL
+                            setBackgroundColor(ctx.attrColor(R.attr.colorColumnStripBackground))
+
+                            addView(AppCompatImageView(ctx).apply {
+                                id = AppSettingItem.idIvFooterMenu
+                                layoutParams = LinearLayout.LayoutParams(ctx.dp(48), ctx.dp(48))
+                                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                                setImageResource(R.drawable.ic_hamburger)
+                            })
+
+                            addView(View(ctx).apply {
+                                id = AppSettingItem.idVFooterDivider1
+                                layoutParams = LinearLayout.LayoutParams(
+                                    ctx.dp(1), LinearLayout.LayoutParams.MATCH_PARENT
+                                )
+                                setBackgroundColor(ctx.attrColor(R.attr.colorColumnStripBackground))
+                            })
+
+                            addView(View(ctx).apply {
+                                layoutParams = LinearLayout.LayoutParams(0, 0, 1f)
+                            })
+
+                            addView(HorizontalScrollView(ctx).apply {
+                                layoutParams = LinearLayout.LayoutParams(
+                                    0, LinearLayout.LayoutParams.MATCH_PARENT, 1f
+                                )
+                                isHorizontalFadingEdgeEnabled = true
+                                setFadingEdgeLength(ctx.dp(20))
+                                isFillViewport = true
+                                isHorizontalScrollBarEnabled = false
+
+                                addView(LinearLayout(ctx).apply {
+                                    layoutParams = FrameLayout.LayoutParams(
+                                        FrameLayout.LayoutParams.WRAP_CONTENT,
+                                        FrameLayout.LayoutParams.MATCH_PARENT,
+                                    )
+                                    orientation = LinearLayout.HORIZONTAL
+                                })
+                            })
+
+                            addView(View(ctx).apply {
+                                layoutParams = LinearLayout.LayoutParams(0, 0, 1f)
+                            })
+
+                            addView(View(ctx).apply {
+                                id = AppSettingItem.idVFooterDivider2
+                                layoutParams = LinearLayout.LayoutParams(
+                                    ctx.dp(1), LinearLayout.LayoutParams.MATCH_PARENT
+                                )
+                            })
+
+                            addView(AppCompatImageView(ctx).apply {
+                                id = AppSettingItem.idIvFooterToot
+                                layoutParams = LinearLayout.LayoutParams(ctx.dp(48), ctx.dp(48))
+                                contentDescription = ctx.getString(R.string.toot)
+                                setImageResource(R.drawable.ic_edit)
+                            })
+                        })
+
+                        addView(View(ctx).apply {
+                            id = AppSettingItem.idVIndicator
+                            layoutParams = FrameLayout.LayoutParams(
+                                ctx.dp(48), ctx.dp(2)
+                            ).apply {
+                                gravity = Gravity.CENTER_HORIZONTAL
+                            }
+                        })
+                    }.let { parent.addView(it) }
+                }) { activity, viewRoot ->
                     showSampleFooter(activity, viewRoot)
                 }
 
@@ -1074,9 +1263,9 @@ val appSettingRoot = AppSettingItem(null, SettingType.Section, R.string.app_sett
 }
 
 private fun showSampleCcdHeader(activity: ActAppSetting, viewRoot: View) {
-    val llColumnHeader: View = viewRoot.findViewById(R.id.llColumnHeader)
-    val ivColumnHeader: ImageView = viewRoot.findViewById(R.id.ivColumnHeader)
-    val tvColumnName: TextView = viewRoot.findViewById(R.id.tvColumnName)
+    val llColumnHeader: View = viewRoot.findViewById(AppSettingItem.idLlColumnHeader)
+    val ivColumnHeader: ImageView = viewRoot.findViewById(AppSettingItem.idIvColumnHeader)
+    val tvColumnName: TextView = viewRoot.findViewById(AppSettingItem.idTvColumnName)
 
     val colorColumnHeaderBg = PrefI.ipCcdHeaderBg.value
     val colorColumnHeaderFg = PrefI.ipCcdHeaderFg.value
@@ -1099,9 +1288,9 @@ private fun showSampleCcdHeader(activity: ActAppSetting, viewRoot: View) {
 }
 
 private fun showSampleColumnBody(activity: ActAppSetting, viewRoot: View) {
-    val flColumnBackground: View = viewRoot.findViewById(R.id.flColumnBackground)
-    val tvSampleAcct: TextView = viewRoot.findViewById(R.id.tvSampleAcct)
-    val tvSampleContent: TextView = viewRoot.findViewById(R.id.tvSampleContent)
+    val flColumnBackground: View = viewRoot.findViewById(AppSettingItem.idFlColumnBackground)
+    val tvSampleAcct: TextView = viewRoot.findViewById(AppSettingItem.idTvSampleAcct)
+    val tvSampleContent: TextView = viewRoot.findViewById(AppSettingItem.idTvSampleContent)
 
     val colorColumnBg = PrefI.ipCcdContentBg.value
     val colorColumnAcct = PrefI.ipCcdContentAcct.value
@@ -1121,12 +1310,12 @@ private fun showSampleColumnBody(activity: ActAppSetting, viewRoot: View) {
 }
 
 private fun showSampleFooter(activity: ActAppSetting, viewRoot: View) {
-    val ivFooterToot: AppCompatImageView = viewRoot.findViewById(R.id.ivFooterToot)
-    val ivFooterMenu: AppCompatImageView = viewRoot.findViewById(R.id.ivFooterMenu)
-    val llFooterBG: View = viewRoot.findViewById(R.id.llFooterBG)
-    val vFooterDivider1: View = viewRoot.findViewById(R.id.vFooterDivider1)
-    val vFooterDivider2: View = viewRoot.findViewById(R.id.vFooterDivider2)
-    val vIndicator: View = viewRoot.findViewById(R.id.vIndicator)
+    val ivFooterToot: AppCompatImageView = viewRoot.findViewById(AppSettingItem.idIvFooterToot)
+    val ivFooterMenu: AppCompatImageView = viewRoot.findViewById(AppSettingItem.idIvFooterMenu)
+    val llFooterBG: View = viewRoot.findViewById(AppSettingItem.idLlFooterBG)
+    val vFooterDivider1: View = viewRoot.findViewById(AppSettingItem.idVFooterDivider1)
+    val vFooterDivider2: View = viewRoot.findViewById(AppSettingItem.idVFooterDivider2)
+    val vIndicator: View = viewRoot.findViewById(AppSettingItem.idVIndicator)
 
     val footerButtonBgColor = PrefI.ipFooterButtonBgColor.value
     val footerButtonFgColor = PrefI.ipFooterButtonFgColor.value
@@ -1145,9 +1334,9 @@ private fun showSampleFooter(activity: ActAppSetting, viewRoot: View) {
     val colorButtonFg = footerButtonFgColor.notZero()
         ?: activity.attrColor(R.attr.colorRippleEffect)
 
-    ivFooterMenu.backgroundDrawable =
+    ivFooterMenu.background =
         getAdaptiveRippleDrawableRound(activity, colorButtonBg, colorButtonFg)
-    ivFooterToot.backgroundDrawable =
+    ivFooterToot.background =
         getAdaptiveRippleDrawableRound(activity, colorButtonBg, colorButtonFg)
 
     val csl = ColorStateList.valueOf(

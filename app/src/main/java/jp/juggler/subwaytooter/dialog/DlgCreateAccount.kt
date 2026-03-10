@@ -1,12 +1,13 @@
 package jp.juggler.subwaytooter.dialog
 
-import android.annotation.SuppressLint
 import android.app.Dialog
 import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import jp.juggler.subwaytooter.R
@@ -18,72 +19,214 @@ import jp.juggler.subwaytooter.util.LinkHelper
 import jp.juggler.subwaytooter.util.openCustomTab
 import jp.juggler.util.data.*
 import jp.juggler.util.log.showToast
-import jp.juggler.util.ui.*
 
 class DlgCreateAccount(
     val activity: AppCompatActivity,
     val apiHost: Host,
     val onClickOk: (dialog: Dialog, params: CreateUserParams) -> Unit,
-) : View.OnClickListener {
+) {
 
     companion object {
-        // private val log = LogCategory("DlgCreateAccount")
-
         fun AppCompatActivity.showUserCreateDialog(
             apiHost: Host,
             onClickOk: (dialog: Dialog, params: CreateUserParams) -> Unit,
         ) = DlgCreateAccount(this, apiHost, onClickOk).show()
     }
 
-    @SuppressLint("InflateParams")
-    private val viewRoot = activity.layoutInflater
-        .inflate(R.layout.dlg_account_create, null, false)
+    private val density = activity.resources.displayMetrics.density
+    private val dp12 = (12 * density + 0.5f).toInt()
 
-    private val etUserName: EditText = viewRoot.findViewById(R.id.etUserName)
-    private val etEmail: EditText = viewRoot.findViewById(R.id.etEmail)
-    private val etPassword: EditText = viewRoot.findViewById(R.id.etPassword)
-    private val cbAgreement: CheckBox = viewRoot.findViewById(R.id.cbAgreement)
-    private val tvDescription: TextView = viewRoot.findViewById(R.id.tvDescription)
-    private val etReason: EditText = viewRoot.findViewById(R.id.etReason)
-    private val tvReasonCaption: TextView = viewRoot.findViewById(R.id.tvReasonCaption)
+    private val etUserName: EditText
+    private val etEmail: EditText
+    private val etPassword: EditText
+    private val cbAgreement: CheckBox
+    private val etReason: EditText
 
     private val dialog = Dialog(activity)
 
-    init {
-        viewRoot.findViewById<TextView>(R.id.tvInstance).text = apiHost.pretty
+    private val rootView: ScrollView
 
-        intArrayOf(
-            R.id.btnRules,
-            R.id.btnTerms,
-            R.id.btnCancel,
-            R.id.btnOk
-        ).forEach {
-            viewRoot.findViewById<Button>(it)?.setOnClickListener(this)
+    init {
+        val ll = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
         }
 
-        val instanceInfo = TootInstance.getCached(apiHost)
-
-        tvDescription.text =
-            DecodeOptions(
-                activity,
-                linkHelper = LinkHelper.create(
-                    apiHost,
-                    misskeyVersion = instanceInfo?.misskeyVersionMajor ?: 0
+        fun addLabel(textResId: Int) {
+            ll.addView(
+                TextView(activity).apply {
+                    setText(textResId)
+                    setPadding(dp12, dp12, dp12, 0)
+                },
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
                 ),
-            ).decodeHTML(
-                instanceInfo?.description?.notBlank()
-                    ?: instanceInfo?.descriptionOld?.notBlank()
-                    ?: TootInstance.DESCRIPTION_DEFAULT
-            ).neatSpaces()
+            )
+        }
 
+        fun addText(text: CharSequence) {
+            ll.addView(
+                TextView(activity).apply {
+                    this.text = text
+                    setPadding(dp12, 0, dp12, 0)
+                },
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+        }
+
+        fun addEditText(hintResId: Int, inputType: Int = android.text.InputType.TYPE_CLASS_TEXT): EditText {
+            val et = EditText(activity).apply {
+                setHint(hintResId)
+                importantForAutofill = EditText.IMPORTANT_FOR_AUTOFILL_NO
+                this.inputType = inputType
+                setPadding(dp12, 0, dp12, 0)
+            }
+            ll.addView(
+                et,
+                LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                ),
+            )
+            return et
+        }
+
+        // Instance 
+        addLabel(R.string.instance)
+        addText(apiHost.pretty)
+
+        // Description
+        addLabel(R.string.description)
+        val instanceInfo = TootInstance.getCached(apiHost)
+        val descriptionText = DecodeOptions(
+            activity,
+            linkHelper = LinkHelper.create(
+                apiHost,
+                misskeyVersion = instanceInfo?.misskeyVersionMajor ?: 0
+            ),
+        ).decodeHTML(
+            instanceInfo?.description?.notBlank()
+                ?: instanceInfo?.descriptionOld?.notBlank()
+                ?: TootInstance.DESCRIPTION_DEFAULT
+        ).neatSpaces()
+        addText(descriptionText)
+
+        // User name
+        addLabel(R.string.user_name)
+        etUserName = addEditText(R.string.user_name_hint)
+
+        // Email
+        addLabel(R.string.email)
+        etEmail = addEditText(R.string.email_hint)
+
+        // Password
+        addLabel(R.string.password)
+        etPassword = addEditText(
+            R.string.password_hint,
+            android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD,
+        )
+
+        // Reason (conditional)
         val showReason = instanceInfo?.approval_required ?: false
-        tvReasonCaption.vg(showReason)
-        etReason.vg(showReason)
+        val tvReasonCaption = TextView(activity).apply {
+            setText(R.string.reason_create_account)
+            setPadding(dp12, dp12, dp12, 0)
+            visibility = if (showReason) View.VISIBLE else View.GONE
+        }
+        ll.addView(
+            tvReasonCaption,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+        etReason = EditText(activity).apply {
+            importantForAutofill = EditText.IMPORTANT_FOR_AUTOFILL_NO
+            inputType = android.text.InputType.TYPE_CLASS_TEXT
+            setPadding(dp12, 0, dp12, 0)
+            visibility = if (showReason) View.VISIBLE else View.GONE
+        }
+        ll.addView(
+            etReason,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        // Rules button
+        ll.addView(
+            Button(activity).apply {
+                setText(R.string.instance_rules)
+                isAllCaps = false
+                setPadding(dp12, 0, dp12, 0)
+                setOnClickListener { activity.openCustomTab("https://$apiHost/about/more") }
+            },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ).apply { topMargin = dp12 },
+        )
+
+        // Terms button
+        ll.addView(
+            Button(activity).apply {
+                setText(R.string.privacy_policy)
+                isAllCaps = false
+                setPadding(dp12, 0, dp12, 0)
+                setOnClickListener { activity.openCustomTab("https://$apiHost/terms") }
+            },
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        // Agreement checkbox
+        cbAgreement = CheckBox(activity).apply {
+            setText(R.string.agree_terms)
+            setPadding(dp12, 0, dp12, 0)
+        }
+        ll.addView(
+            cbAgreement,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        // Button bar
+        val btnCancel = Button(activity, null, android.R.attr.buttonBarButtonStyle).apply {
+            setText(R.string.cancel)
+            setOnClickListener { dialog.cancel() }
+        }
+        val btnOk = Button(activity, null, android.R.attr.buttonBarButtonStyle).apply {
+            setText(R.string.ok)
+            setOnClickListener { onClick() }
+        }
+        val buttonBar = LinearLayout(activity).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(btnCancel, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(btnOk, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        }
+        ll.addView(
+            buttonBar,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        rootView = ScrollView(activity).apply {
+            addView(ll)
+        }
     }
 
     fun show() {
-        dialog.setContentView(viewRoot)
-
+        dialog.setContentView(rootView)
         dialog.window?.setLayout(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT
@@ -91,50 +234,37 @@ class DlgCreateAccount(
         dialog.show()
     }
 
-    override fun onClick(v: View?) {
-        when (v?.id) {
-            R.id.btnRules ->
-                activity.openCustomTab("https://$apiHost/about/more")
+    private fun onClick() {
+        val username = etUserName.text.toString().trim()
+        val email = etEmail.text.toString().trim()
+        val password = etPassword.text.toString().trim()
 
-            R.id.btnTerms ->
-                activity.openCustomTab("https://$apiHost/terms")
+        when {
+            username.isEmpty() ->
+                activity.showToast(true, R.string.username_empty)
 
-            R.id.btnCancel ->
-                dialog.cancel()
+            email.isEmpty() ->
+                activity.showToast(true, R.string.email_empty)
 
-            R.id.btnOk -> {
-                val username = etUserName.text.toString().trim()
-                val email = etEmail.text.toString().trim()
-                val password = etPassword.text.toString().trim()
+            password.isEmpty() ->
+                activity.showToast(true, R.string.password_empty)
 
-                when {
-                    username.isEmpty() ->
-                        activity.showToast(true, R.string.username_empty)
+            username.contains("/") || username.contains("@") ->
+                activity.showToast(true, R.string.username_not_need_atmark)
 
-                    email.isEmpty() ->
-                        activity.showToast(true, R.string.email_empty)
-
-                    password.isEmpty() ->
-                        activity.showToast(true, R.string.password_empty)
-
-                    username.contains("/") || username.contains("@") ->
-                        activity.showToast(true, R.string.username_not_need_atmark)
-
-                    else -> onClickOk(
-                        dialog,
-                        CreateUserParams(
-                            username = username,
-                            email = email,
-                            password = password,
-                            agreement = cbAgreement.isChecked,
-                            reason = when (etReason.visibility) {
-                                View.VISIBLE -> etReason.text.toString().trim()
-                                else -> null
-                            },
-                        )
-                    )
-                }
-            }
+            else -> onClickOk(
+                dialog,
+                CreateUserParams(
+                    username = username,
+                    email = email,
+                    password = password,
+                    agreement = cbAgreement.isChecked,
+                    reason = when (etReason.visibility) {
+                        View.VISIBLE -> etReason.text.toString().trim()
+                        else -> null
+                    },
+                )
+            )
         }
     }
 }

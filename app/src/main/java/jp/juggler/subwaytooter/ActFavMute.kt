@@ -1,36 +1,37 @@
 package jp.juggler.subwaytooter
 
 import android.os.Bundle
-import android.view.View
-import android.view.ViewGroup
-import android.widget.BaseAdapter
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Text
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.api.entity.Acct
-import jp.juggler.subwaytooter.databinding.ActWordListBinding
-import jp.juggler.subwaytooter.databinding.LvMuteAppBinding
+import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.subwaytooter.table.daoFavMute
-import jp.juggler.subwaytooter.view.wrapTitleTextView
+import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError
-import jp.juggler.util.data.cast
 import jp.juggler.util.log.LogCategory
-import jp.juggler.util.ui.setContentViewAndInsets
-import jp.juggler.util.ui.setNavigationBack
 import kotlinx.coroutines.withContext
 
-class ActFavMute : AppCompatActivity() {
+class ActFavMute : ComponentActivity() {
 
     companion object {
         private val log = LogCategory("ActFavMute")
     }
 
-    private val views by lazy {
-        ActWordListBinding.inflate(layoutInflater)
-    }
+    internal class MyItem(val id: Long, val acct: Acct)
 
-    private val listAdapter by lazy { MyListAdapter() }
+    private val items = mutableStateListOf<MyItem>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,32 +40,40 @@ class ActFavMute : AppCompatActivity() {
             finish()
         }
         App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
-        initUI()
-        loadData()
-    }
-
-    private fun initUI() {
-        setSupportActionBar(views.toolbar)
-        wrapTitleTextView()
-        setNavigationBack(views.toolbar)
-        fixHorizontalMargin(views.llContent)
-        views.tvFooterDesc.text = getString(R.string.fav_muted_user_desc)
-        views.listView.adapter = listAdapter
-    }
-
-    private fun delete(item: MyItem?) {
-        item ?: return
-        launchAndShowError {
-            confirm(R.string.delete_confirm, item.acct.pretty)
-            daoFavMute.delete(item.acct)
-            listAdapter.remove(item)
+        val stColorScheme = getStColorTheme()
+        setContent {
+            StScreen(
+                stColorScheme = stColorScheme,
+                title = getString(R.string.fav_muted_user),
+                onBack = {
+                    setResult(RESULT_OK)
+                    finish()
+                },
+            ) { innerPadding ->
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                ) {
+                    items(items, key = { it.id }) { item ->
+                        MuteItemRow(item.acct.pretty) { delete(item) }
+                    }
+                    item {
+                        Text(
+                            text = stringResource(R.string.fav_muted_user_desc),
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                            fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp),
+                        )
+                    }
+                }
+            }
         }
+        loadData()
     }
 
     private fun loadData() {
         launchAndShowError {
-            listAdapter.items = withContext(AppDispatchers.IO) {
+            val list = withContext(AppDispatchers.IO) {
                 daoFavMute.listAll().map {
                     MyItem(
                         id = it.id,
@@ -72,49 +81,16 @@ class ActFavMute : AppCompatActivity() {
                     )
                 }
             }
+            items.clear()
+            items.addAll(list)
         }
     }
 
-    // リスト要素のデータ
-    internal class MyItem(val id: Long, val acct: Acct)
-
-    // リスト要素のViewHolder
-    private inner class MyViewHolder(parent: ViewGroup?) {
-        val views = LvMuteAppBinding.inflate(layoutInflater, parent, false)
-
-        private var lastItem: MyItem? = null
-
-        init {
-            views.root.tag = this
-            views.btnDelete.setOnClickListener { delete(lastItem) }
+    private fun delete(item: MyItem) {
+        launchAndShowError {
+            confirm(R.string.delete_confirm, item.acct.pretty)
+            daoFavMute.delete(item.acct)
+            items.remove(item)
         }
-
-        fun bind(item: MyItem?) {
-            item ?: return
-            lastItem = item
-            views.tvName.text = item.acct.pretty
-        }
-    }
-
-    private inner class MyListAdapter : BaseAdapter() {
-        var items: List<MyItem> = emptyList()
-            set(value) {
-                field = value
-                notifyDataSetChanged()
-            }
-
-        fun remove(item: MyItem) {
-            items = items.filter { it != item }
-        }
-
-        override fun getCount() = items.size
-        override fun getItem(position: Int) = items.elementAtOrNull(position)
-        override fun getItemId(position: Int) = 0L
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup?) =
-            (convertView?.tag?.cast() ?: MyViewHolder(parent))
-                .also { it.bind(items.elementAtOrNull(position)) }
-                .views.root
-
-        override fun isEnabled(position: Int) = false
     }
 }

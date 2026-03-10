@@ -6,48 +6,64 @@ import android.os.Looper
 import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.view.ViewGroup
-import androidx.appcompat.app.AppCompatActivity
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import jp.juggler.subwaytooter.databinding.ActGlideTestBinding
-import jp.juggler.subwaytooter.databinding.LvGlideTestBinding
+import android.widget.TextView
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.span.NetworkEmojiSpan
 import jp.juggler.subwaytooter.util.EmojiSizeMode
 import jp.juggler.subwaytooter.util.NetworkEmojiInvalidator
-import jp.juggler.subwaytooter.view.wrapTitleTextView
+import jp.juggler.subwaytooter.util.getStColorTheme
+import jp.juggler.subwaytooter.view.MyNetworkImageView
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError
-import jp.juggler.util.ui.setContentViewAndInsets
-import jp.juggler.util.ui.setNavigationBack
 import kotlinx.coroutines.withContext
 
-class ActGlideTest : AppCompatActivity() {
-    private val views by lazy {
-        ActGlideTestBinding.inflate(layoutInflater)
-    }
+class ActGlideTest : ComponentActivity() {
+    private var items = mutableStateOf<List<MyItem>>(emptyList())
 
-    private val listAdapter by lazy {
-        MyAdapter()
+    private val mainHandler by lazy {
+        Handler(Looper.getMainLooper())
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
-        setSupportActionBar(views.toolbar)
-        wrapTitleTextView()
-        fixHorizontalMargin(views.rvImages)
-        setNavigationBack(views.toolbar)
+        val stColorScheme = getStColorTheme()
 
-        views.rvImages.layoutManager = LinearLayoutManager(this)
-        views.rvImages.adapter = listAdapter
-        launchAndShowError {
-            load()
+        setContent {
+            StScreen(
+                stColorScheme = stColorScheme,
+                title = "Glide Test",
+                onBack = { finish() },
+            ) { contentPadding ->
+                val list by items
+                LazyColumn(
+                    modifier = Modifier.padding(contentPadding),
+                ) {
+                    items(list.size) { index ->
+                        val item = list[index]
+                        GlideTestRow(item)
+                    }
+                }
+            }
         }
+
+        launchAndShowError { load() }
     }
 
     private suspend fun load() {
-        listAdapter.items = withContext(AppDispatchers.IO) {
+        items.value = withContext(AppDispatchers.IO) {
             buildList {
                 repeat(300) {
                     arrayOf(
@@ -76,57 +92,74 @@ class ActGlideTest : AppCompatActivity() {
         val url: String,
     )
 
-    private val mainHandler by lazy {
-        Handler(Looper.getMainLooper())
-    }
-
-    private inner class MyViewHolder(
-        parent: ViewGroup,
-        val views: LvGlideTestBinding =
-            LvGlideTestBinding.inflate(layoutInflater, parent, false),
-    ) : RecyclerView.ViewHolder(views.root) {
-
-        private val nameInvalidator = NetworkEmojiInvalidator(mainHandler, views.tvName)
-
-        fun bind(item: MyItem?) {
-            item ?: return
-            val density = views.root.context.resources.displayMetrics.density
-            val r = (8f * density)
-            views.nivStatic.setImageUrl(r, item.url, null)
-            views.nivAnimation.setImageUrl(r, item.url, item.url)
-
-            val text = SpannableStringBuilder().apply {
-                val start = length
-                append("a")
-                val end = length
-                val span = NetworkEmojiSpan(
-                    url = item.url,
-                    scale = 2f,
-                    sizeMode = EmojiSizeMode.Square,
-                )
-                setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-                append(" ")
-                append(item.name)
-            }
-            nameInvalidator.text = text
-        }
-    }
-
-    private inner class MyAdapter : RecyclerView.Adapter<MyViewHolder>() {
-        var items: List<MyItem> = emptyList()
-            set(value) {
-                field = value
-                @Suppress("NotifyDataSetChanged")
-                notifyDataSetChanged()
-            }
-
-        override fun getItemCount(): Int = items.size
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-            MyViewHolder(parent)
-
-        override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
-            holder.bind(items.elementAtOrNull(position))
+    @Composable
+    private fun GlideTestRow(item: MyItem) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(4.dp),
+            verticalAlignment = Alignment.Top,
+        ) {
+            // Static image
+            AndroidView(
+                factory = { context ->
+                    MyNetworkImageView(context).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            (60 * context.resources.displayMetrics.density).toInt(),
+                            (60 * context.resources.displayMetrics.density).toInt(),
+                        )
+                    }
+                },
+                update = { view ->
+                    val density = view.context.resources.displayMetrics.density
+                    val r = (8f * density)
+                    view.setImageUrl(r, item.url, null)
+                },
+                modifier = Modifier.size(60.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+            // Animation image
+            AndroidView(
+                factory = { context ->
+                    MyNetworkImageView(context).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            (60 * context.resources.displayMetrics.density).toInt(),
+                            (60 * context.resources.displayMetrics.density).toInt(),
+                        )
+                    }
+                },
+                update = { view ->
+                    val density = view.context.resources.displayMetrics.density
+                    val r = (8f * density)
+                    view.setImageUrl(r, item.url, item.url)
+                },
+                modifier = Modifier.size(60.dp),
+            )
+            Spacer(Modifier.width(4.dp))
+            // Name with emoji span
+            AndroidView(
+                factory = { context ->
+                    TextView(context)
+                },
+                update = { view ->
+                    val text = SpannableStringBuilder().apply {
+                        val start = length
+                        append("a")
+                        val end = length
+                        val span = NetworkEmojiSpan(
+                            url = item.url,
+                            scale = 2f,
+                            sizeMode = EmojiSizeMode.Square,
+                        )
+                        setSpan(span, start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+                        append(" ")
+                        append(item.name)
+                    }
+                    val invalidator = NetworkEmojiInvalidator(mainHandler, view)
+                    invalidator.text = text
+                },
+                modifier = Modifier.weight(1f),
+            )
         }
     }
 }

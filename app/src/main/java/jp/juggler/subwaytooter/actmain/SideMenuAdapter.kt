@@ -11,12 +11,15 @@ import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
 import android.text.style.UnderlineSpan
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import android.widget.FrameLayout
 import android.widget.ListView
 import android.widget.TextView
+import androidx.appcompat.widget.AppCompatButton
+import androidx.core.content.ContextCompat
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import jp.juggler.subwaytooter.ActAbout
@@ -67,7 +70,7 @@ import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.createColoredDrawable
 import jp.juggler.util.ui.dp
 import kotlinx.coroutines.withContext
-import org.jetbrains.anko.backgroundColor
+
 import java.lang.ref.WeakReference
 import java.util.TimeZone
 import java.util.concurrent.TimeUnit
@@ -505,27 +508,64 @@ class SideMenuAdapter(
     override fun getViewTypeCount(): Int = itemTypeCount
     override fun getItemViewType(position: Int): Int = list[position].itemType.id
 
-    private inline fun <reified T : View> viewOrInflate(
+    private inline fun <reified T : View> viewOrCreate(
         view: View?,
-        parent: ViewGroup?,
-        resId: Int,
-    ): T =
-        (view ?: actMain.layoutInflater.inflate(resId, parent, false))
-                as? T ?: error("invalid view type! ${T::class.java.simpleName}")
+        creator: () -> T,
+    ): T = view as? T ?: creator()
 
     override fun getView(position: Int, view: View?, parent: ViewGroup?): View =
         list[position].run {
             when (itemType) {
                 ItemType.IT_DIVIDER ->
-                    viewOrInflate(view, parent, R.layout.lv_sidemenu_separator)
+                    viewOrCreate<FrameLayout>(view) {
+                        FrameLayout(actMain).apply {
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT
+                            )
+                            addView(View(actMain).apply {
+                                layoutParams = FrameLayout.LayoutParams(
+                                    FrameLayout.LayoutParams.MATCH_PARENT,
+                                    actMain.dp(1)
+                                ).apply {
+                                    topMargin = actMain.dp(3)
+                                    bottomMargin = actMain.dp(3)
+                                }
+                                setBackgroundColor(actMain.attrColor(R.attr.colorTimeSmall))
+                            })
+                        }
+                    }
 
                 ItemType.IT_GROUP_HEADER ->
-                    viewOrInflate<TextView>(view, parent, R.layout.lv_sidemenu_group).apply {
+                    viewOrCreate<TextView>(view) {
+                        TextView(actMain).apply {
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT
+                            )
+                            setTextColor(actMain.attrColor(R.attr.colorSettingDivider))
+                            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                            setPaddingRelative(actMain.dp(12), actMain.dp(12), actMain.dp(12), actMain.dp(6))
+                        }
+                    }.apply {
                         text = actMain.getString(title)
                     }
 
                 ItemType.IT_NORMAL ->
-                    viewOrInflate<TextView>(view, parent, R.layout.lv_sidemenu_item).apply {
+                    viewOrCreate<AppCompatButton>(view) {
+                        AppCompatButton(actMain).apply {
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT
+                            )
+                            background = ContextCompat.getDrawable(actMain, R.drawable.btn_bg_transparent_round6dp)
+                            setTextColor(actMain.attrColor(R.attr.colorTextContent))
+                            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                            compoundDrawablePadding = actMain.dp(12)
+                            minimumHeight = actMain.dp(44)
+                            setPaddingRelative(actMain.dp(12), actMain.dp(6), actMain.dp(12), actMain.dp(6))
+                        }
+                    }.apply {
                         isAllCaps = false
                         text = actMain.getString(title)
                         val drawable = createColoredDrawable(actMain, icon, iconColor, 1f)
@@ -543,7 +583,20 @@ class SideMenuAdapter(
                     }
 
                 ItemType.IT_VERSION ->
-                    viewOrInflate<TextView>(view, parent, R.layout.lv_sidemenu_item).apply {
+                    viewOrCreate<AppCompatButton>(view) {
+                        AppCompatButton(actMain).apply {
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT
+                            )
+                            background = ContextCompat.getDrawable(actMain, R.drawable.btn_bg_transparent_round6dp)
+                            setTextColor(actMain.attrColor(R.attr.colorTextContent))
+                            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                            compoundDrawablePadding = actMain.dp(12)
+                            minimumHeight = actMain.dp(44)
+                            setPaddingRelative(actMain.dp(12), actMain.dp(6), actMain.dp(12), actMain.dp(6))
+                        }
+                    }.apply {
                         lastVersionView = WeakReference(this)
                         movementMethod = LinkMovementMethod.getInstance()
                         textSize = 18f
@@ -557,7 +610,20 @@ class SideMenuAdapter(
                     }
 
                 ItemType.IT_TIMEZONE ->
-                    viewOrInflate<TextView>(view, parent, R.layout.lv_sidemenu_item).apply {
+                    viewOrCreate<AppCompatButton>(view) {
+                        AppCompatButton(actMain).apply {
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT
+                            )
+                            background = ContextCompat.getDrawable(actMain, R.drawable.btn_bg_transparent_round6dp)
+                            setTextColor(actMain.attrColor(R.attr.colorTextContent))
+                            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                            compoundDrawablePadding = actMain.dp(12)
+                            minimumHeight = actMain.dp(44)
+                            setPaddingRelative(actMain.dp(12), actMain.dp(6), actMain.dp(12), actMain.dp(6))
+                        }
+                    }.apply {
                         textSize = 14f
                         isAllCaps = false
                         background = null
@@ -565,7 +631,20 @@ class SideMenuAdapter(
                     }
 
                 ItemType.IT_NOTIFICATION_PERMISSION ->
-                    viewOrInflate<TextView>(view, parent, R.layout.lv_sidemenu_item).apply {
+                    viewOrCreate<AppCompatButton>(view) {
+                        AppCompatButton(actMain).apply {
+                            layoutParams = ViewGroup.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.WRAP_CONTENT
+                            )
+                            background = ContextCompat.getDrawable(actMain, R.drawable.btn_bg_transparent_round6dp)
+                            setTextColor(actMain.attrColor(R.attr.colorTextContent))
+                            gravity = Gravity.CENTER_VERTICAL or Gravity.START
+                            compoundDrawablePadding = actMain.dp(12)
+                            minimumHeight = actMain.dp(44)
+                            setPaddingRelative(actMain.dp(12), actMain.dp(6), actMain.dp(12), actMain.dp(6))
+                        }
+                    }.apply {
                         isAllCaps = false
                         val action = notificationActionRecommend() ?: return@apply
                         text = actMain.getString(action.first)
@@ -669,7 +748,7 @@ class SideMenuAdapter(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
-            backgroundColor = actMain.attrColor(R.attr.colorMainBackground)
+            setBackgroundColor(actMain.attrColor(R.attr.colorMainBackground))
             selector = StateListDrawable()
             divider = null
             dividerHeight = 0

@@ -4,10 +4,13 @@ import android.app.Dialog
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.view.WindowManager
+import android.widget.Button
+import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
+import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.*
 import jp.juggler.subwaytooter.api.entity.TootAttachment
-import jp.juggler.subwaytooter.databinding.DlgFocusPointBinding
+import jp.juggler.subwaytooter.view.FocusPointView
 import jp.juggler.util.*
 import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.data.*
@@ -76,27 +79,52 @@ suspend fun AppCompatActivity.focusPointDialog(
             return
         }
         val dialog = Dialog(this)
-        val views = DlgFocusPointBinding.inflate(layoutInflater)
-        dialog.setContentView(views.root)
-        views.ivFocus.setAttachment(attachment, bitmap!!)
+        val ivFocus = FocusPointView(this)
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(ivFocus, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
+            ).apply {
+                setMargins(dp(12), dp(12), dp(12), dp(12))
+            })
+            val buttonBar = LinearLayout(this@focusPointDialog).apply {
+                orientation = LinearLayout.HORIZONTAL
+                val btnCancel = Button(this@focusPointDialog).apply {
+                    text = getString(R.string.cancel)
+                    setOnClickListener { dialog.dismissSafe() }
+                }
+                addView(btnCancel, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                val btnOk = Button(this@focusPointDialog).apply {
+                    text = getString(R.string.ok)
+                    setOnClickListener {
+                        launchMain {
+                            try {
+                                if (callback(ivFocus.focusX, ivFocus.focusY)) {
+                                    dialog.dismissSafe()
+                                }
+                            } catch (ex: Throwable) {
+                                showToast(ex, "can't set focus point.")
+                            }
+                        }
+                    }
+                }
+                addView(btnOk, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            }
+            addView(buttonBar, LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ))
+        }
+        dialog.setContentView(root)
+        ivFocus.setAttachment(attachment, bitmap!!)
         dialog.window?.setLayout(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.MATCH_PARENT
         )
-        views.btnCancel.setOnClickListener {
-            dialog.dismissSafe()
-        }
-        views.btnOk.setOnClickListener {
-            launchMain {
-                try {
-                    if (callback(views.ivFocus.focusX, views.ivFocus.focusY)) {
-                        dialog.dismissSafe()
-                    }
-                } catch (ex: Throwable) {
-                    showToast(ex, "can't set focus point.")
-                }
-            }
-        }
+        dialog.window?.setLayout(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT
+        )
         // dialogが閉じるまで待ってからbitmapをリサイクルする
         suspendCancellableCoroutine { cont ->
             dialog.setOnDismissListener {
