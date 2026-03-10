@@ -17,6 +17,7 @@ import android.text.TextWatcher
 import android.util.JsonWriter
 import android.view.Gravity
 import android.view.KeyEvent
+import android.view.ContextThemeWrapper
 import android.view.View
 import android.view.View.FOCUS_FORWARD
 import android.view.ViewGroup
@@ -198,18 +199,19 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
             })
 
             // lvList
-            lvList = RecyclerView(context).apply {
+            // Use ContextThemeWrapper to set scrollbar attributes via XML style.
+            // Without this, setting isVerticalScrollBarEnabled programmatically
+            // causes an NPE in View.onDrawScrollBars() because the
+            // ScrollBarDrawable objects are only initialized from XML attributes.
+            lvList = RecyclerView(
+                ContextThemeWrapper(context, R.style.recycler_view_with_scroll_bar)
+            ).apply {
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     0,
                     1f,
                 )
                 setBackgroundColor(context.attrColor(R.attr.colorMainBackground))
-                isVerticalScrollBarEnabled = true
-                isScrollbarFadingEnabled = false
-                isVerticalFadingEdgeEnabled = true
-                setFadingEdgeLength(context.dp(20))
-                scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
             }
             addView(lvList)
         }
