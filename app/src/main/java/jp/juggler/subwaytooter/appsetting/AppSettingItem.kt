@@ -868,7 +868,16 @@ val appSettingRoot = AppSettingItem(null, SettingType.Section, R.string.app_sett
             R.string.theme_light,
             R.string.theme_dark,
             R.string.theme_mastodon_dark,
-        )
+        ) {
+            var lastTheme = PrefI.ipUiTheme.value
+            changed = {
+                val cur = PrefI.ipUiTheme.value
+                if (cur != lastTheme) {
+                    lastTheme = cur
+                    recreate()
+                }
+            }
+        }
 
         text(PrefS.spBoostAlpha, R.string.boost_button_alpha, InputTypeEx.numberDecimal)
     }

@@ -41,10 +41,8 @@ class ActDrawableList : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        val colorScheme = getStColorTheme()
         setContent {
             StScreen(
-                colorScheme = colorScheme,
                 title = "Drawables",
                 onBack = { finish() },
             ) { innerPadding ->

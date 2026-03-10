@@ -23,7 +23,6 @@ import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.span.NetworkEmojiSpan
 import jp.juggler.subwaytooter.util.EmojiSizeMode
 import jp.juggler.subwaytooter.util.NetworkEmojiInvalidator
-import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.subwaytooter.view.MyNetworkImageView
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError
@@ -39,11 +38,9 @@ class ActGlideTest : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        val colorScheme = getStColorTheme()
 
         setContent {
             StScreen(
-                colorScheme = colorScheme,
                 title = "Glide Test",
                 onBack = { finish() },
             ) { contentPadding ->

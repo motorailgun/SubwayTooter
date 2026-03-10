@@ -23,7 +23,6 @@ import com.jrummyapps.android.colorpicker.dialogColorPicker
 import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.table.HighlightWord
 import jp.juggler.subwaytooter.table.daoHighlightWord
-import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.decodeJsonObject
@@ -107,7 +106,6 @@ class ActHighlightWordEdit : ComponentActivity() {
 
         arNotificationSound.register(this)
         App1.setActivityTheme(this)
-        val colorScheme = getStColorTheme()
 
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
         setResult(RESULT_CANCELED)
@@ -137,7 +135,6 @@ class ActHighlightWordEdit : ComponentActivity() {
 
             setContent {
                 StScreen(
-                    colorScheme = colorScheme,
                     title = stringResource(R.string.highlight_word),
                     onBack = { finish() },
                 ) { contentPadding ->

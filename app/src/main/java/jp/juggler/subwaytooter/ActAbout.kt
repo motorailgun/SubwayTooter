@@ -17,12 +17,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.compose.StScreen
-import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.subwaytooter.util.openBrowser
 import jp.juggler.util.getPackageInfoCompat
 import jp.juggler.util.log.LogCategory
@@ -91,7 +89,6 @@ class ActAbout : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        val colorScheme = getStColorTheme()
 
         val versionName = try {
             packageManager.getPackageInfoCompat(packageName)?.versionName ?: "?"
@@ -101,14 +98,13 @@ class ActAbout : ComponentActivity() {
         }
 
         setContent {
-            AboutScreen(colorScheme, versionName)
+            AboutScreen(versionName)
         }
     }
 
     @Composable
-    private fun AboutScreen(colorScheme: ColorScheme, versionName: String) {
+    private fun AboutScreen(versionName: String) {
         StScreen(
-            colorScheme = colorScheme,
             title = stringResource(R.string.app_name),
             onBack = { finish() },
         ) { innerPadding ->

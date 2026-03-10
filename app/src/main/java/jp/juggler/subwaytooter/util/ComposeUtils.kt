@@ -5,25 +5,51 @@ import androidx.activity.ComponentActivity
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import jp.juggler.subwaytooter.App1
 import jp.juggler.subwaytooter.pref.PrefI
+import jp.juggler.subwaytooter.pref.lazyPref
 
 /**
- * Returns the Material3 ColorScheme for the current UI theme preference.
- * - Light (0): M3 default lightColorScheme
- * - Dark (1): M3 default darkColorScheme
- * - Mastodon (2): Custom dark scheme with Mastodon branding colors
+ * Composable function that observes the UI theme preference reactively.
+ *
+ * Returns the appropriate M3 ColorScheme based on the current theme setting,
+ * and automatically recomposes when the preference changes (no app restart needed).
  */
-fun Activity.getStColorTheme(forceDark: Boolean = false): ColorScheme {
-    App1.prepare(applicationContext, "getStColorTheme")
-    var nTheme = PrefI.ipUiTheme.value
-    if (forceDark && nTheme == 0) nTheme = 1
-    return when (nTheme) {
-        2 -> mastodonDarkColorScheme()
-        1 -> darkColorScheme()
-        else -> lightColorScheme()
+@Composable
+fun stColorScheme(): ColorScheme {
+    val themeState = remember { mutableIntStateOf(PrefI.ipUiTheme.value) }
+    DisposableEffect(Unit) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key == PrefI.ipUiTheme.key) {
+                themeState.intValue = PrefI.ipUiTheme.value
+            }
+        }
+        lazyPref.registerOnSharedPreferenceChangeListener(listener)
+        onDispose {
+            lazyPref.unregisterOnSharedPreferenceChangeListener(listener)
+        }
     }
+    return themeToColorScheme(themeState.intValue)
+}
+
+/**
+ * Non-composable version for use outside of @Composable scope
+ * (e.g., ViewModel data processing, View-based dialogs).
+ */
+fun Activity.getStColorTheme(): ColorScheme {
+    App1.prepare(applicationContext, "getStColorTheme")
+    return themeToColorScheme(PrefI.ipUiTheme.value)
+}
+
+private fun themeToColorScheme(nTheme: Int): ColorScheme = when (nTheme) {
+    2 -> mastodonDarkColorScheme()
+    1 -> darkColorScheme()
+    else -> lightColorScheme()
 }
 
 /**

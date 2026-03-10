@@ -29,9 +29,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Save
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,6 +64,7 @@ import jp.juggler.subwaytooter.util.collectOnLifeCycle
 import jp.juggler.subwaytooter.util.fireBackPressed
 import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.subwaytooter.util.provideViewModel
+import jp.juggler.subwaytooter.util.stColorScheme
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.checkMimeTypeAndGrant
@@ -116,10 +115,6 @@ class LanguageFilterActivity : ComponentActivity() {
         }
     }
 
-    private val colorScheme by lazy {
-        getStColorTheme()
-    }
-
     private val arImport = ActivityResultHandler(log) { r ->
         if (r.isNotOk) return@ActivityResultHandler
         r.data?.checkMimeTypeAndGrant(contentResolver)
@@ -154,11 +149,9 @@ class LanguageFilterActivity : ComponentActivity() {
         // ステータスバーの色にattr色を使っているので、テーマの指定は必要
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         App1.setActivityTheme(this)
-        val colorScheme = getStColorTheme()
         setContent {
             Screen(
                 viewModel = viewModel,
-                colorScheme = colorScheme,
                 languageListFlow = viewModel.languageList,
                 progressMessageFlow = viewModel.progressMessage,
                 saveAction = {
@@ -178,7 +171,7 @@ class LanguageFilterActivity : ComponentActivity() {
         val result = dialogLanguageFilterEdit(
             myItem,
             viewModel.languageNameMap,
-            colorScheme,
+            getStColorTheme(),
         )
         viewModel.handleEditResult(result)
     }
@@ -212,7 +205,6 @@ class LanguageFilterActivity : ComponentActivity() {
     fun DefaultPreview() {
         Screen(
             viewModel = LanguageFilterViewModel(Application()),
-            colorScheme = darkColorScheme(),
             languageListFlow = MutableStateFlow(
                 listOf(
                     LanguageFilterItem(
@@ -241,7 +233,6 @@ class LanguageFilterActivity : ComponentActivity() {
     @Composable
     fun Screen(
         viewModel: LanguageFilterViewModel,
-        colorScheme: ColorScheme,
         languageListFlow: StateFlow<List<LanguageFilterItem>>,
         progressMessageFlow: StateFlow<StringResAndArgs?>,
         saveAction: () -> Unit,
@@ -250,7 +241,7 @@ class LanguageFilterActivity : ComponentActivity() {
         val scope = rememberCoroutineScope()
         val snackbarHostState = remember { SnackbarHostState() }
         val progressMessageState = progressMessageFlow.collectAsState()
-        MaterialTheme(colorScheme = colorScheme) {
+        MaterialTheme(colorScheme = stColorScheme()) {
             CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
                 Scaffold(
                     snackbarHost = {

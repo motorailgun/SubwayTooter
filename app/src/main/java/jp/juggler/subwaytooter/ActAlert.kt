@@ -12,12 +12,10 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import jp.juggler.subwaytooter.compose.StScreen
-import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.util.data.encodePercent
 import jp.juggler.util.data.notEmpty
 
@@ -43,20 +41,17 @@ class ActAlert : ComponentActivity() {
         val message = intent?.getStringExtra(EXTRA_MESSAGE).notEmpty() ?: ""
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        val colorScheme = getStColorTheme()
         setContent {
-            AlertScreen(colorScheme, title, message)
+            AlertScreen(title, message)
         }
     }
 
     @Composable
     private fun AlertScreen(
-        colorScheme: ColorScheme,
         title: String,
         message: String,
     ) {
         StScreen(
-            colorScheme = colorScheme,
             title = title,
             onBack = { finish() },
         ) { innerPadding ->

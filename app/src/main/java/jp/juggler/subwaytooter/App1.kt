@@ -1,14 +1,17 @@
 package jp.juggler.subwaytooter
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.res.Configuration
+import android.os.Bundle
 import android.os.Handler
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.emoji2.bundled.BundledEmojiCompatConfig
 import androidx.emoji2.text.EmojiCompat
+import java.util.WeakHashMap
 import com.bumptech.glide.Glide
 import com.bumptech.glide.GlideBuilder
 import com.bumptech.glide.Registry
@@ -68,6 +71,7 @@ class App1 : Application() {
         super.onCreate()
         initializeToastUtils(this)
         prepare(applicationContext, "App1.onCreate")
+        registerActivityLifecycleCallbacks(themeLifecycleCallbacks)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -80,9 +84,33 @@ class App1 : Application() {
         super.onTerminate()
     }
 
+    private val themeLifecycleCallbacks = object : ActivityLifecycleCallbacks {
+        override fun onActivityResumed(activity: Activity) {
+            val applied = appliedThemes[activity] ?: return
+            var newTheme = PrefI.ipUiTheme.value
+            if (applied.forceDark && newTheme == 0) newTheme = 1
+            if (newTheme != applied.effectiveTheme) {
+                activity.recreate()
+            }
+        }
+
+        override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+        override fun onActivityStarted(activity: Activity) {}
+        override fun onActivityPaused(activity: Activity) {}
+        override fun onActivityStopped(activity: Activity) {}
+        override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+        override fun onActivityDestroyed(activity: Activity) {
+            appliedThemes.remove(activity)
+        }
+    }
+
     companion object {
 
         internal val log = LogCategory("App1")
+
+        private data class AppliedTheme(val effectiveTheme: Int, val forceDark: Boolean)
+
+        private val appliedThemes = WeakHashMap<Activity, AppliedTheme>()
 
         //		private val APPROVED_CIPHER_SUITES = arrayOf(
         //
@@ -444,6 +472,10 @@ class App1 : Application() {
                 }
             )
             activity.enableEdgeToEdgeEx(forceDark = forceDark)
+            appliedThemes[activity] = AppliedTheme(
+                effectiveTheme = nTheme,
+                forceDark = forceDark,
+            )
         }
 
         internal val CACHE_CONTROL = CacheControl.Builder()

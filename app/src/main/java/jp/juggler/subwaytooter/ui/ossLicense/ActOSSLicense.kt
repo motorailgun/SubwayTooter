@@ -19,7 +19,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -28,7 +27,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
@@ -43,6 +41,7 @@ import jp.juggler.subwaytooter.util.collectOnLifeCycle
 import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.subwaytooter.util.openBrowser
 import jp.juggler.subwaytooter.util.provideViewModel
+import jp.juggler.subwaytooter.util.stColorScheme
 import jp.juggler.subwaytooter.util.toAnnotatedString
 import jp.juggler.util.data.notEmpty
 import jp.juggler.util.log.LogCategory
@@ -66,10 +65,8 @@ class ActOSSLicense : ComponentActivity() {
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         // ステータスバーの色にattr色を使っているので、テーマの指定は必要
         App1.setActivityTheme(this)
-        val colorScheme = getStColorTheme()
         setContent {
             Screen(
-                colorScheme = colorScheme,
                 librariesFlow = viewModel.libraries,
                 isProgressShownFlow = viewModel.isProgressShown,
             )
@@ -80,7 +77,7 @@ class ActOSSLicense : ComponentActivity() {
         }
 
         try {
-            viewModel.load(colorScheme = colorScheme)
+            viewModel.load(colorScheme = getStColorTheme())
         } catch (ex: Throwable) {
             log.e(ex, "dependency in fo loading failed.")
         }
@@ -90,7 +87,6 @@ class ActOSSLicense : ComponentActivity() {
     @Composable
     fun DefaultPreview() {
         Screen(
-            colorScheme = darkColorScheme(),
             isProgressShownFlow = MutableStateFlow(false),
             librariesFlow = MutableStateFlow(
                 listOf(
@@ -117,13 +113,12 @@ class ActOSSLicense : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun Screen(
-        colorScheme: ColorScheme,
         librariesFlow: Flow<List<LibText>>,
         isProgressShownFlow: Flow<Boolean>,
     ) {
         val isProgressShown = isProgressShownFlow.collectAsState(false)
         val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-        MaterialTheme(colorScheme = colorScheme) {
+        MaterialTheme(colorScheme = stColorScheme()) {
             Scaffold(
                 modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                 topBar = {

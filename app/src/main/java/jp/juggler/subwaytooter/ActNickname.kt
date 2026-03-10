@@ -23,7 +23,6 @@ import jp.juggler.subwaytooter.api.entity.Acct
 import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.table.AcctColor
 import jp.juggler.subwaytooter.table.daoAcctColor
-import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.util.backPressed
 import jp.juggler.util.boolean
 import jp.juggler.util.coroutine.launchAndShowError
@@ -84,7 +83,6 @@ class ActNickname : ComponentActivity() {
         }
         arNotificationSound.register(this)
         App1.setActivityTheme(this)
-        val colorScheme = getStColorTheme()
 
         load()
 
@@ -96,7 +94,6 @@ class ActNickname : ComponentActivity() {
                 }
             )
             StScreen(
-                colorScheme = colorScheme,
                 title = subtitle,
                 onBack = {
                     setResult(RESULT_OK)

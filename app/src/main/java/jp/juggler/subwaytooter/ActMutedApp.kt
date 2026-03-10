@@ -39,10 +39,8 @@ class ActMutedApp : ComponentActivity() {
             finish()
         }
         App1.setActivityTheme(this)
-        val colorScheme = getStColorTheme()
         setContent {
             StScreen(
-                colorScheme = colorScheme,
                 title = getString(R.string.muted_app),
                 onBack = {
                     setResult(RESULT_OK)

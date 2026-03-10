@@ -17,7 +17,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.api.entity.TootStatus
 import jp.juggler.subwaytooter.compose.StScreen
-import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.util.data.decodeUTF8
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.withCaption
@@ -78,7 +77,6 @@ class ActExitReasons : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        val colorScheme = getStColorTheme()
 
         val am = getSystemService(ActivityManager::class.java)
         if (am == null) {
@@ -97,7 +95,6 @@ class ActExitReasons : ComponentActivity() {
 
         setContent {
             StScreen(
-                colorScheme = colorScheme,
                 title = getString(R.string.exit_reasons),
                 onBack = { finish() },
             ) { innerPadding ->

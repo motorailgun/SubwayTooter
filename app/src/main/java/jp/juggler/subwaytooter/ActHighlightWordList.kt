@@ -33,7 +33,6 @@ import jp.juggler.util.data.notZero
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.ActivityResultHandler
 import jp.juggler.util.ui.isNotOk
-import jp.juggler.subwaytooter.util.getStColorTheme
 import kotlinx.coroutines.withContext
 import java.lang.ref.WeakReference
 
@@ -102,11 +101,9 @@ class ActHighlightWordList : ComponentActivity() {
         super.onCreate(savedInstanceState)
         arEdit.register(this)
         App1.setActivityTheme(this)
-        val colorScheme = getStColorTheme()
         loadData()
         setContent {
             StScreen(
-                colorScheme = colorScheme,
                 title = stringResource(R.string.highlight_word),
                 onBack = { finish() },
             ) { contentPadding ->

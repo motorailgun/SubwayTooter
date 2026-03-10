@@ -62,7 +62,6 @@ import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.table.daoAcctColor
 import jp.juggler.subwaytooter.table.daoSavedAccount
-import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.launchMain
@@ -153,13 +152,11 @@ class ActKeywordFilter : ComponentActivity() {
         backPressed { showBackDialog.value = true }
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        val colorScheme = getStColorTheme()
 
         filterId = EntityId.entityId(intent, EXTRA_FILTER_ID)
 
         setContent {
             StScreen(
-                colorScheme = colorScheme,
                 title = stringResource(
                     if (filterId == null) R.string.keyword_filter_new
                     else R.string.keyword_filter_edit
