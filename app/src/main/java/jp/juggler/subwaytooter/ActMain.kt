@@ -425,35 +425,19 @@ class ActMain : AppCompatActivity(),
     //////////////////////////////////////////////////////////////////
     // 読み取り専用のプロパティ
 
-    val followCompleteCallback: () -> Unit =
-        { showToast(false, R.string.follow_succeeded) }
+    private fun toastCallback(stringId: Int): () -> Unit =
+        { showToast(false, stringId) }
 
-    val unfollowCompleteCallback: () -> Unit =
-        { showToast(false, R.string.unfollow_succeeded) }
-
-    val cancelFollowRequestCompleteCallback: () -> Unit =
-        { showToast(false, R.string.follow_request_cancelled) }
-
-    val favouriteCompleteCallback: () -> Unit =
-        { showToast(false, R.string.favourite_succeeded) }
-
-    val unfavouriteCompleteCallback: () -> Unit =
-        { showToast(false, R.string.unfavourite_succeeded) }
-
-    val bookmarkCompleteCallback: () -> Unit =
-        { showToast(false, R.string.bookmark_succeeded) }
-
-    val unbookmarkCompleteCallback: () -> Unit =
-        { showToast(false, R.string.unbookmark_succeeded) }
-
-    val boostCompleteCallback: () -> Unit =
-        { showToast(false, R.string.boost_succeeded) }
-
-    val unboostCompleteCallback: () -> Unit =
-        { showToast(false, R.string.unboost_succeeded) }
-
-    val reactionCompleteCallback: () -> Unit =
-        { showToast(false, R.string.reaction_succeeded) }
+    val followCompleteCallback = toastCallback(R.string.follow_succeeded)
+    val unfollowCompleteCallback = toastCallback(R.string.unfollow_succeeded)
+    val cancelFollowRequestCompleteCallback = toastCallback(R.string.follow_request_cancelled)
+    val favouriteCompleteCallback = toastCallback(R.string.favourite_succeeded)
+    val unfavouriteCompleteCallback = toastCallback(R.string.unfavourite_succeeded)
+    val bookmarkCompleteCallback = toastCallback(R.string.bookmark_succeeded)
+    val unbookmarkCompleteCallback = toastCallback(R.string.unbookmark_succeeded)
+    val boostCompleteCallback = toastCallback(R.string.boost_succeeded)
+    val unboostCompleteCallback = toastCallback(R.string.unboost_succeeded)
+    val reactionCompleteCallback = toastCallback(R.string.reaction_succeeded)
 
     // 相対時刻の表記を定期的に更新する
     private val procUpdateRelativeTime = object : Runnable {
@@ -573,8 +557,6 @@ class ActMain : AppCompatActivity(),
 
     val arActText = ActivityResultHandler(log) { r ->
         when (r.resultCode) {
-            // ActText.RESULT_SEARCH_MSP -> searchFromActivityResult(r.data, ColumnType.SEARCH_MSP)
-            // ActText.RESULT_SEARCH_TS -> searchFromActivityResult(r.data, ColumnType.SEARCH_TS)
             ActText.RESULT_SEARCH_NOTESTOCK -> searchFromActivityResult(
                 r.data,
                 ColumnType.SEARCH_NOTESTOCK
@@ -630,7 +612,7 @@ class ActMain : AppCompatActivity(),
 
         EmojiDecoder.useTwemoji = PrefB.bpUseTwemoji.value
 
-        acctPadLr = (0.5f + 4f * density).toInt()
+        acctPadLr = dp(4)
         reloadTextSize()
         reloadEmojiScale()
 
@@ -678,7 +660,7 @@ class ActMain : AppCompatActivity(),
     override fun onConfigurationChanged(newConfig: Configuration) {
         log.w("onConfigurationChanged")
         super.onConfigurationChanged(newConfig)
-        if (newConfig.screenHeightDp > 0 || newConfig.screenHeightDp > 0) {
+        if (newConfig.screenWidthDp > 0 || newConfig.screenHeightDp > 0) {
             tabOnly { env -> resizeColumnWidth(env) }
         }
     }
@@ -831,31 +813,9 @@ class ActMain : AppCompatActivity(),
         log.d("onResume")
         isResumed = true
 
+        // super.onResume() から呼ばれる isTopOfTask() が
+        // android.os.RemoteException をたまに出すが、放置する
         super.onResume()
-        /*
-           super.onResume() から呼ばれる isTopOfTask() が android.os.RemoteException 例外をたまに出すが、放置することにした。
-            java.lang.RuntimeException:
-            at android.app.ActivityThread.performResumeActivity (ActivityThread.java:4430)
-            at android.app.ActivityThread.handleResumeActivity (ActivityThread.java:4470)
-            Caused by: java.lang.IllegalArgumentException:
-            at android.os.Parcel.createException (Parcel.java:1957)
-            at android.os.Parcel.readException (Parcel.java:1921)
-            at android.os.Parcel.readException (Parcel.java:1871)
-            at android.app.IActivityManager$Stub$Proxy.isTopOfTask (IActivityManager.java:7912)
-            at android.app.Activity.isTopOfTask (Activity.java:6724)
-            at android.app.Activity.onResume (Activity.java:1425)
-            at androidx.fragment.app.FragmentActivity.onResume (FragmentActivity.java:456)
-            at jp.juggler.subwaytooter.ActMain.onResume (ActMain.kt:685)
-            at android.app.Instrumentation.callActivityOnResume (Instrumentation.java:1456)
-            at android.app.Activity.performResume (Activity.java:7614)
-            at android.app.ActivityThread.performResumeActivity (ActivityThread.java:4412)
-            Caused by: android.os.RemoteException:
-            at com.android.server.am.ActivityManagerService.isTopOfTask (ActivityManagerService.java:16128)
-            at android.app.IActivityManager$Stub.onTransact (IActivityManager.java:2376)
-            at com.android.server.am.ActivityManagerService.onTransact (ActivityManagerService.java:3648)
-            at com.android.server.am.HwActivityManagerService.onTransact (HwActivityManagerService.java:609)
-            at android.os.Binder.execTransact (Binder.java:739)
-         */
 
         if (PrefB.bpDontScreenOff.value) {
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)

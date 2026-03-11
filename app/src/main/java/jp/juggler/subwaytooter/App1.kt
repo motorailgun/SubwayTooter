@@ -43,9 +43,7 @@ import kotlinx.coroutines.launch
 import okhttp3.Cache
 import okhttp3.CacheControl
 import okhttp3.ConnectionSpec
-import okhttp3.CookieJar
 import okhttp3.Interceptor
-import okhttp3.JavaNetCookieJar
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -53,9 +51,6 @@ import org.conscrypt.Conscrypt
 import ru.gildor.coroutines.okhttp.await
 import java.io.File
 import java.io.InputStream
-import java.net.CookieHandler
-import java.net.CookieManager
-import java.net.CookiePolicy
 import java.security.Security
 import java.util.Collections
 import java.util.concurrent.TimeUnit
@@ -112,66 +107,6 @@ class App1 : Application() {
 
         private val appliedThemes = WeakHashMap<Activity, AppliedTheme>()
 
-        //		private val APPROVED_CIPHER_SUITES = arrayOf(
-        //
-        //			// 以下は okhttp 3 のデフォルト
-        //			// This is nearly equal to the cipher suites supported in Chrome 51, current as of 2016-05-25.
-        //			// All of these suites are available on Android 7.0; earlier releases support a subset of these
-        //			// suites. https://github.com/square/okhttp/issues/1972
-        //			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-        //			CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-        //			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-        //			CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-        //			CipherSuite.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305_SHA256,
-        //			CipherSuite.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305_SHA256,
-        //
-        //			// Note that the following cipher suites are all on HTTP/2's bad cipher suites list. We'll
-        //			// continue to include them until better suites are commonly available. For example, none
-        //			// of the better cipher suites listed above shipped with Android 4.4 or Java 7.
-        //			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA,
-        //			CipherSuite.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
-        //			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA,
-        //			CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA,
-        //			CipherSuite.TLS_RSA_WITH_AES_128_GCM_SHA256,
-        //			CipherSuite.TLS_RSA_WITH_AES_256_GCM_SHA384,
-        //			CipherSuite.TLS_RSA_WITH_AES_128_CBC_SHA,
-        //			CipherSuite.TLS_RSA_WITH_AES_256_CBC_SHA,
-        //			CipherSuite.TLS_RSA_WITH_3DES_EDE_CBC_SHA,
-        //
-        //			//https://www.ssllabs.com/ssltest/analyze.html?d=mastodon.cloud&latest
-        //			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256, // mastodon.cloud用 デフォルトにはない
-        //			CipherSuite.TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA384, //mastodon.cloud用 デフォルトにはない
-        //
-        //			// https://www.ssllabs.com/ssltest/analyze.html?d=m.sighash.info
-        //			CipherSuite.TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384, // m.sighash.info 用 デフォルトにはない
-        //			CipherSuite.TLS_DHE_RSA_WITH_AES_256_GCM_SHA384, // m.sighash.info 用 デフォルトにはない
-        //			CipherSuite.TLS_DHE_RSA_WITH_AES_256_CBC_SHA256, // m.sighash.info 用 デフォルトにはない
-        //			CipherSuite.TLS_DHE_RSA_WITH_AES_256_CBC_SHA
-        //		) // m.sighash.info 用 デフォルトにはない
-
-        //	private int getBitmapPoolSize( Context context ){
-        //		ActivityManager am = ((ActivityManager)context.getSystemService(Activity.ACTIVITY_SERVICE));
-        //		int memory = am.getMemoryClass();
-        //		int largeMemory = am.getLargeMemoryClass();
-        //		// どちらも単位はMB
-        //		warning.d("MemoryClass=%d, LargeMemoryClass = %d",memory,largeMemory);
-        //
-        //		int maxSize;
-        //		if( am.isLowRamDevice() ){
-        //			maxSize = 5 * 1024; // 単位はKiB
-        //		}else if( largeMemory >= 512 ){
-        //			maxSize = 128 * 1024; // 単位はKiB
-        //		}else if( largeMemory >= 256 ){
-        //			maxSize = 64 * 1024; // 単位はKiB
-        //		}else{
-        //			maxSize = 10 * 1024; // 単位はKiB
-        //		}
-        //		return maxSize * 1024;
-        //	}
-
-        private var cookieManager: CookieManager? = null
-        private var cookieJar: CookieJar? = null
-
         private fun Context.userAgentInterceptor() =
             Interceptor { chain ->
                 chain.proceed(
@@ -185,21 +120,6 @@ class App1 : Application() {
             timeoutSecondsConnect: Int,
             timeoutSecondsRead: Int,
         ): OkHttpClient.Builder {
-
-            Logger.getLogger(OkHttpClient::class.java.name).level = Level.FINE
-
-            var cookieJar = this@Companion.cookieJar
-            if (cookieJar == null) {
-                val cookieManager = CookieManager().apply {
-                    setCookiePolicy(CookiePolicy.ACCEPT_ALL)
-                }
-                CookieHandler.setDefault(cookieManager)
-                cookieJar = JavaNetCookieJar(cookieManager)
-
-                this@Companion.cookieManager = cookieManager
-                this@Companion.cookieJar = cookieJar
-            }
-
             val spec = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
                 .allEnabledCipherSuites()
                 .allEnabledTlsVersions()
@@ -214,9 +134,6 @@ class App1 : Application() {
                 .sslSocketFactory(MySslSocketFactory, MySslSocketFactory.trustManager)
                 .addInterceptor(ProgressResponseBody.makeInterceptor())
                 .addInterceptor(userAgentInterceptor())
-
-            // クッキーの導入は検討中。とりあえずmstdn.jpではクッキー有効でも改善しなかったので現時点では追加しない
-            //	.cookieJar(cookieJar)
         }
 
         lateinit var ok_http_client: OkHttpClient
@@ -224,8 +141,6 @@ class App1 : Application() {
         private lateinit var ok_http_client2: OkHttpClient
 
         lateinit var ok_http_client_media_viewer: OkHttpClient
-
-        // lateinit var task_executor : ThreadPoolExecutor
 
         @SuppressLint("StaticFieldLeak")
         lateinit var custom_emoji_cache: CustomEmojiCache
@@ -247,21 +162,15 @@ class App1 : Application() {
             // ワークアラウンドとして、アプリ内にバンドルしたデータを使うBundledEmojiCompatConfigで初期化する
             // (初期化が既に行われている場合は無害である)
             EmojiCompat.init(
-                BundledEmojiCompatConfig(
-                    appContext,
-                    object : java.util.concurrent.Executor {
-                        override fun execute(command: Runnable?) {
-                            command ?: throw NullPointerException()
-                            EmptyScope.launch(AppDispatchers.IO) {
-                                try {
-                                    command.run()
-                                } catch (ex: Throwable) {
-                                    log.w(ex, "BundledEmojiCompatConfig fontLoadExecutor failed.")
-                                }
-                            }
+                BundledEmojiCompatConfig(appContext) { command ->
+                    EmptyScope.launch(AppDispatchers.IO) {
+                        try {
+                            command.run()
+                        } catch (ex: Throwable) {
+                            log.w(ex, "BundledEmojiCompatConfig fontLoadExecutor failed.")
                         }
                     }
-                )
+                }
             )
 
             // initialize Conscrypt
@@ -270,52 +179,8 @@ class App1 : Application() {
                 1 /* 1 means first position */
             )
 
-            // We want at least 2 threads and at most 4 threads in the core pool,
-            // preferring to have 1 less than the CPU count to avoid saturating
-            // the CPU with background work
-
-            //				val CPU_COUNT = Runtime.getRuntime().availableProcessors()
-            //				val CORE_POOL_SIZE = max(2, min(CPU_COUNT - 1, 4))
-            //				val MAXIMUM_POOL_SIZE = CPU_COUNT * 2 + 1
-            //				val KEEP_ALIVE_SECONDS = 30
-
-            //				// デフォルトだとキューはmax128で、溢れることがある
-            //				val sPoolWorkQueue = LinkedBlockingQueue<Runnable>(999)
-            //
-            //				val sThreadFactory = object : ThreadFactory {
-            //					private val mCount = AtomicInteger(1)
-            //
-            //					override fun newThread(r : Runnable) : Thread {
-            //						return Thread(r, "SubwayTooterTask #" + mCount.getAndIncrement())
-            //					}
-            //				}
-
-            //				task_executor = ThreadPoolExecutor(
-            //					CORE_POOL_SIZE  // pool size
-            //					, MAXIMUM_POOL_SIZE // max pool size
-            //					, KEEP_ALIVE_SECONDS.toLong() // keep-alive-seconds
-            //					, TimeUnit.SECONDS // unit of keep-alive-seconds
-            //					, sPoolWorkQueue, sThreadFactory
-            //				)
-            //
-            //				task_executor.allowCoreThreadTimeOut(true)
-
-            //		if( USE_OLD_EMOJIONE ){
-            //			if( typeface_emoji == null ){
-            //				typeface_emoji = TypefaceUtils.load( app_context.getAssets(), "emojione_android.ttf" );
-            //			}
-            //		}
-
-            //		if( image_loader == null ){
-            //			image_loader = new MyImageLoader(
-            //				Volley.newRequestQueue( getApplicationContext() )
-            //				, new BitmapCache( getApplicationContext() )
-            //			);
-            //		}
-
             log.d("create okhttp client")
             run {
-
                 Logger.getLogger(OkHttpClient::class.java.name).level = Level.FINE
 
                 val apiReadTimeout = max(3, PrefS.spApiReadTimeout.toInt())
@@ -410,50 +275,6 @@ class App1 : Application() {
             )
 
             builder.setDiskCache(InternalCacheDiskCacheFactory(context, 10L * 1024L * 1024L))
-
-            // DEBUG 画像のディスクキャッシュの消去
-            //			new Thread(new Runnable() {
-            //				@Override
-            //				public void run() {
-            //					Glide.get(context).clearDiskCache();
-            //				}
-            //			}).start();
-
-            //
-            //			////////////
-            //			// サンプル1：キャッシュサイズを自動で計算する
-            //			val calculator = MemorySizeCalculator.Builder(context)
-            //				.setMemoryCacheScreens(2f)
-            //				.setBitmapPoolScreens(3f)
-            //				.build()
-            //
-            //			builder.setMemoryCache(LruResourceCache(calculator.memoryCacheSize.toLong()))
-
-            //////
-            // サンプル2：キャッシュサイズをアプリが決める
-            // int memoryCacheSizeBytes = 1024 * 1024 * 20; // 20mb
-            // builder.setMemoryCache(new LruResourceCache(memoryCacheSizeBytes));
-
-            //////
-            // サンプル3 ： 自前のメモリキャッシュ
-            // builder.setMemoryCache(new YourAppMemoryCacheImpl());
-
-            //			builder.setBitmapPool(LruBitmapPool(calculator.bitmapPoolSize.toLong()))
-
-            // ディスクキャッシュを保存する場所を変えたい場合
-            // builder.setDiskCache(new ExternalDiskCacheFactory(context));
-
-            // ディスクキャッシュのサイズを変えたい場合
-            //			val diskCacheSizeBytes = 1024 * 1024 * 100 // 100 MB
-            //			builder.setDiskCache(InternalDiskCacheFactory(context, diskCacheSizeBytes))
-
-            // Although RequestOptions are typically specified per request,
-            // you can also apply a default set of RequestOptions that will be applied to every load
-            // you start in your application by using an AppGlideModule:
-            //			val ro = RequestOptions()
-            //				.format(DecodeFormat.PREFER_ARGB_8888)
-            //				.disallowHardwareConfig()
-            //			builder.setDefaultRequestOptions(ro)
         }
 
         fun setActivityTheme(
