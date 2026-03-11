@@ -2,35 +2,29 @@ package jp.juggler.subwaytooter.columnviewholder
 
 import android.view.View
 import android.widget.ImageView
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.core.net.toUri
 import com.omadahealth.github.swipyrefreshlayout.library.SwipyRefreshLayoutDirection
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.actmain.closePopup
 import jp.juggler.subwaytooter.column.*
+import jp.juggler.subwaytooter.compose.TimelineState
 import jp.juggler.subwaytooter.pref.PrefB
-import jp.juggler.subwaytooter.util.endPadding
-import jp.juggler.subwaytooter.util.startPadding
-import jp.juggler.subwaytooter.view.ListDivider
+import jp.juggler.subwaytooter.util.ScrollPosition
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.media.createResizedBitmap
 import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.createRoundDrawable
-import jp.juggler.util.ui.isCheckedNoAnime
-import jp.juggler.util.ui.vg
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
-import org.jetbrains.anko.backgroundColor
-import org.jetbrains.anko.bottomPadding
-import org.jetbrains.anko.topPadding
 
 private val log = LogCategory("ColumnViewHolderLifeCycle")
 
 fun ColumnViewHolder.closeBitmaps() {
     try {
-        ivColumnBackgroundImage.visibility = View.GONE
-        ivColumnBackgroundImage.setImageDrawable(null)
+        columnUiState.columnBgImageBitmap = null
 
         lastImageBitmap?.recycle()
         lastImageBitmap = null
@@ -44,28 +38,22 @@ fun ColumnViewHolder.closeBitmaps() {
     }
 }
 
-fun ColumnViewHolder.loadBackgroundImage(iv: ImageView, url: String?) {
+fun ColumnViewHolder.loadBackgroundImage(url: String?) {
     try {
         if (url == null || url.isEmpty() || PrefB.bpDontShowColumnBackgroundImage.value) {
-            // 指定がないなら閉じる
             closeBitmaps()
             return
         }
 
-        if (url == lastImageUri) {
-            // 今表示してるのと同じ
-            return
-        }
+        if (url == lastImageUri) return
 
-        // 直前の処理をキャンセルする。Bitmapも破棄する
         closeBitmaps()
 
-        // ロード開始
         lastImageUri = url
-        val screenW = iv.resources.displayMetrics.widthPixels
-        val screenH = iv.resources.displayMetrics.heightPixels
+        val activity = this.activity
+        val screenW = activity.resources.displayMetrics.widthPixels
+        val screenH = activity.resources.displayMetrics.heightPixels
 
-        // 非同期処理を開始
         lastImageTask = launchMain {
             val bitmap = try {
                 withContext(AppDispatchers.IO) {
@@ -92,8 +80,7 @@ fun ColumnViewHolder.loadBackgroundImage(iv: ImageView, url: String?) {
                     bitmap.recycle()
                 } else {
                     lastImageBitmap = bitmap
-                    iv.setImageBitmap(lastImageBitmap)
-                    iv.visibility = View.VISIBLE
+                    columnUiState.columnBgImageBitmap = bitmap
                 }
             }
         }
@@ -103,12 +90,12 @@ fun ColumnViewHolder.loadBackgroundImage(iv: ImageView, url: String?) {
 }
 
 fun ColumnViewHolder.onPageDestroy(pageIdx: Int) {
-    // タブレットモードの場合、onPageCreateより前に呼ばれる
     val column = this.column
     if (column != null) {
-        ColumnViewHolder.log.d("onPageDestroy [$pageIdx] ${tvColumnName.text}")
+        ColumnViewHolder.log.d("onPageDestroy [$pageIdx] ${columnUiState.columnName}")
         saveScrollPosition()
-        listView.adapter = null
+        timelineState = null
+        lazyListState = null
         column.removeColumnViewHolder(this)
         this.column = null
     }
@@ -127,26 +114,30 @@ fun ColumnViewHolder.onPageCreate(column: Column, pageIdx: Int, pageCount: Int) 
         ColumnViewHolder.log.d("onPageCreate [$pageIdx] ${column.getColumnName(true)}")
 
         val bSimpleList = !column.isConversation && PrefB.bpSimpleList.value
-
-        tvColumnIndex.text = activity.getString(R.string.column_index, pageIdx + 1, pageCount)
-        tvColumnStatus.text = "?"
-        ivColumnIcon.setImageResource(column.getIconId())
-
-        listView.adapter = null
-        if (listView.itemDecorationCount == 0) {
-            listView.addItemDecoration(ListDivider(activity))
-        }
-
-        val statusAdapter = ItemListAdapter(activity, column, this, bSimpleList)
-        this.statusAdapter = statusAdapter
-
+        val ui = columnUiState
         val isNotificationColumn = column.isNotificationColumn
-
-        // 添付メディアや正規表現のフィルタ
         val bAllowFilter = column.canStatusFilter()
 
-        showColumnSetting(false)
+        // ──── Header ────
+        ui.columnIndex = activity.getString(R.string.column_index, pageIdx + 1, pageCount)
+        ui.columnStatus = "?"
+        ui.columnIconResId = column.getIconId()
 
+        // ──── Create Compose timeline state ────
+        val scrollSave = column.scrollSave
+        val newLazyListState = LazyListState(
+            firstVisibleItemIndex = scrollSave?.adapterIndex ?: 0,
+            firstVisibleItemScrollOffset = scrollSave?.offset ?: 0,
+        )
+        this.lazyListState = newLazyListState
+
+        val newTimelineState = TimelineState()
+        this.timelineState = newTimelineState
+
+        // ──── Settings visibility ────
+        ui.settingsVisible = false
+
+        // Clear emoji invalidators
         for (invalidator in emojiQueryInvalidatorList) {
             invalidator.register(null)
         }
@@ -157,128 +148,111 @@ fun ColumnViewHolder.onPageCreate(column: Column, pageIdx: Int, pageCount: Int) 
         }
         extraInvalidatorList.clear()
 
-        cbDontCloseColumn.isCheckedNoAnime = column.dontClose
-        cbShowMediaDescription.isCheckedNoAnime = column.showMediaDescription
-        cbRemoteOnly.isCheckedNoAnime = column.remoteOnly
-        cbWithAttachment.isCheckedNoAnime = column.withAttachment
-        cbWithHighlight.isCheckedNoAnime = column.withHighlight
-        cbDontShowBoost.isCheckedNoAnime = column.dontShowBoost
-        cbDontShowFollow.isCheckedNoAnime = column.dontShowFollow
-        cbDontShowFavourite.isCheckedNoAnime = column.dontShowFavourite
-        cbDontShowReply.isCheckedNoAnime = column.dontShowReply
-        cbDontShowReaction.isCheckedNoAnime = column.dontShowReaction
-        cbDontShowVote.isCheckedNoAnime = column.dontShowVote
-        cbDontShowNormalToot.isCheckedNoAnime = column.dontShowNormalToot
-        cbDontShowNonPublicToot.isCheckedNoAnime = column.dontShowNonPublicToot
-        cbInstanceLocal.isCheckedNoAnime = column.instanceLocal
-        cbDontStreaming.isCheckedNoAnime = column.dontStreaming
-        cbDontAutoRefresh.isCheckedNoAnime = column.dontAutoRefresh
-        cbHideMediaDefault.isCheckedNoAnime = column.hideMediaDefault
-        cbSystemNotificationNotRelated.isCheckedNoAnime = column.systemNotificationNotRelated
-        cbEnableSpeech.isCheckedNoAnime = column.enableSpeech
-        cbOldApi.isCheckedNoAnime = column.useOldApi
+        // ──── Checkbox values ────
+        ui.dontClose = column.dontClose
+        ui.showMediaDescription = column.showMediaDescription
+        ui.remoteOnly = column.remoteOnly
+        ui.withAttachment = column.withAttachment
+        ui.withHighlight = column.withHighlight
+        ui.dontShowBoost = column.dontShowBoost
+        ui.dontShowFollow = column.dontShowFollow
+        ui.dontShowFavourite = column.dontShowFavourite
+        ui.dontShowReply = column.dontShowReply
+        ui.dontShowReaction = column.dontShowReaction
+        ui.dontShowVote = column.dontShowVote
+        ui.dontShowNormalToot = column.dontShowNormalToot
+        ui.dontShowNonPublicToot = column.dontShowNonPublicToot
+        ui.instanceLocal = column.instanceLocal
+        ui.dontStreaming = column.dontStreaming
+        ui.dontAutoRefresh = column.dontAutoRefresh
+        ui.hideMediaDefault = column.hideMediaDefault
+        ui.systemNotificationNotRelated = column.systemNotificationNotRelated
+        ui.enableSpeech = column.enableSpeech
+        ui.oldApi = column.useOldApi
 
-        etRegexFilter.setText(column.regexText)
-        etSearch.setText(column.searchQuery)
-        cbResolve.isCheckedNoAnime = column.searchResolve
+        // ──── Text fields ────
+        ui.regexFilterText = column.regexText
+        ui.searchQuery = column.searchQuery
+        ui.searchResolve = column.searchResolve
 
         if (column.type == ColumnType.AGG_BOOSTS) {
-            etStatusLoadLimit.setText(column.aggStatusLimit.toString())
+            ui.statusLoadLimit = column.aggStatusLimit.toString()
         }
 
-        cbRemoteOnly.vg(column.canRemoteOnly())
+        // ──── Checkbox visibility ────
+        ui.showRemoteOnly = column.canRemoteOnly()
+        ui.showWithAttachment = bAllowFilter
+        ui.showWithHighlight = bAllowFilter
+        ui.showRegexFilter = bAllowFilter
+        ui.showLanguageFilter = bAllowFilter
 
-        cbWithAttachment.vg(bAllowFilter)
-        cbWithHighlight.vg(bAllowFilter)
-        etRegexFilter.vg(bAllowFilter)
-        llRegexFilter.vg(bAllowFilter)
-        btnLanguageFilter.vg(bAllowFilter)
+        ui.showDontShowBoost = column.canFilterBoost()
+        ui.showDontShowReply = column.canFilterReply()
+        ui.showDontShowNormalToot = column.canFilterNormalToot()
+        ui.showDontShowNonPublicToot = column.canFilterNonPublicToot()
+        ui.showDontShowReaction = isNotificationColumn && column.isMisskey
+        ui.showDontShowVote = isNotificationColumn
+        ui.showDontShowFavourite = isNotificationColumn && !column.isMisskey
+        ui.showDontShowFollow = isNotificationColumn
 
-        cbDontShowBoost.vg(column.canFilterBoost())
-        cbDontShowReply.vg(column.canFilterReply())
-        cbDontShowNormalToot.vg(column.canFilterNormalToot())
-        cbDontShowNonPublicToot.vg(column.canFilterNonPublicToot())
-        cbDontShowReaction.vg(isNotificationColumn && column.isMisskey)
-        cbDontShowVote.vg(isNotificationColumn)
-        cbDontShowFavourite.vg(isNotificationColumn && !column.isMisskey)
-        cbDontShowFollow.vg(isNotificationColumn)
+        ui.showInstanceLocal = column.type == ColumnType.HASHTAG
 
-        cbInstanceLocal.vg(column.type == ColumnType.HASHTAG)
+        ui.showDontStreaming = column.canStreamingType()
+        ui.showDontAutoRefresh = column.canAutoRefresh()
+        ui.showHideMediaDefault = column.canNSFWDefault()
+        ui.showSystemNotificationNotRelated = column.isNotificationColumn
+        ui.showEnableSpeech = column.canSpeech()
+        ui.showOldApi = column.type == ColumnType.DIRECT_MESSAGES
 
-        cbDontStreaming.vg(column.canStreamingType())
-        cbDontAutoRefresh.vg(column.canAutoRefresh())
-        cbHideMediaDefault.vg(column.canNSFWDefault())
-        cbSystemNotificationNotRelated.vg(column.isNotificationColumn)
-        cbEnableSpeech.vg(column.canSpeech())
-        cbOldApi.vg(column.type == ColumnType.DIRECT_MESSAGES)
+        ui.showDeleteNotification = column.isNotificationColumn
 
-        btnDeleteNotification.vg(column.isNotificationColumn)
+        // ──── Search / list / agg bars ────
+        val searchBgColor = activity.attrColor(R.attr.colorSearchFormBackground)
+        ui.searchFormBgColor = searchBgColor
 
-        fun dip(dp: Int): Int = (activity.density * dp + 0.5f).toInt()
-        val context = activity
+        ui.aggBoostBarVisible = column.type == ColumnType.AGG_BOOSTS
+        ui.listBarVisible = column.type == ColumnType.LIST_LIST
 
-        val searchBgColor = context.attrColor(R.attr.colorSearchFormBackground)
-
-        for (v in arrayOf(
-            llSearch,
-            llAggBoostBar,
-            llListList,
-        )) {
-            v.apply {
-                backgroundColor = searchBgColor
-                startPadding = dip(12)
-                endPadding = dip(12)
-                topPadding = dip(3)
-                bottomPadding = dip(3)
-            }
-        }
-        llAggBoostBar.vg(column.type == ColumnType.AGG_BOOSTS)
-        llListList.vg(column.type == ColumnType.LIST_LIST)
-        // 検索バーは複数の絡む種別で異なる利用をされる
         when {
             column.isSearchColumn -> {
-                llSearch.vg(true)
-
-                flEmoji.vg(false)
-                tvEmojiDesc.vg(false)
-                btnEmojiAdd.vg(false)
-
-                etSearch.vg(true)
-                btnSearchClear.vg(PrefB.bpShowSearchClear.value)
-                cbResolve.vg(column.type == ColumnType.SEARCH)
+                ui.searchBarVisible = true
+                ui.showEmojiQueryMode = false
+                ui.showSearchInput = true
+                ui.showSearchClear = PrefB.bpShowSearchClear.value
+                ui.showResolveCheckbox = column.type == ColumnType.SEARCH
             }
 
             column.type == ColumnType.REACTIONS && column.accessInfo.isMastodon -> {
-                llSearch.vg(true)
-
-                flEmoji.vg(true)
-                tvEmojiDesc.vg(true)
-                btnEmojiAdd.vg(true)
-
-                etSearch.vg(false)
-                btnSearchClear.vg(false)
-                cbResolve.vg(false)
+                ui.searchBarVisible = true
+                ui.showEmojiQueryMode = true
+                ui.showSearchInput = false
+                ui.showSearchClear = false
+                ui.showResolveCheckbox = false
             }
 
-            else -> llSearch.vg(false)
+            else -> {
+                ui.searchBarVisible = false
+            }
         }
 
-        tvLoadLimitLabel
+        // ──── Hashtag extra ────
+        ui.showHashtagExtra = column.hasHashtagExtra
+        ui.hashtagExtraAny = column.hashtagAny
+        ui.hashtagExtraAll = column.hashtagAll
+        ui.hashtagExtraNone = column.hashtagNone
 
-
-        llHashtagExtra.vg(column.hasHashtagExtra)
-        etHashtagExtraAny.setText(column.hashtagAny)
-        etHashtagExtraAll.setText(column.hashtagAll)
-        etHashtagExtraNone.setText(column.hashtagNone)
-
-        // tvRegexFilterErrorの表示を更新
+        // Regex filter error display
         if (bAllowFilter) {
             isRegexValid()
         }
 
+        // ──── Refresh layout state ────
         val canRefreshTop = column.canRefreshTopBySwipe()
         val canRefreshBottom = column.canRefreshBottomBySwipe()
+        ui.canRefreshTop = canRefreshTop
+        ui.canRefreshBottom = canRefreshBottom
 
+        // Also sync the dummy SwipyRefreshLayout for external callers
         refreshLayout.isEnabled = canRefreshTop || canRefreshBottom
         refreshLayout.direction = if (canRefreshTop && canRefreshBottom) {
             SwipyRefreshLayoutDirection.BOTH
@@ -288,38 +262,30 @@ fun ColumnViewHolder.onPageCreate(column: Column, pageIdx: Int, pageCount: Int) 
             SwipyRefreshLayoutDirection.BOTTOM
         }
 
+        // ──── Refresh error ────
+        ui.refreshErrorVisible = false
         bRefreshErrorWillShown = false
-        llRefreshError.clearAnimation()
-        llRefreshError.visibility = View.GONE
 
-        //
-        listView.adapter = statusAdapter
+        // ──── Quick filter ────
+        ui.quickFilterVisible = isNotificationColumn
+        ui.quickFilterInsideSetting = PrefB.bpMoveNotificationsQuickFilter.value
 
-        //XXX FastScrollerのサポートを諦める。ライブラリはいくつかあるんだけど、設定でON/OFFできなかったり頭文字バブルを無効にできなかったり
-        // listView.isFastScrollEnabled = ! PrefB.bpDisableFastScroller(Pref.pref(activity))
+        // ──── Announcements ────
+        lastAnnouncementShown = -1L
+        val announcementsBgColor = searchBgColor
+        ui.settingsBgColor = activity.attrColor(R.attr.colorColumnSettingBackground)
 
+        // ──── Connect column ────
         column.addColumnViewHolder(this)
 
-        lastAnnouncementShown = -1L
+        // ──── Build callbacks ────
+        columnCallbacks = buildColumnCallbacks()
 
-        val announcementsBgColor = context.attrColor(R.attr.colorSearchFormBackground)
+        // ──── Set compose content ────
+        setComposeContent()
 
-        btnAnnouncementsCutout.apply {
-            color = announcementsBgColor
-        }
-
-        llAnnouncementsBox.apply {
-            background = createRoundDrawable(dip(6).toFloat(), announcementsBgColor)
-            val padV = dip(2)
-            setPadding(0, padV, 0, padV)
-        }
-
-
-
-
-
+        // ──── Show content ────
         showColumnColor()
-
         showContent(reason = "onPageCreate", reset = true)
     } finally {
         bindingBusy = false

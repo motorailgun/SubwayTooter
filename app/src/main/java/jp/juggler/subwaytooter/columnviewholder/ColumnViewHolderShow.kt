@@ -1,18 +1,10 @@
 package jp.juggler.subwaytooter.columnviewholder
 
-import android.content.res.ColorStateList
-import android.text.TextUtils
-import android.view.View
-import android.view.animation.AlphaAnimation
-import android.view.animation.Animation
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.column.*
 import jp.juggler.util.data.notZero
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.AdapterChange
-import jp.juggler.util.ui.isEnabledAlpha
-import jp.juggler.util.ui.vg
-import org.jetbrains.anko.textColor
 
 private val log = LogCategory("ColumnViewHolderShow")
 
@@ -31,38 +23,28 @@ fun ColumnViewHolder.showColumnColor() {
     val column = this.column
     if (column == null || column.isDispose.get()) return
 
-    // カラムヘッダ背景
-    column.setHeaderBackground(llColumnHeader)
+    val ui = columnUiState
 
-    // カラムヘッダ文字色(A)
-    var c = column.getHeaderNameColor()
-    val csl = ColorStateList.valueOf(c)
-    tvColumnName.textColor = c
-    ivColumnIcon.imageTintList = csl
-    btnAnnouncements.imageTintList = csl
-    btnColumnSetting.imageTintList = csl
-    btnColumnReload.imageTintList = csl
-    btnColumnClose.imageTintList = csl
+    // カラムヘッダ背景色
+    val headerBgColor = column.getHeaderBackgroundColor()
+    ui.headerBgColor = headerBgColor
+    ui.headerBgColorIsDefault = (column.headerBgColor == 0)
 
-    // カラムヘッダ文字色(B)
-    c = column.getHeaderPageNumberColor()
-    tvColumnIndex.textColor = c
-    tvColumnStatus.textColor = c
+    // カラムヘッダ文字色(A) - column name / icons
+    ui.headerNameColor = column.getHeaderNameColor()
+
+    // カラムヘッダ文字色(B) - page number / status
+    ui.headerPageNumberColor = column.getHeaderPageNumberColor()
 
     // カラム内部の背景色
-    flColumnBackground.setBackgroundColor(
-        column.columnBgColor.notZero()
-            ?: Column.defaultColorContentBg
-    )
+    ui.columnBgColor = column.columnBgColor.notZero() ?: Column.defaultColorContentBg
 
     // カラム内部の背景画像
-    ivColumnBackgroundImage.alpha = column.columnBgImageAlpha
-    loadBackgroundImage(ivColumnBackgroundImage, column.columnBgImage)
+    ui.columnBgImageAlpha = column.columnBgImageAlpha
+    loadBackgroundImage(column.columnBgImage)
 
-    // エラー表示
-    tvLoading.textColor = column.getContentColor()
-
-    statusAdapter?.findHeaderViewHolder(listView)?.showColor()
+    // エラー表示のテキストカラー
+    ui.contentColor = column.getContentColor()
 
     // カラム色を変更したらクイックフィルタの色も変わる場合がある
     showQuickFilter()
@@ -73,16 +55,16 @@ fun ColumnViewHolder.showColumnColor() {
 fun ColumnViewHolder.showError(message: String) {
     hideRefreshError()
 
-    refreshLayout.isRefreshing = false
-    refreshLayout.visibility = View.GONE
-
-    llLoading.visibility = View.VISIBLE
-    tvLoading.text = message
-    btnConfirmMail.vg(column?.accessInfo?.isConfirmed == false)
+    val ui = columnUiState
+    ui.isRefreshing = false
+    ui.showRefreshLayout = false
+    ui.showLoading = true
+    ui.loadingMessage = message
+    ui.showConfirmMail = (column?.accessInfo?.isConfirmed == false)
 }
 
 fun ColumnViewHolder.showColumnCloseButton() {
-    column?.dontClose?.let { btnColumnClose.isEnabledAlpha = !it }
+    column?.dontClose?.let { columnUiState.closeButtonEnabled = !it }
 }
 
 internal fun ColumnViewHolder.showContent(
@@ -90,10 +72,13 @@ internal fun ColumnViewHolder.showContent(
     changeList: List<AdapterChange>? = null,
     reset: Boolean = false,
 ) {
-    // クラッシュレポートにadapterとリストデータの状態不整合が多かったので、
-    // とりあえずリストデータ変更の通知だけは最優先で行っておく
+    // Notify Compose TimelineState of data changes
     try {
-        statusAdapter?.notifyChange(reason, changeList, reset)
+        val column = this.column
+        val ts = this.timelineState
+        if (column != null && ts != null) {
+            ts.notifyChange(column, reason, changeList, reset)
+        }
     } catch (ex: Throwable) {
         log.e(ex, "notifyChange failed.")
     }
@@ -125,31 +110,31 @@ internal fun ColumnViewHolder.showContent(
         return
     }
 
-    val statusAdapter = this.statusAdapter
-
-    if (statusAdapter == null || statusAdapter.itemCount == 0) {
+    val ts = this.timelineState
+    if (ts == null || (ts.items.isEmpty() && column.listData.isEmpty())) {
         showError(activity.getString(R.string.list_empty))
         return
     }
 
-    llLoading.visibility = View.GONE
+    // Clear loading/error state in TimelineState
+    ts.isLoading = false
+    ts.errorMessage = null
 
-    refreshLayout.visibility = View.VISIBLE
-
-    statusAdapter.findHeaderViewHolder(listView)?.bindData(column)
+    val ui = columnUiState
+    ui.showLoading = false
+    ui.showRefreshLayout = true
 
     if (column.bRefreshLoading) {
         hideRefreshError()
     } else {
-        refreshLayout.isRefreshing = false
+        ui.isRefreshing = false
         showRefreshError()
     }
     procRestoreScrollPosition.run()
 }
 
 fun ColumnViewHolder.showColumnSetting(show: Boolean): Boolean {
-    llColumnSetting.vg(show)
-    llColumnHeader.invalidate()
+    columnUiState.settingsVisible = show
     return show
 }
 
@@ -161,56 +146,27 @@ fun ColumnViewHolder.showRefreshError() {
     }
 
     val refreshError = column.mRefreshLoadingError
-    //		val refreshErrorTime = column.mRefreshLoadingErrorTime
     if (refreshError.isEmpty()) {
         hideRefreshError()
         return
     }
 
-    tvRefreshError.text = refreshError
-    when (column.mRefreshLoadingErrorPopupState) {
-        // initially expanded
-        0 -> {
-            tvRefreshError.isSingleLine = false
-            tvRefreshError.ellipsize = null
-        }
-
-        // tap to minimize
-        1 -> {
-            tvRefreshError.isSingleLine = true
-            tvRefreshError.ellipsize = TextUtils.TruncateAt.END
-        }
+    val ui = columnUiState
+    ui.refreshErrorText = refreshError
+    ui.refreshErrorSingleLine = when (column.mRefreshLoadingErrorPopupState) {
+        0 -> false // initially expanded
+        1 -> true  // tap to minimize
+        else -> false
     }
 
     if (!bRefreshErrorWillShown) {
         bRefreshErrorWillShown = true
-        if (llRefreshError.visibility == View.GONE) {
-            llRefreshError.visibility = View.VISIBLE
-            val aa = AlphaAnimation(0f, 1f)
-            aa.duration = 666L
-            llRefreshError.clearAnimation()
-            llRefreshError.startAnimation(aa)
-        }
+        ui.refreshErrorVisible = true
     }
 }
 
 fun ColumnViewHolder.hideRefreshError() {
     if (!bRefreshErrorWillShown) return
     bRefreshErrorWillShown = false
-    if (llRefreshError.visibility == View.GONE) return
-    val aa = AlphaAnimation(1f, 0f)
-    aa.duration = 666L
-    aa.setAnimationListener(object : Animation.AnimationListener {
-        override fun onAnimationRepeat(animation: Animation?) {
-        }
-
-        override fun onAnimationStart(animation: Animation?) {
-        }
-
-        override fun onAnimationEnd(animation: Animation?) {
-            if (!bRefreshErrorWillShown) llRefreshError.visibility = View.GONE
-        }
-    })
-    llRefreshError.clearAnimation()
-    llRefreshError.startAnimation(aa)
+    columnUiState.refreshErrorVisible = false
 }

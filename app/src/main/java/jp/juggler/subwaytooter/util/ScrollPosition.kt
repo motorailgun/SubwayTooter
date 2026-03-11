@@ -22,6 +22,11 @@ class ScrollPosition {
         this.offset = 0
     }
 
+    constructor(adapterIndex: Int, offset: Int) {
+        this.adapterIndex = adapterIndex
+        this.offset = offset
+    }
+
     constructor(holder: ColumnViewHolder) {
         val layoutManager = holder.listLayoutManager
         val findPosition = layoutManager.findFirstVisibleItemPosition()

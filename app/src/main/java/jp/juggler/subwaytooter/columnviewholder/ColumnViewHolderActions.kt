@@ -1,7 +1,5 @@
 package jp.juggler.subwaytooter.columnviewholder
 
-import android.view.View
-import android.widget.CompoundButton
 import jp.juggler.subwaytooter.ActColumnCustomize
 import jp.juggler.subwaytooter.App1
 import jp.juggler.subwaytooter.R
@@ -11,26 +9,26 @@ import jp.juggler.subwaytooter.action.notificationDeleteAll
 import jp.juggler.subwaytooter.actmain.closeColumn
 import jp.juggler.subwaytooter.actmain.closeColumnAll
 import jp.juggler.subwaytooter.api.entity.TootAnnouncement
-import jp.juggler.subwaytooter.column.Column
 import jp.juggler.subwaytooter.column.ColumnLoadReason
 import jp.juggler.subwaytooter.column.ColumnType
 import jp.juggler.subwaytooter.column.addColumnViewHolder
 import jp.juggler.subwaytooter.column.fireShowContent
 import jp.juggler.subwaytooter.column.isSearchColumn
+import jp.juggler.subwaytooter.column.canReloadWhenRefreshTop
 import jp.juggler.subwaytooter.column.startLoading
+import jp.juggler.subwaytooter.column.startRefresh
+import jp.juggler.subwaytooter.compose.ColumnCallbacks
 import jp.juggler.subwaytooter.ui.languageFilter.LanguageFilterActivity.Companion.openLanguageFilterActivity
 import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
 import jp.juggler.util.log.withCaption
-import jp.juggler.util.ui.hideKeyboard
-import jp.juggler.util.ui.isCheckedNoAnime
 import java.util.regex.Pattern
 
 private val log = LogCategory("ColumnViewHolderActions")
 
 fun ColumnViewHolder.onListListUpdated() {
-    etListName.setText("")
+    columnUiState.listName = ""
 }
 
 fun ColumnViewHolder.checkRegexFilterError(src: String): String? {
@@ -40,8 +38,6 @@ fun ColumnViewHolder.checkRegexFilterError(src: String): String? {
         }
         val m = Pattern.compile(src).matcher("")
         if (m.find()) {
-            // 空文字列にマッチする正規表現はエラー扱いにする
-            // そうしないとCWの警告テキストにマッチしてしまう
             return activity.getString(R.string.regex_filter_matches_empty_string)
         }
         return null
@@ -56,9 +52,9 @@ fun ColumnViewHolder.checkRegexFilterError(src: String): String? {
 }
 
 fun ColumnViewHolder.isRegexValid(): Boolean {
-    val s = etRegexFilter.text.toString()
+    val s = columnUiState.regexFilterText
     val error = checkRegexFilterError(s)
-    tvRegexFilterError.text = error ?: ""
+    columnUiState.regexFilterError = error ?: ""
     return error == null
 }
 
@@ -67,266 +63,321 @@ fun ColumnViewHolder.reloadBySettingChange() {
     column?.startLoading(ColumnLoadReason.SettingChange)
 }
 
-fun ColumnViewHolder.onCheckedChangedImpl(view: CompoundButton?, isChecked: Boolean) {
-    view ?: return
+/**
+ * Handle checkbox state changes. Called from ColumnCallbacks.
+ */
+fun ColumnViewHolder.onCheckedChangedImpl(key: String, isChecked: Boolean) {
+    val column = this.column ?: return
 
-    val column = this.column
+    if (bindingBusy) return
 
-    if (bindingBusy || column == null || statusAdapter == null) return
-
-    // カラムを追加/削除したときに ColumnからColumnViewHolderへの参照が外れることがある
-    // リロードやリフレッシュ操作で直るようにする
     column.addColumnViewHolder(this)
 
-    when (view) {
-
-        cbDontCloseColumn -> {
+    when (key) {
+        "dontClose" -> {
             column.dontClose = isChecked
-            showColumnCloseButton()
+            columnUiState.closeButtonEnabled = !isChecked
             activity.appState.saveColumnList()
         }
 
-        cbShowMediaDescription -> {
+        "showMediaDescription" -> {
             column.showMediaDescription = isChecked
             reloadBySettingChange()
         }
 
-        cbWithAttachment -> {
+        "withAttachment" -> {
             column.withAttachment = isChecked
             reloadBySettingChange()
         }
 
-        cbRemoteOnly -> {
+        "remoteOnly" -> {
             column.remoteOnly = isChecked
             reloadBySettingChange()
         }
 
-        cbWithHighlight -> {
+        "withHighlight" -> {
             column.withHighlight = isChecked
             reloadBySettingChange()
         }
 
-        cbDontShowBoost -> {
+        "dontShowBoost" -> {
             column.dontShowBoost = isChecked
             reloadBySettingChange()
         }
 
-        cbDontShowReply -> {
+        "dontShowReply" -> {
             column.dontShowReply = isChecked
             reloadBySettingChange()
         }
 
-        cbDontShowReaction -> {
+        "dontShowReaction" -> {
             column.dontShowReaction = isChecked
             reloadBySettingChange()
         }
 
-        cbDontShowVote -> {
+        "dontShowVote" -> {
             column.dontShowVote = isChecked
             reloadBySettingChange()
         }
 
-        cbDontShowNormalToot -> {
+        "dontShowNormalToot" -> {
             column.dontShowNormalToot = isChecked
             reloadBySettingChange()
         }
 
-        cbDontShowNonPublicToot -> {
+        "dontShowNonPublicToot" -> {
             column.dontShowNonPublicToot = isChecked
             reloadBySettingChange()
         }
 
-        cbDontShowFavourite -> {
+        "dontShowFavourite" -> {
             column.dontShowFavourite = isChecked
             reloadBySettingChange()
         }
 
-        cbDontShowFollow -> {
+        "dontShowFollow" -> {
             column.dontShowFollow = isChecked
             reloadBySettingChange()
         }
 
-        cbInstanceLocal -> {
+        "instanceLocal" -> {
             column.instanceLocal = isChecked
             reloadBySettingChange()
         }
 
-        cbDontStreaming -> {
+        "dontStreaming" -> {
             column.dontStreaming = isChecked
             activity.appState.saveColumnList()
             activity.appState.streamManager.updateStreamingColumns()
         }
 
-        cbDontAutoRefresh -> {
+        "dontAutoRefresh" -> {
             column.dontAutoRefresh = isChecked
             activity.appState.saveColumnList()
         }
 
-        cbHideMediaDefault -> {
+        "hideMediaDefault" -> {
             column.hideMediaDefault = isChecked
             activity.appState.saveColumnList()
             column.fireShowContent(reason = "HideMediaDefault in ColumnSetting", reset = true)
         }
 
-        cbSystemNotificationNotRelated -> {
+        "systemNotificationNotRelated" -> {
             column.systemNotificationNotRelated = isChecked
             activity.appState.saveColumnList()
         }
 
-        cbEnableSpeech -> {
+        "enableSpeech" -> {
             column.enableSpeech = isChecked
             activity.appState.saveColumnList()
         }
 
-        cbOldApi -> {
+        "oldApi" -> {
             column.useOldApi = isChecked
             reloadBySettingChange()
         }
     }
 }
 
-fun ColumnViewHolder.onClickImpl(v: View?) {
-    v ?: return
+/**
+ * Build ColumnCallbacks that wire Compose UI interactions to existing action methods.
+ */
+fun ColumnViewHolder.buildColumnCallbacks(): ColumnCallbacks = ColumnCallbacks(
+    onHeaderClick = { scrollToTop2() },
 
-    val column = this.column
-    val statusAdapter = this.statusAdapter
-    if (bindingBusy || column == null || statusAdapter == null) return
+    onColumnClose = {
+        column?.let { activity.closeColumn(it) }
+    },
 
-    // カラムを追加/削除したときに ColumnからColumnViewHolderへの参照が外れることがある
-    // リロードやリフレッシュ操作で直るようにする
-    column.addColumnViewHolder(this)
+    onColumnCloseLongClick = {
+        activity.appState.columnIndex(column)?.let { activity.closeColumnAll(it) }
+    },
 
-    when (v) {
-        btnColumnClose -> activity.closeColumn(column)
+    onColumnReload = {
+        val column = this.column ?: return@ColumnCallbacks
+        App1.custom_emoji_cache.clearErrorCache()
 
-        btnColumnReload -> {
-            App1.custom_emoji_cache.clearErrorCache()
+        if (column.isSearchColumn) {
+            column.searchQuery = columnUiState.searchQuery
+            column.searchResolve = columnUiState.searchResolve
+        } else if (column.type == ColumnType.REACTIONS) {
+            updateReactionQueryView()
+        } else if (column.type == ColumnType.AGG_BOOSTS) {
+            // aggStatusLimit is already set via onAggStart
+        }
+        refreshLayout.isRefreshing = false
+        column.startLoading(ColumnLoadReason.ForceReload)
+    },
 
-            if (column.isSearchColumn) {
-                etSearch.hideKeyboard()
-                etSearch.setText(column.searchQuery)
-                cbResolve.isCheckedNoAnime = column.searchResolve
-            } else if (column.type == ColumnType.REACTIONS) {
-                updateReactionQueryView()
-            } else if (column.type == ColumnType.AGG_BOOSTS) {
-                etStatusLoadLimit.hideKeyboard()
-                etStatusLoadLimit.setText(column.aggStatusLimit.toString())
+    onColumnSettingToggle = {
+        val newShow = !columnUiState.settingsVisible
+        showColumnSetting(newShow)
+        if (newShow) hideAnnouncements()
+    },
+
+    onAnnouncementsToggle = { toggleAnnouncements() },
+    onAnnouncementsPrev = {
+        val column = this.column ?: return@ColumnCallbacks
+        column.announcementId =
+            TootAnnouncement.move(column.announcements, column.announcementId, -1)
+        activity.appState.saveColumnList()
+        showAnnouncements()
+    },
+    onAnnouncementsNext = {
+        val column = this.column ?: return@ColumnCallbacks
+        column.announcementId =
+            TootAnnouncement.move(column.announcements, column.announcementId, +1)
+        activity.appState.saveColumnList()
+        showAnnouncements()
+    },
+
+    // Settings checkboxes
+    onDontCloseChanged = { onCheckedChangedImpl("dontClose", it) },
+    onShowMediaDescriptionChanged = { onCheckedChangedImpl("showMediaDescription", it) },
+    onRemoteOnlyChanged = { onCheckedChangedImpl("remoteOnly", it) },
+    onWithAttachmentChanged = { onCheckedChangedImpl("withAttachment", it) },
+    onWithHighlightChanged = { onCheckedChangedImpl("withHighlight", it) },
+    onDontShowBoostChanged = { onCheckedChangedImpl("dontShowBoost", it) },
+    onDontShowFollowChanged = { onCheckedChangedImpl("dontShowFollow", it) },
+    onDontShowFavouriteChanged = { onCheckedChangedImpl("dontShowFavourite", it) },
+    onDontShowReplyChanged = { onCheckedChangedImpl("dontShowReply", it) },
+    onDontShowReactionChanged = { onCheckedChangedImpl("dontShowReaction", it) },
+    onDontShowVoteChanged = { onCheckedChangedImpl("dontShowVote", it) },
+    onDontShowNormalTootChanged = { onCheckedChangedImpl("dontShowNormalToot", it) },
+    onDontShowNonPublicTootChanged = { onCheckedChangedImpl("dontShowNonPublicToot", it) },
+    onInstanceLocalChanged = { onCheckedChangedImpl("instanceLocal", it) },
+    onDontStreamingChanged = { onCheckedChangedImpl("dontStreaming", it) },
+    onDontAutoRefreshChanged = { onCheckedChangedImpl("dontAutoRefresh", it) },
+    onHideMediaDefaultChanged = { onCheckedChangedImpl("hideMediaDefault", it) },
+    onSystemNotificationNotRelatedChanged = {
+        onCheckedChangedImpl("systemNotificationNotRelated", it)
+    },
+    onEnableSpeechChanged = { onCheckedChangedImpl("enableSpeech", it) },
+    onOldApiChanged = { onCheckedChangedImpl("oldApi", it) },
+
+    // Settings buttons
+    onDeleteNotification = {
+        column?.let { activity.notificationDeleteAll(it.accessInfo) }
+    },
+    onColorAndBackground = {
+        activity.appState.columnIndex(column)?.let { colIdx ->
+            activity.arColumnColor.launch(
+                ActColumnCustomize.createIntent(activity, colIdx)
+            )
+        }
+    },
+    onLanguageFilter = {
+        activity.appState.columnIndex(column)?.let { colIdx ->
+            openLanguageFilterActivity(activity.arLanguageFilter, colIdx)
+        }
+    },
+
+    // Regex filter
+    onRegexFilterChanged = { text ->
+        if (!bindingBusy && !isPageDestroyed) {
+            columnUiState.regexFilterText = text
+            val error = checkRegexFilterError(text)
+            columnUiState.regexFilterError = error ?: ""
+            if (error == null) {
+                column?.regexText = text
+                delayLoadByContentInvalidated()
             }
+        }
+    },
+
+    // Hashtag extra
+    onHashtagExtraAnyChanged = { text ->
+        if (!bindingBusy && !isPageDestroyed) {
+            column?.hashtagAny = text
+            delayLoadByContentInvalidated()
+        }
+    },
+    onHashtagExtraAllChanged = { text ->
+        if (!bindingBusy && !isPageDestroyed) {
+            column?.hashtagAll = text
+            delayLoadByContentInvalidated()
+        }
+    },
+    onHashtagExtraNoneChanged = { text ->
+        if (!bindingBusy && !isPageDestroyed) {
+            column?.hashtagNone = text
+            delayLoadByContentInvalidated()
+        }
+    },
+
+    // Search bar
+    onSearchExecute = { query, resolve ->
+        val column = this.column ?: return@ColumnCallbacks
+        if (column.isSearchColumn) {
+            column.searchQuery = query.trim()
+            column.searchResolve = resolve
+        }
+        activity.appState.saveColumnList()
+        column.startLoading(ColumnLoadReason.ForceReload)
+    },
+    onSearchClear = {
+        val column = this.column ?: return@ColumnCallbacks
+        column.searchQuery = ""
+        column.searchResolve = columnUiState.searchResolve
+        columnUiState.searchQuery = ""
+        columnUiState.emojiQueryItems.clear()
+        activity.appState.saveColumnList()
+        column.startLoading(ColumnLoadReason.ForceReload)
+    },
+    onSearchResolveChanged = { checked ->
+        columnUiState.searchResolve = checked
+    },
+    onEmojiAdd = { addEmojiQuery() },
+    onEmojiQueryRemove = { /* handled via long-click in updateReactionQueryView */ },
+
+    // Agg boost bar
+    onAggStart = { limit ->
+        val column = this.column ?: return@ColumnCallbacks
+        if (limit > 0) {
+            column.aggStatusLimit = limit
+            activity.appState.saveColumnList()
+            column.startLoading(ColumnLoadReason.ForceReload)
+        }
+    },
+
+    // List bar
+    onListAdd = { name ->
+        val column = this.column ?: return@ColumnCallbacks
+        val tv = name.trim()
+        if (tv.isEmpty()) {
+            activity.showToast(true, R.string.list_name_empty)
+            return@ColumnCallbacks
+        }
+        launchMain { activity.listCreate(column.accessInfo, tv) }
+    },
+
+    // Quick filter
+    onQuickFilterClick = { filter -> clickQuickFilter(filter) },
+
+    // Announcements
+    onReactionAdd = { /* handled by showReactionBox */ },
+    onReactionClick = { /* handled by showReactionBox click listeners */ },
+
+    // Body
+    onRefresh = { isBottom ->
+        val column = this.column ?: return@ColumnCallbacks
+        column.addColumnViewHolder(this)
+
+        if (!isBottom && column.canReloadWhenRefreshTop()) {
             refreshLayout.isRefreshing = false
-            column.startLoading(ColumnLoadReason.ForceReload)
-        }
-
-        btnSearch -> {
-            if (column.isSearchColumn) {
-                etSearch.hideKeyboard()
-                column.searchQuery = etSearch.text.toString().trim { it <= ' ' }
-                column.searchResolve = cbResolve.isChecked
+            activity.handler.post {
+                this.column?.startLoading(ColumnLoadReason.PullToRefresh)
             }
-            activity.appState.saveColumnList()
-            column.startLoading(ColumnLoadReason.ForceReload)
+            return@ColumnCallbacks
         }
-
-        btnSearchClear -> {
-            column.searchQuery = ""
-            column.searchResolve = cbResolve.isChecked
-            etSearch.setText("")
-            flEmoji.removeAllViews()
-            activity.appState.saveColumnList()
-            column.startLoading(ColumnLoadReason.ForceReload)
-        }
-
-        btnAggStart -> {
-            val n = etStatusLoadLimit.text.toString().toIntOrNull()
-            if (n != null && n > 0) {
-                column.aggStatusLimit = n
-                activity.appState.saveColumnList()
-                etStatusLoadLimit.hideKeyboard()
-                column.startLoading(ColumnLoadReason.ForceReload)
-            }
-        }
-
-        llColumnHeader -> scrollToTop2()
-
-        btnColumnSetting -> {
-            if (showColumnSetting(!isColumnSettingShown)) {
-                hideAnnouncements()
-            }
-        }
-
-        btnDeleteNotification ->
-            activity.notificationDeleteAll(column.accessInfo)
-
-        btnColor ->
-            activity.appState.columnIndex(column)?.let { colIdx ->
-
-                activity.arColumnColor.launch(
-                    ActColumnCustomize.createIntent(activity, colIdx)
-                )
-            }
-
-        btnLanguageFilter ->
-            activity.appState.columnIndex(column)?.let { colIdx ->
-                openLanguageFilterActivity(
-                    activity.arLanguageFilter,
-                    colIdx
-                )
-            }
-
-        btnListAdd -> {
-            val tv = etListName.text.toString().trim { it <= ' ' }
-            if (tv.isEmpty()) {
-                activity.showToast(true, R.string.list_name_empty)
-                return
-            }
-            launchMain { activity.listCreate(column.accessInfo, tv) }
-        }
-
-        llRefreshError -> {
-            column.mRefreshLoadingErrorPopupState = 1 - column.mRefreshLoadingErrorPopupState
-            showRefreshError()
-        }
-
-        btnQuickFilterAll -> clickQuickFilter(Column.QUICK_FILTER_ALL)
-        btnQuickFilterMention -> clickQuickFilter(Column.QUICK_FILTER_MENTION)
-        btnQuickFilterFavourite -> clickQuickFilter(Column.QUICK_FILTER_FAVOURITE)
-        btnQuickFilterBoost -> clickQuickFilter(Column.QUICK_FILTER_BOOST)
-        btnQuickFilterFollow -> clickQuickFilter(Column.QUICK_FILTER_FOLLOW)
-        btnQuickFilterPost -> clickQuickFilter(Column.QUICK_FILTER_POST)
-        btnQuickFilterReaction -> clickQuickFilter(Column.QUICK_FILTER_REACTION)
-        btnQuickFilterVote -> clickQuickFilter(Column.QUICK_FILTER_VOTE)
-
-        btnAnnouncements -> toggleAnnouncements()
-
-        btnAnnouncementsPrev -> {
-            column.announcementId =
-                TootAnnouncement.move(column.announcements, column.announcementId, -1)
-            activity.appState.saveColumnList()
-            showAnnouncements()
-        }
-
-        btnAnnouncementsNext -> {
-            column.announcementId =
-                TootAnnouncement.move(column.announcements, column.announcementId, +1)
-            activity.appState.saveColumnList()
-            showAnnouncements()
-        }
-
-        btnConfirmMail -> {
-            activity.accountResendConfirmMail(column.accessInfo)
-        }
-
-        btnEmojiAdd -> {
-            addEmojiQuery()
-        }
-    }
-}
-
-fun ColumnViewHolder.onLongClickImpl(v: View?): Boolean = when (v) {
-    btnColumnClose ->
-        activity.appState.columnIndex(column)?.let {
-            activity.closeColumnAll(it)
-            true
-        } ?: false
-
-    else -> false
-}
+        column.startRefresh(false, isBottom)
+    },
+    onRefreshErrorClick = {
+        val column = this.column ?: return@ColumnCallbacks
+        column.mRefreshLoadingErrorPopupState = 1 - column.mRefreshLoadingErrorPopupState
+        showRefreshError()
+    },
+    onConfirmMail = {
+        column?.let { activity.accountResendConfirmMail(it.accessInfo) }
+    },
+)
