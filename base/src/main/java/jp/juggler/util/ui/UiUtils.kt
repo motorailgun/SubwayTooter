@@ -81,16 +81,6 @@ fun Context.attrDrawable(attrId: Int): Drawable =
 
 /////////////////////////////////////////////////////////
 
-// 後方互換用にボタン背景Drawableを生成する
-//private fun getStateListDrawable(normalColor : Int, pressedColor : Int) : StateListDrawable {
-//	val states = StateListDrawable()
-//	states.addState(intArrayOf(android.R.attr.state_pressed), ColorDrawable(pressedColor))
-//	states.addState(intArrayOf(android.R.attr.state_focused), ColorDrawable(pressedColor))
-//	states.addState(intArrayOf(android.R.attr.state_activated), ColorDrawable(pressedColor))
-//	states.addState(intArrayOf(), ColorDrawable(normalColor))
-//	return states
-//}
-
 // 色を指定してRectShapeを生成する
 private fun getRectShape(color: Int): Drawable {
     val r = RectShape()
@@ -273,22 +263,6 @@ fun setIconDrawableId(
     }
 }
 
-//fun setIconAttr(
-//	context : Context,
-//	imageView : ImageView,
-//	iconAttrId : Int,
-//	color : Int? = null,
-//	alphaMultiplier : Float? = null
-//) {
-//	setIconDrawableId(
-//		context,
-//		imageView,
-//		getAttributeResourceId(context, iconAttrId),
-//		color,
-//		alphaMultiplier
-//	)
-//}
-
 fun DialogInterface.dismissSafe() {
     try {
         dismiss()
@@ -354,11 +328,6 @@ val ActivityResult.decodeRingtonePickerResult
     get() = when {
         isNotOk -> null
         else -> data?.getUriExtra(RingtoneManager.EXTRA_RINGTONE_PICKED_URI)
-    }
-
-fun AppCompatActivity.setNavigationBack(toolbar: Toolbar) =
-    toolbar.setNavigationOnClickListener {
-        onBackPressedDispatcher.onBackPressed()
     }
 
 fun ComponentActivity.setNavigationBack(toolbar: Toolbar) =

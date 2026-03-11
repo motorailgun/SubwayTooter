@@ -17,12 +17,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.compose.StScreen
-import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.log.LogCategory
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
+import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -35,8 +32,6 @@ class ActDrawableList : ComponentActivity() {
     private class MyItem(val id: Int, val name: String)
 
     private val drawableList = mutableStateListOf<MyItem>()
-    private val job = Job()
-    private val scope = CoroutineScope(Dispatchers.Main + job)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,12 +70,7 @@ class ActDrawableList : ComponentActivity() {
         load()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        job.cancel()
-    }
-
-    private fun load() = scope.launch {
+    private fun load() = lifecycleScope.launch {
         try {
             val rePackageSpec = """.+/""".toRegex()
             val reSkipName =

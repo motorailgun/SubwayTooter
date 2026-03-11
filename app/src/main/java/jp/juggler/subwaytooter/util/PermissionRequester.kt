@@ -9,8 +9,8 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat.shouldShowRequestPermissionRationale
 import androidx.core.net.toUri
+import androidx.activity.ComponentActivity
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentActivity
 import jp.juggler.subwaytooter.R
 import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.log.LogCategory
@@ -43,10 +43,10 @@ class PermissionRequester(
     private var getContext: (() -> Context?)? = null
 
     val activity
-        get() = getContext?.invoke() as? FragmentActivity
+        get() = getContext?.invoke() as? ComponentActivity
 
     // ActivityのonCreate()から呼び出す
-    fun register(activity: FragmentActivity) {
+    fun register(activity: ComponentActivity) {
         getContext = { activity }
         launcher = activity.registerForActivityResult(
             ActivityResultContracts.RequestMultiplePermissions(),
@@ -141,7 +141,7 @@ class PermissionRequester(
         }
     }
 
-    fun openAppSetting(activity: FragmentActivity) {
+    fun openAppSetting(activity: ComponentActivity) {
         try {
             Intent(
                 Settings.ACTION_APPLICATION_DETAILS_SETTINGS,

@@ -16,7 +16,6 @@ import jp.juggler.subwaytooter.api.entity.Acct
 import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.subwaytooter.table.daoFavMute
-import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError

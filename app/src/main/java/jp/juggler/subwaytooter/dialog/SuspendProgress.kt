@@ -5,7 +5,7 @@ import android.graphics.Typeface
 import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.log.LogCategory
@@ -17,7 +17,7 @@ import kotlinx.coroutines.launch
 
 private val log = LogCategory("SuspendProgress")
 
-class SuspendProgress(val activity: AppCompatActivity) {
+class SuspendProgress(val activity: ComponentActivity) {
 
     private val density = activity.resources.displayMetrics.density
     private val dp16 = (16 * density + 0.5f).toInt()
@@ -128,7 +128,7 @@ class SuspendProgress(val activity: AppCompatActivity) {
     }
 }
 
-suspend fun <T : Any?> AppCompatActivity.runInProgress(
+suspend fun <T : Any?> ComponentActivity.runInProgress(
     message: String = "please wait…",
     title: String = "",
     cancellable: Boolean = true,

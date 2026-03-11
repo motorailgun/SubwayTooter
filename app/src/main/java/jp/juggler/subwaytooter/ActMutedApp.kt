@@ -16,7 +16,6 @@ import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.subwaytooter.table.MutedApp
 import jp.juggler.subwaytooter.table.appDatabase
-import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.log.LogCategory

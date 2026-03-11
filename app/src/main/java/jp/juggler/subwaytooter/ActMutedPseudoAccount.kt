@@ -13,7 +13,6 @@ import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.subwaytooter.table.UserRelation
 import jp.juggler.subwaytooter.table.daoUserRelation
-import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError

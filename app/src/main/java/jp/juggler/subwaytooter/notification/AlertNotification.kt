@@ -53,28 +53,3 @@ fun Context.dialogOrAlert(message: String) {
         showAlertNotification(message)
     }
 }
-
-//fun Context.showError(ex: Throwable, message: String) {
-//    when (ex) {
-//        is CancellationException -> Unit
-//        is IllegalStateException -> {
-//            log.e(ex, message)
-//            dialogOrAlert(ex.message ?: ex.cause?.message ?: "?")
-//        }
-//        else -> {
-//            log.e(ex, message)
-//            dialogOrAlert(ex.withCaption(message))
-//        }
-//    }
-//}
-//
-//fun AppCompatActivity.launchAndShowError(
-//    context: CoroutineContext = EmptyCoroutineContext,
-//    block: suspend () -> Unit,
-//) = lifecycleScope.launch(context) {
-//    try {
-//        block()
-//    } catch (ex: Throwable) {
-//        showError(ex, "")
-//    }
-//}
