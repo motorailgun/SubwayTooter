@@ -186,6 +186,7 @@ fun ActMain.reloadColors() {
 
 fun ActMain.showFooterColor() {
     val colorColumnStripBackground = attrColor(MR.attr.colorSurfaceContainer)
+    val colorOnSurface = attrColor(MR.attr.colorOnSurface)
 
     views.svColumnStrip.setBackgroundColor(colorColumnStripBackground)
     views.llQuickTootBar.setBackgroundColor(colorColumnStripBackground)
@@ -194,24 +195,21 @@ fun ActMain.showFooterColor() {
 
     val colorButtonBg = colorColumnStripBackground
 
-    val colorButtonFg = attrColor(MR.attr.colorOnSurface)
-
     views.btnMenu.background =
-        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorButtonFg)
+        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorOnSurface)
     views.btnToot.background =
-        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorButtonFg)
+        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorOnSurface)
     views.btnQuickToot.background =
-        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorButtonFg)
+        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorOnSurface)
     views.ivQuickTootAccount.background =
-        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorButtonFg)
+        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorOnSurface)
     views.btnQuickTootMenu.background =
-        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorButtonFg)
+        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorOnSurface)
 
-    val c = attrColor(MR.attr.colorOnSurface)
-    val d = resDrawable(R.drawable.ic_question).wrapAndTint(color = c)
+    val d = resDrawable(R.drawable.ic_question).wrapAndTint(color = colorOnSurface)
     views.ivQuickTootAccount.setDefaultImage(d)
 
-    val csl = ColorStateList.valueOf(attrColor(MR.attr.colorOnSurface))
+    val csl = ColorStateList.valueOf(colorOnSurface)
     views.btnToot.imageTintList = csl
     views.btnMenu.imageTintList = csl
     views.btnQuickToot.imageTintList = csl

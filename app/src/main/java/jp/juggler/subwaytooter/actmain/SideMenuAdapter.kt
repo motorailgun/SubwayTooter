@@ -501,6 +501,9 @@ class SideMenuAdapter(
     private var list = originalList
 
     private val iconColor = actMain.attrColor(MR.attr.colorOnSurfaceVariant)
+    private val colorOnSurface = actMain.attrColor(MR.attr.colorOnSurface)
+    private val colorOutlineVariant = actMain.attrColor(MR.attr.colorOutlineVariant)
+    private val colorSurface = actMain.attrColor(MR.attr.colorSurface)
 
     override fun getCount(): Int = list.size
     override fun getItem(position: Int): Any = list[position]
@@ -532,7 +535,7 @@ class SideMenuAdapter(
                                     topMargin = actMain.dp(3)
                                     bottomMargin = actMain.dp(3)
                                 }
-                                setBackgroundColor(actMain.attrColor(MR.attr.colorOnSurfaceVariant))
+                                setBackgroundColor(iconColor)
                             })
                         }
                     }
@@ -544,7 +547,7 @@ class SideMenuAdapter(
                                 ViewGroup.LayoutParams.MATCH_PARENT,
                                 ViewGroup.LayoutParams.WRAP_CONTENT
                             )
-                            setTextColor(actMain.attrColor(MR.attr.colorOutlineVariant))
+                            setTextColor(colorOutlineVariant)
                             gravity = Gravity.CENTER_VERTICAL or Gravity.START
                             setPaddingRelative(actMain.dp(12), actMain.dp(12), actMain.dp(12), actMain.dp(6))
                         }
@@ -560,7 +563,7 @@ class SideMenuAdapter(
                                 ViewGroup.LayoutParams.WRAP_CONTENT
                             )
                             background = ContextCompat.getDrawable(actMain, R.drawable.btn_bg_transparent_round6dp)
-                            setTextColor(actMain.attrColor(MR.attr.colorOnSurface))
+                            setTextColor(colorOnSurface)
                             gravity = Gravity.CENTER_VERTICAL or Gravity.START
                             compoundDrawablePadding = actMain.dp(12)
                             minimumHeight = actMain.dp(44)
@@ -591,7 +594,7 @@ class SideMenuAdapter(
                                 ViewGroup.LayoutParams.WRAP_CONTENT
                             )
                             background = ContextCompat.getDrawable(actMain, R.drawable.btn_bg_transparent_round6dp)
-                            setTextColor(actMain.attrColor(MR.attr.colorOnSurface))
+                            setTextColor(colorOnSurface)
                             gravity = Gravity.CENTER_VERTICAL or Gravity.START
                             compoundDrawablePadding = actMain.dp(12)
                             minimumHeight = actMain.dp(44)
@@ -618,7 +621,7 @@ class SideMenuAdapter(
                                 ViewGroup.LayoutParams.WRAP_CONTENT
                             )
                             background = ContextCompat.getDrawable(actMain, R.drawable.btn_bg_transparent_round6dp)
-                            setTextColor(actMain.attrColor(MR.attr.colorOnSurface))
+                            setTextColor(colorOnSurface)
                             gravity = Gravity.CENTER_VERTICAL or Gravity.START
                             compoundDrawablePadding = actMain.dp(12)
                             minimumHeight = actMain.dp(44)
@@ -639,7 +642,7 @@ class SideMenuAdapter(
                                 ViewGroup.LayoutParams.WRAP_CONTENT
                             )
                             background = ContextCompat.getDrawable(actMain, R.drawable.btn_bg_transparent_round6dp)
-                            setTextColor(actMain.attrColor(MR.attr.colorOnSurface))
+                            setTextColor(colorOnSurface)
                             gravity = Gravity.CENTER_VERTICAL or Gravity.START
                             compoundDrawablePadding = actMain.dp(12)
                             minimumHeight = actMain.dp(44)
@@ -749,7 +752,7 @@ class SideMenuAdapter(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
-            setBackgroundColor(actMain.attrColor(MR.attr.colorSurface))
+            setBackgroundColor(colorSurface)
             selector = StateListDrawable()
             divider = null
             dividerHeight = 0

@@ -150,6 +150,10 @@ fun createActPostViews(context: Context): ActPostViews {
     val wrapContent = ViewGroup.LayoutParams.WRAP_CONTENT
 
     val tintColor = ColorStateList.valueOf(context.attrColor(MR.attr.colorOnSurface))
+    val colorSurfaceContainerHigh = context.attrColor(MR.attr.colorSurfaceContainerHigh)
+    val colorSurfaceContainerHighest = context.attrColor(MR.attr.colorSurfaceContainerHighest)
+    val colorSurface = context.attrColor(MR.attr.colorSurface)
+    val colorSurfaceContainer = context.attrColor(MR.attr.colorSurfaceContainer)
     val btnBg = ContextCompat.getDrawable(context, R.drawable.btn_bg_transparent_round6dp)
     fun btnBg() = ContextCompat.getDrawable(context, R.drawable.btn_bg_transparent_round6dp)
 
@@ -190,7 +194,7 @@ fun createActPostViews(context: Context): ActPostViews {
 
     fun makeChoiceFrame(editText: MyEditText) = FrameLayout(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
-        setBackgroundColor(context.attrColor(MR.attr.colorSurfaceContainerHigh))
+        setBackgroundColor(colorSurfaceContainerHigh)
         addView(editText)
     }
 
@@ -251,7 +255,7 @@ fun createActPostViews(context: Context): ActPostViews {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent).apply {
             bottomMargin = context.dp(4)
         }
-        setBackgroundColor(context.attrColor(MR.attr.colorSurfaceContainerHighest))
+        setBackgroundColor(colorSurfaceContainerHighest)
         orientation = LinearLayout.VERTICAL
         val pad = context.dp(6)
         setPadding(pad, pad, pad, pad)
@@ -376,7 +380,7 @@ fun createActPostViews(context: Context): ActPostViews {
 
     val cwFrame = FrameLayout(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
-        setBackgroundColor(context.attrColor(MR.attr.colorSurfaceContainerHigh))
+        setBackgroundColor(colorSurfaceContainerHigh)
         addView(etContentWarning)
     }
 
@@ -427,7 +431,7 @@ fun createActPostViews(context: Context): ActPostViews {
 
     val contentFrame = FrameLayout(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
-        setBackgroundColor(context.attrColor(MR.attr.colorSurfaceContainerHigh))
+        setBackgroundColor(colorSurfaceContainerHigh)
         addView(etContent)
     }
 
@@ -563,7 +567,7 @@ fun createActPostViews(context: Context): ActPostViews {
     // --- ScrollView ---
     val scrollView = ScrollView(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, 0, 1f)
-        setBackgroundColor(context.attrColor(MR.attr.colorSurface))
+        setBackgroundColor(colorSurface)
         isScrollbarFadingEnabled = false
         setFadingEdgeLength(context.dp(20))
         isFillViewport = true
@@ -599,7 +603,7 @@ fun createActPostViews(context: Context): ActPostViews {
 
     val llFooterBar = LinearLayout(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, context.dp(48))
-        setBackgroundColor(context.attrColor(MR.attr.colorSurfaceContainer))
+        setBackgroundColor(colorSurfaceContainer)
         isBaselineAligned = false
         orientation = LinearLayout.HORIZONTAL
         addView(btnAttachment)

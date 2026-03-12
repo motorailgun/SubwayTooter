@@ -197,6 +197,9 @@ class ActMain : ComponentActivity(),
 
     val views by lazy {
         val ctx = this@ActMain
+        val colorOnSurface = attrColor(MR.attr.colorOnSurface)
+        val colorSurfaceContainer = attrColor(MR.attr.colorSurfaceContainer)
+        val colorSurface = attrColor(MR.attr.colorSurface)
 
         val tvEmpty = TextView(ctx).apply {
             id = R.id.tvEmpty
@@ -207,7 +210,7 @@ class ActMain : ComponentActivity(),
             gravity = android.view.Gravity.CENTER
             setPadding(dp(12), dp(12), dp(12), dp(12))
             setText(R.string.column_empty)
-            setTextColor(attrColor(MR.attr.colorOnSurface))
+            setTextColor(colorOnSurface)
             textSize = 16f
         }
 
@@ -238,7 +241,7 @@ class ActMain : ComponentActivity(),
         val vFooterDivider1 = View(ctx).apply {
             id = R.id.vFooterDivider1
             layoutParams = LinearLayout.LayoutParams(dp(1), LinearLayout.LayoutParams.MATCH_PARENT)
-            setBackgroundColor(attrColor(MR.attr.colorSurfaceContainer))
+            setBackgroundColor(colorSurfaceContainer)
         }
 
         val llColumnStrip = jp.juggler.subwaytooter.actmain.ColumnStripLinearLayout(ctx).apply {
@@ -253,7 +256,7 @@ class ActMain : ComponentActivity(),
         val svColumnStrip = HorizontalScrollView(ctx).apply {
             id = R.id.svColumnStrip
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
-            setBackgroundColor(attrColor(MR.attr.colorSurfaceContainer))
+            setBackgroundColor(colorSurfaceContainer)
             isFillViewport = true
             isHorizontalScrollBarEnabled = false
             isHorizontalFadingEdgeEnabled = true
@@ -264,7 +267,7 @@ class ActMain : ComponentActivity(),
         val vFooterDivider2 = View(ctx).apply {
             id = R.id.vFooterDivider2
             layoutParams = LinearLayout.LayoutParams(dp(1), LinearLayout.LayoutParams.MATCH_PARENT)
-            setBackgroundColor(attrColor(MR.attr.colorSurfaceContainer))
+            setBackgroundColor(colorSurfaceContainer)
         }
 
         val btnToot = ImageButton(ctx).apply {
@@ -340,7 +343,7 @@ class ActMain : ComponentActivity(),
                 DrawerLayout.LayoutParams.MATCH_PARENT,
                 DrawerLayout.LayoutParams.MATCH_PARENT
             )
-            setBackgroundColor(attrColor(MR.attr.colorSurface))
+            setBackgroundColor(colorSurface)
             orientation = LinearLayout.VERTICAL
 
             // Content area (weight=1)
@@ -380,7 +383,7 @@ class ActMain : ComponentActivity(),
             ).apply {
                 gravity = android.view.Gravity.START
             }
-            setBackgroundColor(attrColor(MR.attr.colorSurface))
+            setBackgroundColor(colorSurface)
         }
 
         val drawerLayout = jp.juggler.subwaytooter.view.MyDrawerLayout(ctx).apply {

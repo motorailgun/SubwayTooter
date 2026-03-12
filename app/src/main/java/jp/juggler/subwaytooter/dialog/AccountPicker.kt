@@ -5,7 +5,6 @@ import android.app.Activity
 import android.app.Dialog
 import android.content.DialogInterface
 import android.view.WindowManager
-import android.widget.LinearLayout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -28,7 +27,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.table.*
@@ -51,7 +49,7 @@ suspend fun Activity.pickAccount(
     message: String? = null,
     accountListArg: List<SavedAccount>? = null,
     dismissCallback: (dialog: DialogInterface) -> Unit = {},
-    extraCallback: (LinearLayout, Int, Int) -> Unit = { _, _, _ -> },
+    extraContent: @Composable (() -> Unit)? = null,
 ): SavedAccount? {
     val activity = this
     var removeMastodon = 0
@@ -118,10 +116,6 @@ suspend fun Activity.pickAccount(
             }
         }
 
-        val density = activity.resources.displayMetrics.density
-        val padX = (0.5f + 12f * density).toInt()
-        val padY = (0.5f + 6f * density).toInt()
-
         val composeView = ComposeView(activity).apply {
             setContent {
                 StThemedContent {
@@ -143,19 +137,10 @@ suspend fun Activity.pickAccount(
                                     .weight(1f, fill = false)
                                     .fillMaxWidth()
                             ) {
-                                item {
-                                    AndroidView(
-                                        factory = { context ->
-                                            LinearLayout(context).apply {
-                                                orientation = LinearLayout.VERTICAL
-                                                layoutParams = LinearLayout.LayoutParams(
-                                                    LinearLayout.LayoutParams.MATCH_PARENT,
-                                                    LinearLayout.LayoutParams.WRAP_CONTENT
-                                                )
-                                                extraCallback(this, padX, padY)
-                                            }
-                                        }
-                                    )
+                                if (extraContent != null) {
+                                    item {
+                                        extraContent()
+                                    }
                                 }
 
                                 items(accountList) { a ->

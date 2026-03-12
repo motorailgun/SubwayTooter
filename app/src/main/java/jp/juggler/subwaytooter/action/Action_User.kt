@@ -3,7 +3,9 @@ package jp.juggler.subwaytooter.action
 import android.app.AlertDialog
 import android.view.Gravity
 import android.widget.*
-import androidx.appcompat.widget.AppCompatButton
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.*
 import jp.juggler.subwaytooter.actmain.addColumn
 import jp.juggler.subwaytooter.api.*
@@ -713,25 +715,17 @@ fun ActMain.userProfile(
             daoAcctColor.getNickname(acct)
         ),
         accountListArg = accountListNonPseudo(acct.host),
-        extraCallback = { ll, pad_se, pad_tb ->
-            // chrome tab で開くアクションを追加
-            val lp = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            val b = AppCompatButton(activity)
-            b.setPaddingRelative(pad_se, pad_tb, pad_se, pad_tb)
-            b.gravity = Gravity.START or Gravity.CENTER_VERTICAL
-            b.isAllCaps = false
-            b.layoutParams = lp
-            b.minHeight = (0.5f + 32f * activity.density).toInt()
-            b.text = getString(R.string.open_in_browser)
-            b.setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
-
-            b.setOnClickListener {
-                openCustomTab(originalUrl)
+        extraContent = {
+            androidx.compose.material3.TextButton(
+                onClick = { openCustomTab(originalUrl) },
+                modifier = androidx.compose.ui.Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+            ) {
+                androidx.compose.material3.Text(
+                    text = getString(R.string.open_in_browser),
+                )
             }
-            ll.addView(b, 0)
         }
     )?.let {
         userProfileFromUrlOrAcct(pos, it, acct, userUrl)
