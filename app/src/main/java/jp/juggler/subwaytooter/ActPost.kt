@@ -10,12 +10,10 @@ import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.ScrollView
-import android.widget.Spinner
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -148,12 +146,8 @@ data class AttachmentSlotUi(
 class ActPostViews(
     val scrollView: ScrollView,
     val ivReply: MyNetworkImageView,
-    val cwFrame: View,
     val etContentWarning: TextEditState,
     val etContent: TextEditState,
-    val etContentView: View,
-    val spLanguage: Spinner,
-    val llEnquete: View,
     val etChoice1: TextEditState,
     val etChoice2: TextEditState,
     val etChoice3: TextEditState,
@@ -435,20 +429,22 @@ fun createActPostViews(context: Context): ActPostViews {
         setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         setContent {
             StThemedContent {
-                OutlinedTextField(
-                    value = etContentWarning.fieldValue,
-                    onValueChange = { etContentWarning.fieldValue = it },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 3.dp)
-                        .onFocusChanged { fs ->
-                            if (fs.isFocused) (context as ActPost).focusedEditField = 1
-                        },
-                    singleLine = true,
-                    label = { Text(context.getString(R.string.content_warning)) },
-                    placeholder = { Text(context.getString(R.string.content_warning_hint)) },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                )
+                if ((context as ActPost).contentWarningChecked) {
+                    OutlinedTextField(
+                        value = etContentWarning.fieldValue,
+                        onValueChange = { etContentWarning.fieldValue = it },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 3.dp)
+                            .onFocusChanged { fs ->
+                                if (fs.isFocused) (context as ActPost).focusedEditField = 1
+                            },
+                        singleLine = true,
+                        label = { Text(context.getString(R.string.content_warning)) },
+                        placeholder = { Text(context.getString(R.string.content_warning_hint)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    )
+                }
             }
         }
     }
@@ -519,13 +515,7 @@ fun createActPostViews(context: Context): ActPostViews {
             }
         }
     }
-    val etContentView: View = contentFrame
-
     // --- Language row ---
-    val spLanguage = Spinner(context).apply {
-        layoutParams = LinearLayout.LayoutParams(0, context.dp(48), 1f)
-    }
-
     val languageRow = ComposeView(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent).apply {
             topMargin = context.dp(2)
@@ -533,6 +523,8 @@ fun createActPostViews(context: Context): ActPostViews {
         setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         setContent {
             StThemedContent {
+                val activity = context as ActPost
+                var expanded by remember { mutableStateOf(false) }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
@@ -541,12 +533,31 @@ fun createActPostViews(context: Context): ActPostViews {
                         text = context.getString(R.string.language),
                         modifier = Modifier.padding(end = 4.dp),
                     )
-                    AndroidView(
-                        factory = { spLanguage },
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp),
-                    )
+                    Box(modifier = Modifier.weight(1f)) {
+                        OutlinedButton(
+                            onClick = { expanded = true },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(
+                                activity.languages.elementAtOrNull(activity.selectedLanguageIndex)?.second
+                                    ?: context.getString(R.string.unspecified)
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false },
+                        ) {
+                            activity.languages.forEachIndexed { index, pair ->
+                                DropdownMenuItem(
+                                    text = { Text(pair.second) },
+                                    onClick = {
+                                        expanded = false
+                                        activity.selectedLanguageIndex = index
+                                    },
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -640,46 +651,48 @@ fun createActPostViews(context: Context): ActPostViews {
         setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         setContent {
             StThemedContent {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    val activity = context as ActPost
-                    ChoiceField(R.string.choice1, etChoice1, 2)
-                    ChoiceField(R.string.choice2, etChoice2, 3)
-                    ChoiceField(R.string.choice3, etChoice3, 4)
-                    ChoiceField(R.string.choice4, etChoice4, 5)
-                    if (activity.pollTypeIndex == 1) {
-                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                            androidx.compose.material3.Checkbox(
-                                checked = activity.pollMultipleChoiceChecked,
-                                onCheckedChange = { activity.pollMultipleChoiceChecked = it },
-                            )
-                            Text(text = context.getString(R.string.allow_multiple_choice))
-                        }
-                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
-                            androidx.compose.material3.Checkbox(
-                                checked = activity.pollHideTotalsChecked,
-                                onCheckedChange = { activity.pollHideTotalsChecked = it },
-                            )
-                            Text(text = context.getString(R.string.hide_totals))
-                        }
-                        Row(modifier = Modifier.padding(top = 3.dp)) {
-                            Text(
-                                text = context.getString(R.string.expiration),
-                                modifier = Modifier.padding(end = 4.dp),
-                            )
-                            ExpireField(etExpireDays)
-                            Text(text = context.getString(R.string.poll_expire_days))
-                            Text(
-                                text = context.getString(R.string.plus),
-                                modifier = Modifier.padding(start = 4.dp, end = 4.dp),
-                            )
-                            ExpireField(etExpireHours)
-                            Text(text = context.getString(R.string.poll_expire_hours))
-                            Text(
-                                text = context.getString(R.string.plus),
-                                modifier = Modifier.padding(start = 4.dp, end = 4.dp),
-                            )
-                            ExpireField(etExpireMinutes)
-                            Text(text = context.getString(R.string.poll_expire_minutes))
+                val activity = context as ActPost
+                if (activity.pollTypeIndex != 0) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        ChoiceField(R.string.choice1, etChoice1, 2)
+                        ChoiceField(R.string.choice2, etChoice2, 3)
+                        ChoiceField(R.string.choice3, etChoice3, 4)
+                        ChoiceField(R.string.choice4, etChoice4, 5)
+                        if (activity.pollTypeIndex == 1) {
+                            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                androidx.compose.material3.Checkbox(
+                                    checked = activity.pollMultipleChoiceChecked,
+                                    onCheckedChange = { activity.pollMultipleChoiceChecked = it },
+                                )
+                                Text(text = context.getString(R.string.allow_multiple_choice))
+                            }
+                            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                androidx.compose.material3.Checkbox(
+                                    checked = activity.pollHideTotalsChecked,
+                                    onCheckedChange = { activity.pollHideTotalsChecked = it },
+                                )
+                                Text(text = context.getString(R.string.hide_totals))
+                            }
+                            Row(modifier = Modifier.padding(top = 3.dp)) {
+                                Text(
+                                    text = context.getString(R.string.expiration),
+                                    modifier = Modifier.padding(end = 4.dp),
+                                )
+                                ExpireField(etExpireDays)
+                                Text(text = context.getString(R.string.poll_expire_days))
+                                Text(
+                                    text = context.getString(R.string.plus),
+                                    modifier = Modifier.padding(start = 4.dp, end = 4.dp),
+                                )
+                                ExpireField(etExpireHours)
+                                Text(text = context.getString(R.string.poll_expire_hours))
+                                Text(
+                                    text = context.getString(R.string.plus),
+                                    modifier = Modifier.padding(start = 4.dp, end = 4.dp),
+                                )
+                                ExpireField(etExpireMinutes)
+                                Text(text = context.getString(R.string.poll_expire_minutes))
+                            }
                         }
                     }
                 }
@@ -727,12 +740,8 @@ fun createActPostViews(context: Context): ActPostViews {
     return ActPostViews(
         scrollView = scrollView,
         ivReply = ivReply,
-        cwFrame = cwFrame,
         etContentWarning = etContentWarning,
         etContent = etContent,
-        etContentView = etContentView,
-        spLanguage = spLanguage,
-        llEnquete = llEnquete,
         etChoice1 = etChoice1,
         etChoice2 = etChoice2,
         etChoice3 = etChoice3,
@@ -744,7 +753,6 @@ fun createActPostViews(context: Context): ActPostViews {
 }
 
 class ActPost : ComponentActivity(),
-    View.OnClickListener,
     PostAttachment.Callback,
     MyClickableSpanHandler {
 
@@ -832,6 +840,7 @@ class ActPost : ComponentActivity(),
     var accountAvatarAnimatedUrl by mutableStateOf<String?>(null)
     var accountAvatarCorner by mutableStateOf(0f)
     var showAttachmentSection by mutableStateOf(false)
+    var selectedLanguageIndex by mutableIntStateOf(0)
     var attachmentSlots by mutableStateOf(List(4) { AttachmentSlotUi() })
     var attachmentThumbCorner by mutableStateOf(0f)
     var showAttachmentRearrange by mutableStateOf(false)
@@ -942,6 +951,7 @@ class ActPost : ComponentActivity(),
         accountAvatarAnimatedUrl = null
         accountAvatarCorner = calcIconRound(dp(32))
         showAttachmentSection = false
+        selectedLanguageIndex = 0
         attachmentSlots = List(4) { AttachmentSlotUi() }
         attachmentThumbCorner = calcIconRound(dp(48))
         showAttachmentRearrange = false
@@ -1036,13 +1046,6 @@ class ActPost : ComponentActivity(),
                 log.e(ex, "can't save draft.")
                 showToast(ex, "can't save draft.")
             }
-        }
-    }
-
-    override fun onClick(v: View) {
-        refActPost = WeakReference(this)
-        when (v) {
-            else -> Unit
         }
     }
 
@@ -1172,12 +1175,5 @@ class ActPost : ComponentActivity(),
             }
         }
 
-        views.spLanguage.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            languages.map { it.second }.toTypedArray()
-        ).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
     }
 }

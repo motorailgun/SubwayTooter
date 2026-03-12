@@ -27,7 +27,7 @@ fun ActPost.selectAccount(a: SavedAccount?) {
         // 先読みしてキャッシュを温める。この時点では取得結果を使わない
         App1.custom_emoji_lister.tryGetList(a)
 
-        views.spLanguage.setSelection(max(0, languages.indexOfFirst { it.first == a.lang }))
+        selectedLanguageIndex = max(0, languages.indexOfFirst { it.first == a.lang })
 
         val ac = daoAcctColor.load(a)
         accountButtonText = ac.nickname

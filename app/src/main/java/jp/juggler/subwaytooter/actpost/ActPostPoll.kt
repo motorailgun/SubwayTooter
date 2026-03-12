@@ -2,13 +2,11 @@ package jp.juggler.subwaytooter.actpost
 
 import jp.juggler.subwaytooter.ActPost
 import jp.juggler.util.data.notEmpty
-import jp.juggler.util.ui.vg
 
 private fun Double?.finiteOrZero(): Double = if (this?.isFinite() == true) this else 0.0
 
 fun ActPost.showPoll() {
-    val i = pollTypeIndex
-    views.llEnquete.vg(i != 0)
+    // no-op: poll section visibility is controlled by Compose state.
 }
 
 // 投票が有効で何か入力済みなら真

@@ -23,7 +23,6 @@ import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.CharacterGroup
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
-import jp.juggler.util.ui.vg
 
 private val log = LogCategory("ActPostExtra")
 
@@ -323,7 +322,7 @@ fun ActPost.performPost() {
             editStatusId = states.editStatusId,
             emojiMapCustom = App1.custom_emoji_lister.getMapNonBlocking(account),
             useQuoteToot = quoteChecked,
-            lang = languages.elementAtOrNull(views.spLanguage.selectedItemPosition)?.first
+            lang = languages.elementAtOrNull(selectedLanguageIndex)?.first
                 ?: SavedAccount.LANG_WEB
         ).runSuspend()
         when (postResult) {
@@ -370,5 +369,5 @@ fun ActPost.performPost() {
 }
 
 fun ActPost.showContentWarningEnabled() {
-    views.cwFrame.vg(contentWarningChecked)
+    // no-op: CW field visibility is controlled directly by Compose state.
 }
