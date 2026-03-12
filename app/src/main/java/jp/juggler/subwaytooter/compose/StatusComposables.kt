@@ -58,7 +58,6 @@ import jp.juggler.subwaytooter.calcIconRound
 import jp.juggler.subwaytooter.column.Column
 import jp.juggler.subwaytooter.column.getContentColor
 import jp.juggler.subwaytooter.pref.PrefB
-import jp.juggler.subwaytooter.stylerBoostAlpha
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.table.daoAcctColor
 import jp.juggler.subwaytooter.table.daoContentWarning
@@ -309,7 +308,7 @@ fun BoostHeader(
             contentDescription = null,
             modifier = Modifier
                 .size(32.dp)
-                .alpha(stylerBoostAlpha),
+                .alpha(1f),
             tint = contentColorCompose,
         )
 
@@ -391,7 +390,7 @@ fun ReplyHeader(
             contentDescription = null,
             modifier = Modifier
                 .size(32.dp)
-                .alpha(stylerBoostAlpha),
+                .alpha(1f),
             tint = contentColorCompose,
         )
 
@@ -749,7 +748,7 @@ fun MediaAttachments(
                     Icon(
                         painter = painterResource(id = R.drawable.ic_close),
                         contentDescription = stringResource(R.string.hide),
-                        tint = Color(contentColor).copy(alpha = stylerBoostAlpha),
+                        tint = Color(contentColor).copy(alpha = 1f),
                     )
                 }
             }

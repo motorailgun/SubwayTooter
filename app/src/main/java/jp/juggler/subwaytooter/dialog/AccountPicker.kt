@@ -4,30 +4,48 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Dialog
 import android.content.DialogInterface
-import android.text.Spannable
-import android.text.SpannableStringBuilder
-import android.text.style.RelativeSizeSpan
-import android.view.Gravity
-import android.view.View
-import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
-import androidx.appcompat.widget.AppCompatButton
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import jp.juggler.subwaytooter.R
+import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.table.*
 import jp.juggler.util.data.notEmpty
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
 import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.dismissSafe
-import jp.juggler.util.ui.dp
-import jp.juggler.util.ui.getAdaptiveRippleDrawableRound
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 private val log = LogCategory("pickAccount")
+
+@Composable
+private fun AppTheme(content: @Composable () -> Unit) {
+    StThemedContent(content = content)
+}
 
 @SuppressLint("InflateParams")
 suspend fun Activity.pickAccount(
@@ -67,7 +85,7 @@ suspend fun Activity.pickAccount(
 
     if (accountList.isEmpty()) {
 
-        val sb = StringBuilder()
+        val sb = java.lang.StringBuilder()
 
         if (removedPseudo > 0) {
             sb.append(activity.getString(R.string.not_available_for_pseudo_account))
@@ -95,64 +113,6 @@ suspend fun Activity.pickAccount(
     }
 
     return suspendCoroutine { continuation ->
-        val tvMessage = TextView(activity).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            )
-            setPadding(activity.dp(12), activity.dp(6), activity.dp(12), activity.dp(6))
-            setTextColor(activity.attrColor(android.R.attr.textColorPrimary))
-            textSize = 16f
-            visibility = View.GONE
-        }
-
-        val llAccounts = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            val pad = activity.dp(12)
-            setPadding(pad, pad, pad, pad)
-        }
-
-        val scrollView = ScrollView(activity).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0, 1f,
-            )
-            addView(llAccounts, ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            ))
-        }
-
-        val divider = View(activity).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                activity.dp(1),
-            )
-            setBackgroundColor(activity.attrColor(R.attr.colorSettingDivider))
-        }
-
-        val btnCancel = AppCompatButton(activity).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            )
-            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
-            text = activity.getString(R.string.cancel)
-            isAllCaps = false
-        }
-
-        val viewRoot = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            )
-            addView(tvMessage)
-            addView(scrollView)
-            addView(divider)
-            addView(btnCancel)
-        }
-
         val dialog = Dialog(activity)
         val isResumed = AtomicBoolean(false)
 
@@ -163,86 +123,119 @@ suspend fun Activity.pickAccount(
             }
         }
 
-        dialog.setContentView(viewRoot)
-        if (message != null && message.isNotEmpty()) {
-            tvMessage.visibility = View.VISIBLE
-            tvMessage.text = message
-        }
-
-        btnCancel.setOnClickListener {
-            dialog.cancel()
-        }
-
-        dialog.setCancelable(true)
-        dialog.setCanceledOnTouchOutside(true)
-
         val density = activity.resources.displayMetrics.density
-
         val padX = (0.5f + 12f * density).toInt()
         val padY = (0.5f + 6f * density).toInt()
 
-        for (a in accountList) {
-            val lp = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
+        val composeView = ComposeView(activity).apply {
+            setContent {
+                AppTheme {
+                    Surface {
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (!message.isNullOrEmpty()) {
+                                Text(
+                                    text = message,
+                                    fontSize = 16.sp,
+                                    color = Color(activity.attrColor(android.R.attr.textColorPrimary)),
+                                    modifier = Modifier.padding(12.dp, 6.dp, 12.dp, 6.dp)
+                                )
+                            }
+                            
+                            LazyColumn(
+                                modifier = Modifier
+                                    .weight(1f, fill = false)
+                                    .fillMaxWidth()
+                            ) {
+                                item {
+                                    AndroidView(
+                                        factory = { context ->
+                                            LinearLayout(context).apply {
+                                                orientation = LinearLayout.VERTICAL
+                                                layoutParams = LinearLayout.LayoutParams(
+                                                    LinearLayout.LayoutParams.MATCH_PARENT,
+                                                    LinearLayout.LayoutParams.WRAP_CONTENT
+                                                )
+                                                extraCallback(this, padX, padY)
+                                            }
+                                        }
+                                    )
+                                }
 
-            val ac = daoAcctColor.load(a)
+                                items(accountList) { a ->
+                                    val ac = daoAcctColor.load(a)
+                                    val hasBg = daoAcctColor.hasColorBackground(ac)
+                                    val hasFg = daoAcctColor.hasColorForeground(ac)
 
-            val b = AppCompatButton(activity)
+                                    val bgColor = if (hasBg) Color(ac.colorBg) else Color.Transparent
+                                    val fgColor = if (hasFg) Color(ac.colorFg) else Color.Unspecified
+                                    
+                                    val errorMsg = try {
+                                        val status = daoAccountNotificationStatus.load(a.acct)
+                                        val lastNotificationError = status?.lastNotificationError?.notEmpty()
+                                        val lastSubscriptionError = status?.lastSubscriptionError?.notEmpty()
+                                        lastNotificationError ?: lastSubscriptionError
+                                    } catch (ex: Throwable) {
+                                        log.e(ex, "can't get notification status for ${a.acct}")
+                                        null
+                                    }
 
-            if (daoAcctColor.hasColorBackground(ac)) {
-                b.background = getAdaptiveRippleDrawableRound(
-                    activity,
-                    ac.colorBg,
-                    ac.colorFg
-                )
-            } else {
-                b.setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
-            }
-            if (daoAcctColor.hasColorForeground(ac)) {
-                b.setTextColor(ac.colorFg)
-            }
-
-            b.setPaddingRelative(padX, padY, padX, padY)
-            b.gravity = Gravity.START or Gravity.CENTER_VERTICAL
-            b.isAllCaps = false
-            b.layoutParams = lp
-            b.minHeight = (0.5f + 32f * density).toInt()
-
-            val sb = SpannableStringBuilder(ac.nickname)
-            try {
-                val status = daoAccountNotificationStatus.load(a.acct)
-                val lastNotificationError = status?.lastNotificationError?.notEmpty()
-                val lastSubscriptionError = status?.lastSubscriptionError?.notEmpty()
-                (lastNotificationError ?: lastSubscriptionError)?.let { message ->
-                    sb.append("\n")
-                    val start = sb.length
-                    sb.append(message)
-                    val end = sb.length
-                    sb.setSpan(
-                        RelativeSizeSpan(0.7f),
-                        start,
-                        end,
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-                    )
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                                            .background(color = bgColor, shape = RoundedCornerShape(6.dp))
+                                            .clickable {
+                                                if (isResumed.compareAndSet(false, true)) {
+                                                    continuation.resume(a)
+                                                }
+                                                dialog.dismissSafe()
+                                            }
+                                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                                        contentAlignment = Alignment.CenterStart
+                                    ) {
+                                        Text(
+                                            text = buildAnnotatedString {
+                                                append(ac.nickname)
+                                                if (errorMsg != null) {
+                                                    append("\n")
+                                                    withStyle(style = SpanStyle(fontSize = 11.sp)) {
+                                                        append(errorMsg)
+                                                    }
+                                                }
+                                            },
+                                            color = fgColor,
+                                            lineHeight = 20.sp
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            HorizontalDivider(
+                                color = Color(activity.attrColor(R.attr.colorSettingDivider)),
+                                thickness = 1.dp
+                            )
+                            
+                            TextButton(
+                                onClick = { dialog.cancel() },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(stringResource(R.string.cancel))
+                            }
+                        }
+                    }
                 }
-            } catch (ex: Throwable) {
-                log.e(ex, "can't get notification status for ${a.acct}")
             }
-            b.text = sb
-
-            b.setOnClickListener {
-                if (isResumed.compareAndSet(false, true)) {
-                    continuation.resume(a)
-                }
-                dialog.dismissSafe()
-            }
-            llAccounts.addView(b)
         }
 
-        extraCallback(llAccounts, padX, padY)
-
+        dialog.setContentView(composeView)
+        dialog.setCancelable(true)
+        dialog.setCanceledOnTouchOutside(true)
+        dialog.window?.setLayout(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.WRAP_CONTENT
+        )
         dialog.show()
     }
 }

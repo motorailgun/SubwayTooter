@@ -201,52 +201,6 @@ fun ActMain.onMyClickableSpanClickedImpl(viewClicked: View, span: MyClickableSpa
     )
 }
 
-suspend fun ActMain.themeDefaultChangedDialog() {
-    val lpThemeDefaultChangedWarnTime = PrefL.lpThemeDefaultChangedWarnTime
-    val ipUiTheme = PrefI.ipUiTheme
-    val now = System.currentTimeMillis()
-
-    // テーマが未定義でなければ警告しない
-    if (lazyPref.getInt(ipUiTheme.key, -1) != -1) {
-        log.i("themeDefaultChangedDialog: theme was set.")
-        return
-    }
-
-    // 頻繁には警告しない
-    if (now - lpThemeDefaultChangedWarnTime.value < TimeUnit.DAYS.toMillis(60L)) {
-        log.i("themeDefaultChangedDialog: avoid frequently check.")
-        return
-    }
-    lpThemeDefaultChangedWarnTime.value = now
-
-    // 色がすべてデフォルトなら警告不要
-    val customizedKeys = ArrayList<String>()
-    appSettingRoot.items.find { it.caption == R.string.color }?.scan { item ->
-        item.pref?.let { p ->
-            when {
-                p == PrefS.spBoostAlpha -> Unit
-                p.hasNonDefaultValue() -> customizedKeys.add(p.key)
-            }
-        }
-    }
-    if (customizedKeys.isEmpty()) {
-        ipUiTheme.value = ipUiTheme.defVal
-        return
-    }
-    log.w("themeDefaultChangedDialog: customizedKeys=${customizedKeys.joinToString(",")}")
-    suspendCancellableCoroutine { cont ->
-        val dialog = AlertDialog.Builder(this)
-            .setMessage(R.string.color_theme_changed)
-            .setPositiveButton(android.R.string.ok, null)
-            .setOnDismissListener {
-                if (cont.isActive) cont.resume(Unit) { _, _, _ -> }
-            }
-            .create()
-        cont.invokeOnCancellation { dialog.dismissSafe() }
-        dialog.show()
-    }
-}
-
 fun ActMain.launchDialogs() {
     launchAndShowError {
         // プライバシーポリシー
@@ -258,9 +212,6 @@ fun ActMain.launchDialogs() {
         }
         // 同意がないなら残りの何かは表示しない
         if (!agreed) return@launchAndShowError
-
-        // テーマ告知
-        themeDefaultChangedDialog()
 
         // 通知権限の確認を一度だけ行う
         if (!prefDevice.supressRequestNotificationPermission) {

@@ -23,7 +23,6 @@ import jp.juggler.subwaytooter.column.ColumnType
 import jp.juggler.subwaytooter.column.isConversation
 import jp.juggler.subwaytooter.defaultColorIcon
 import jp.juggler.subwaytooter.pref.PrefB
-import jp.juggler.subwaytooter.stylerBoostAlpha
 import jp.juggler.subwaytooter.table.daoContentWarning
 import jp.juggler.subwaytooter.table.daoMediaShown
 import jp.juggler.subwaytooter.util.OpenSticker
@@ -342,7 +341,7 @@ private fun ItemViewHolder.showAttachments(status: TootStatus) {
             btnHideMedia,
             R.drawable.ic_close,
             color = colorTextContent,
-            alphaMultiplier = stylerBoostAlpha
+            alphaMultiplier = 1f
         )
     }
 }

@@ -2,21 +2,39 @@ package jp.juggler.subwaytooter.dialog
 
 import android.app.Activity
 import android.app.Dialog
-import android.view.View
 import android.view.WindowManager
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.EditText
-import android.widget.FrameLayout
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootAccount
 import jp.juggler.subwaytooter.api.entity.TootStatus
+import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.table.SavedAccount
-import jp.juggler.util.log.*
+import jp.juggler.util.log.showToast
 import jp.juggler.util.ui.attrColor
+
+@Composable
+private fun AppTheme(content: @Composable () -> Unit) {
+    StThemedContent(content = content)
+}
 
 fun Activity.showReportDialog(
     accessInfo: SavedAccount,
@@ -26,143 +44,112 @@ fun Activity.showReportDialog(
     onClickOk: (dialog: Dialog, comment: String, forward: Boolean) -> Unit,
 ) {
     val dialog = Dialog(this)
-    val density = resources.displayMetrics.density
-    val dp3 = (3 * density + 0.5f).toInt()
-    val dp6 = (6 * density + 0.5f).toInt()
-    val dp12 = (12 * density + 0.5f).toInt()
-    val dp24 = (24 * density + 0.5f).toInt()
+    val composeView = ComposeView(this).apply {
+        setContent {
+            AppTheme {
+                var comment by remember { mutableStateOf("") }
+                var forward by remember { mutableStateOf(true) }
+                val buttonBgCw = remember { Color(attrColor(R.attr.colorButtonBgCw)) }
 
-    val innerLayout = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        setPadding(dp12, dp12, dp12, dp12)
-    }
+                Surface {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f, fill = false)
+                                .verticalScroll(rememberScrollState())
+                                .padding(horizontal = 12.dp)
+                        ) {
+                            Text(text = stringResource(R.string.user))
+                            Text(
+                                text = who.acct.pretty,
+                                fontSize = 20.sp,
+                                modifier = Modifier.padding(top = 3.dp)
+                            )
 
-    // User label
-    innerLayout.addView(
-        TextView(this).apply { setText(R.string.user) },
-        LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ),
-    )
+                            if (status != null) {
+                                Text(
+                                    text = stringResource(R.string.status),
+                                    modifier = Modifier.padding(top = 12.dp)
+                                )
+                                Text(
+                                    text = status.decoded_content.toString(),
+                                    modifier = Modifier
+                                        .padding(top = 3.dp)
+                                        .background(buttonBgCw)
+                                        .padding(6.dp)
+                                )
+                            }
 
-    // User value
-    innerLayout.addView(
-        TextView(this).apply {
-            text = who.acct.pretty
-            textSize = 20f
-        },
-        LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ).apply { topMargin = dp3 },
-    )
+                            Text(
+                                text = stringResource(R.string.report_reason),
+                                modifier = Modifier.padding(top = 24.dp)
+                            )
+                            
+                            OutlinedTextField(
+                                value = comment,
+                                onValueChange = { comment = it },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 3.dp)
+                                    .heightIn(min = 100.dp),
+                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
+                                maxLines = Int.MAX_VALUE
+                            )
 
-    // Status caption + value (conditional)
-    if (status != null) {
-        innerLayout.addView(
-            TextView(this).apply { setText(R.string.status) },
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = dp12 },
-        )
-        innerLayout.addView(
-            TextView(this).apply {
-                text = status.decoded_content
-                setPadding(dp6, dp6, dp6, dp6)
-                setBackgroundColor(attrColor(R.attr.colorButtonBgCw))
-            },
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = dp3 },
-        )
-    }
+                            if (canForward) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = forward,
+                                        onCheckedChange = { forward = it }
+                                    )
+                                    Text(
+                                        text = getString(R.string.report_forward_to, who.apDomain.pretty),
+                                        modifier = Modifier.padding(start = 8.dp)
+                                    )
+                                }
+                            }
+                        }
 
-    // Comment label
-    innerLayout.addView(
-        TextView(this).apply { setText(R.string.report_reason) },
-        LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ).apply { topMargin = dp24 },
-    )
-
-    // Comment input
-    val etComment = EditText(this).apply {
-        importantForAutofill = EditText.IMPORTANT_FOR_AUTOFILL_NO
-        inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
-        minLines = 3
-    }
-    val commentFrame = FrameLayout(this).apply {
-        setBackgroundColor(attrColor(R.attr.colorPostFormBackground))
-        addView(etComment)
-    }
-    innerLayout.addView(
-        commentFrame,
-        LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ).apply { topMargin = dp3 },
-    )
-
-    // Forward checkbox (conditional)
-    val cbForward = CheckBox(this).apply {
-        isChecked = true
-        text = getString(R.string.report_forward_to, who.apDomain.pretty)
-    }
-    if (canForward) {
-        innerLayout.addView(
-            cbForward,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { topMargin = dp12 },
-        )
-    }
-
-    val scrollView = ScrollView(this).apply {
-        addView(innerLayout)
-    }
-
-    // Button bar
-    val btnCancel = Button(this, null, android.R.attr.buttonBarButtonStyle).apply {
-        setText(R.string.cancel)
-        setOnClickListener { dialog.cancel() }
-    }
-    val btnOk = Button(this, null, android.R.attr.buttonBarButtonStyle).apply {
-        setText(R.string.ok)
-        setOnClickListener {
-            when (val comment = etComment.text?.toString()?.trim()) {
-                null, "" -> showToast(true, R.string.comment_empty)
-                else -> onClickOk(dialog, comment, canForward && cbForward.isChecked)
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = { dialog.cancel() }) {
+                                Text(stringResource(R.string.cancel))
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            TextButton(onClick = {
+                                val trimmed = comment.trim()
+                                if (trimmed.isEmpty()) {
+                                    showToast(true, R.string.comment_empty)
+                                } else {
+                                    onClickOk(dialog, trimmed, canForward && forward)
+                                }
+                            }) {
+                                Text(stringResource(R.string.ok))
+                            }
+                        }
+                    }
+                }
             }
         }
     }
-    val buttonBar = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL
-        addView(btnCancel, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        addView(btnOk, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-    }
 
-    val root = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        addView(scrollView, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f,
-        ))
-        addView(buttonBar, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ))
-    }
-
-    dialog.apply {
-        setContentView(root)
-        window?.setLayout(
-            WindowManager.LayoutParams.MATCH_PARENT,
-            WindowManager.LayoutParams.WRAP_CONTENT,
-        )
-        show()
-    }
+    dialog.setContentView(composeView)
+    dialog.window?.setLayout(
+        WindowManager.LayoutParams.MATCH_PARENT,
+        WindowManager.LayoutParams.WRAP_CONTENT,
+    )
+    dialog.show()
 }

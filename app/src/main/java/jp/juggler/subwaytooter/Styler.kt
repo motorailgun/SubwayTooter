@@ -357,13 +357,10 @@ fun fixHorizontalMargin(v: View) {
 }
 
 // ActMainの初期化時に更新される
-var stylerRoundRatio: Float = 0.33f * 0.5f
-var stylerBoostAlpha: Float = 1f
-
-fun calcIconRound(wh: Int) = wh.toFloat() * stylerRoundRatio
+fun calcIconRound(wh: Int) = wh.toFloat() * 0.165f
 
 fun calcIconRound(lp: ViewGroup.LayoutParams) =
-    min(lp.width, lp.height).toFloat() * stylerRoundRatio
+    min(lp.width, lp.height).toFloat() * 0.165f
 
 fun SpannableStringBuilder.appendColorShadeIcon(
     context: Context,
@@ -474,32 +471,17 @@ fun ViewGroup.generateLayoutParamsEx(): ViewGroup.LayoutParams? =
 
 
 fun ComponentActivity.enableEdgeToEdgeEx(forceDark: Boolean) {
-    var nTheme = PrefI.ipUiTheme.value
-    if (forceDark && nTheme == 0) nTheme = 1
-    val isLightTheme = when (nTheme) {
-        2 -> false // R.style.AppTheme_Mastodon
-        1 -> false // R.style.AppTheme_Dark
-        /* 0 */ else -> true // R.style.AppTheme_Light
-    }
     val colorBarBg = when{
         forceDark -> Color.BLACK
         else -> attrColor(R.attr.colorWindowInsetsBg)
     }
 
-    val barStyle =when {
-        isLightTheme -> SystemBarStyle.light(
-            // API 28以下では色を指定できる
-            // bg color used when light theme that have dark icon, should use light color.
-            scrim = fixColor(src = colorBarBg, lExpect = 1f),
-            // bg color used when light theme that have LIGHT icon, should use dark color.
-            darkScrim = fixColor(src = colorBarBg, lExpect = 0f),
-        )
-        else -> SystemBarStyle.dark(
-            // API 28以下では色を指定できる
-            // bg color used when dark theme that have LIGHT icon, should use dark color.
-            scrim = fixColor(src = colorBarBg, lExpect = 0f),
-        )
+    val barStyle = if (forceDark) {
+        SystemBarStyle.dark(scrim = fixColor(src = colorBarBg, lExpect = 0f))
+    } else {
+        SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT)
     }
+    
     enableEdgeToEdge(
         statusBarStyle = barStyle,
         navigationBarStyle = barStyle,

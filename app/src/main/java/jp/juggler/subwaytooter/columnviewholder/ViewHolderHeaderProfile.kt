@@ -568,7 +568,7 @@ internal class ViewHolderHeaderProfile(
             btnMore,
             R.drawable.ic_more,
             color = contentColor,
-            alphaMultiplier = stylerBoostAlpha
+            alphaMultiplier = 1f
         )
 
         setIconDrawableId(
@@ -576,7 +576,7 @@ internal class ViewHolderHeaderProfile(
             btnPersonalNotesEdit,
             R.drawable.ic_edit,
             color = contentColor,
-            alphaMultiplier = stylerBoostAlpha
+            alphaMultiplier = 1f
         )
 
         val acctColor = column.getAcctColor()
@@ -702,7 +702,7 @@ internal class ViewHolderHeaderProfile(
             relation,
             who,
             colorTextContent,
-            alphaMultiplier = stylerBoostAlpha
+            alphaMultiplier = 1f
         )
 
         tvPersonalNotes.text = relation.note ?: ""
@@ -745,7 +745,7 @@ internal class ViewHolderHeaderProfile(
             relation,
             moved,
             colorTextContent,
-            alphaMultiplier = stylerBoostAlpha
+            alphaMultiplier = 1f
         )
     }
 

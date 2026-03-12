@@ -47,12 +47,10 @@ import jp.juggler.subwaytooter.actmain.onMyClickableSpanClickedImpl
 import jp.juggler.subwaytooter.actmain.phoneTab
 import jp.juggler.subwaytooter.actmain.refreshAfterPost
 import jp.juggler.subwaytooter.actmain.reloadAccountSetting
-import jp.juggler.subwaytooter.actmain.reloadBoostAlpha
 import jp.juggler.subwaytooter.actmain.reloadColors
 import jp.juggler.subwaytooter.actmain.reloadFonts
 import jp.juggler.subwaytooter.actmain.reloadIconSize
 import jp.juggler.subwaytooter.actmain.reloadMediaHeight
-import jp.juggler.subwaytooter.actmain.reloadRoundRatio
 import jp.juggler.subwaytooter.actmain.reloadTextSize
 import jp.juggler.subwaytooter.actmain.reloadTimeZone
 import jp.juggler.subwaytooter.actmain.resizeColumnWidth
@@ -930,8 +928,6 @@ class ActMain : ComponentActivity(),
 
         reloadFonts()
         reloadIconSize()
-        reloadRoundRatio()
-        reloadBoostAlpha()
 
         findViews()
 

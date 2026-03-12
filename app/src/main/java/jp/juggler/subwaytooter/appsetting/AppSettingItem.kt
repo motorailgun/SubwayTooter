@@ -791,7 +791,6 @@ val appSettingRoot = AppSettingItem(null, SettingType.Section, R.string.app_sett
         )
 
         text(PrefS.spAvatarIconSize, R.string.avatar_icon_size, InputTypeEx.numberDecimal)
-        text(PrefS.spRoundRatio, R.string.avatar_icon_round_ratio, InputTypeEx.numberDecimal)
         sw(PrefB.bpDontRound, R.string.avatar_icon_dont_round)
         text(PrefS.spReplyIconSize, R.string.reply_icon_size, InputTypeEx.numberDecimal)
         text(PrefS.spHeaderIconSize, R.string.header_icon_size, InputTypeEx.numberDecimal)
@@ -857,30 +856,9 @@ val appSettingRoot = AppSettingItem(null, SettingType.Section, R.string.app_sett
 
         sw(PrefB.bpKeepReactionSpace, R.string.keep_reaction_space)
 
-        text(PrefS.spEventTextAlpha, R.string.event_text_alpha, InputTypeEx.numberDecimal)
     }
 
-    section(R.string.color) {
 
-        spinnerSimple(
-            PrefI.ipUiTheme,
-            R.string.ui_theme,
-            R.string.theme_light,
-            R.string.theme_dark,
-            R.string.theme_mastodon_dark,
-        ) {
-            var lastTheme = PrefI.ipUiTheme.value
-            changed = {
-                val cur = PrefI.ipUiTheme.value
-                if (cur != lastTheme) {
-                    lastTheme = cur
-                    recreate()
-                }
-            }
-        }
-
-        text(PrefS.spBoostAlpha, R.string.boost_button_alpha, InputTypeEx.numberDecimal)
-    }
 
     section(R.string.performance) {
         sw(PrefB.bpShareViewPool, R.string.share_view_pool)

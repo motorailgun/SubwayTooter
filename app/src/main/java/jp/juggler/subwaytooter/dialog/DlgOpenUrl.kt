@@ -3,20 +3,43 @@ package jp.juggler.subwaytooter.dialog
 import android.app.Activity
 import android.app.Dialog
 import android.content.ClipboardManager
-import android.view.Gravity
 import android.view.WindowManager
-import android.view.inputmethod.EditorInfo
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.LinearLayout
-import android.widget.TextView
-import androidx.core.view.postDelayed
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.R
+import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
 import jp.juggler.util.systemService
-import jp.juggler.util.ui.isEnabledAlpha
+import kotlinx.coroutines.delay
 
 object DlgOpenUrl {
     private val log = LogCategory("DlgOpenUrl")
@@ -26,131 +49,33 @@ object DlgOpenUrl {
         onEmptyError: () -> Unit = { activity.showToast(false, R.string.url_empty) },
         onOK: (Dialog, String) -> Unit,
     ) {
-
-        val allowEmpty = false
-        val density = activity.resources.displayMetrics.density
-        val dp4 = (4 * density + 0.5f).toInt()
-        val dp12 = (12 * density + 0.5f).toInt()
-        val dp48 = (48 * density + 0.5f).toInt()
-
-        val clipboard: ClipboardManager? = systemService(activity)
-
-        // Label + paste button row
-        val tvLabel = TextView(activity).apply {
-            setText(R.string.url_of_user_or_status)
-            setPadding(dp12, dp12, dp12, 0)
-        }
-        val btnPaste = ImageButton(activity).apply {
-            setImageResource(R.drawable.ic_paste)
-            contentDescription = activity.getString(android.R.string.paste)
-        }
-        val headerRow = LinearLayout(activity).apply {
-            orientation = LinearLayout.HORIZONTAL
-            setPadding(dp12, 0, dp12, 0)
-            addView(tvLabel, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                gravity = Gravity.CENTER_VERTICAL
-            })
-            addView(btnPaste, LinearLayout.LayoutParams(dp48, dp48).apply {
-                marginStart = dp4
-                gravity = Gravity.CENTER_VERTICAL
-            })
-        }
-
-        // Input field
-        val etInput = EditText(activity).apply {
-            imeOptions = EditorInfo.IME_ACTION_DONE
-            importantForAutofill = EditText.IMPORTANT_FOR_AUTOFILL_NO
-            inputType = android.text.InputType.TYPE_CLASS_TEXT
-            minimumHeight = dp48
-            setPadding(dp12, 0, dp12, 0)
-        }
-
-        // Button bar
-        val btnCancel = Button(activity, null, android.R.attr.buttonBarButtonStyle).apply {
-            setText(R.string.cancel)
-        }
-        val btnOk = Button(activity, null, android.R.attr.buttonBarButtonStyle).apply {
-            setText(R.string.ok)
-        }
-        val buttonBar = LinearLayout(activity).apply {
-            orientation = LinearLayout.HORIZONTAL
-            addView(btnCancel, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            addView(btnOk, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        }
-
-        val root = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(headerRow, LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ))
-            addView(etInput, LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ))
-            addView(buttonBar, LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ))
-        }
-
-        etInput.setOnEditorActionListener { _, actionId, _ ->
-            if (actionId == EditorInfo.IME_ACTION_DONE) {
-                btnOk.performClick()
-                true
-            } else {
-                false
-            }
-        }
-
         val dialog = Dialog(activity)
-        dialog.setContentView(root)
-        btnCancel.setOnClickListener { dialog.cancel() }
-        btnPaste.setOnClickListener { pasteTo(clipboard, etInput) }
-        btnOk.setOnClickListener {
-            val token = etInput.text.toString().trim { it <= ' ' }
-            if (token.isEmpty() && !allowEmpty) {
-                onEmptyError()
-            } else {
-                onOK(dialog, token)
+
+        val composeView = ComposeView(activity).apply {
+            setContent {
+                StThemedContent {
+                    Surface {
+                        DlgOpenUrlContent(
+                            activity = activity,
+                            onCancel = { dialog.cancel() },
+                            onOk = { token ->
+                                if (token.isEmpty()) {
+                                    onEmptyError()
+                                } else {
+                                    onOK(dialog, token)
+                                }
+                            }
+                        )
+                    }
+                }
             }
         }
-
+        dialog.setContentView(composeView)
         dialog.window?.setLayout(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT
         )
-
-        val clipboardListener = ClipboardManager.OnPrimaryClipChangedListener {
-            showPasteButton(clipboard, btnPaste)
-        }
-        clipboard?.addPrimaryClipChangedListener(clipboardListener)
-        dialog.setOnDismissListener {
-            clipboard?.removePrimaryClipChangedListener(clipboardListener)
-        }
-        root.postDelayed(100L) {
-            showPasteButton(clipboard, btnPaste)
-            pasteTo(clipboard, etInput)
-        }
         dialog.show()
-    }
-
-    private fun showPasteButton(clipboard: ClipboardManager?, btnPaste: ImageButton) {
-        btnPaste.isEnabledAlpha = when {
-            clipboard == null -> false
-            !clipboard.hasPrimaryClip() -> false
-            clipboard.primaryClipDescription?.hasMimeType("text/plain") != true -> false
-            else -> true
-        }
-    }
-
-    private fun pasteTo(clipboard: ClipboardManager?, et: EditText) {
-        val text = clipboard?.getUrlFromClipboard()
-            ?: return
-        val ss = et.selectionStart
-        val se = et.selectionEnd
-        et.text.replace(ss, se, text)
-        et.setSelection(ss, ss + text.length)
     }
 
     private fun ClipboardManager.getUrlFromClipboard(): String? {
@@ -163,5 +88,115 @@ object DlgOpenUrl {
             log.w(ex, "getUrlFromClipboard failed.")
         }
         return null
+    }
+
+    @Composable
+    private fun DlgOpenUrlContent(
+        activity: Activity,
+        onCancel: () -> Unit,
+        onOk: (String) -> Unit
+    ) {
+        var textFieldValue by remember { mutableStateOf(TextFieldValue("")) }
+        var isPasteEnabled by remember { mutableStateOf(false) }
+        val clipboard: ClipboardManager? = remember { systemService(activity) }
+
+        val updatePasteState = {
+            isPasteEnabled = when {
+                clipboard == null -> false
+                !clipboard.hasPrimaryClip() -> false
+                clipboard.primaryClipDescription?.hasMimeType("text/plain") != true -> false
+                else -> true
+            }
+        }
+
+        val doPaste = {
+            val clipText = clipboard?.getUrlFromClipboard()
+            if (clipText != null) {
+                val text = textFieldValue.text
+                val selection = textFieldValue.selection
+                val newText = text.substring(0, selection.min) + clipText + text.substring(selection.max)
+                val newSelection = selection.min + clipText.length
+                textFieldValue = TextFieldValue(text = newText, selection = TextRange(newSelection))
+            }
+        }
+
+        DisposableEffect(clipboard) {
+            val listener = ClipboardManager.OnPrimaryClipChangedListener {
+                updatePasteState()
+            }
+            clipboard?.addPrimaryClipChangedListener(listener)
+            onDispose {
+                clipboard?.removePrimaryClipChangedListener(listener)
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            delay(100)
+            updatePasteState()
+            doPaste()
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp)
+            ) {
+                Text(
+                    text = stringResource(id = R.string.url_of_user_or_status),
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(
+                    onClick = { doPaste() },
+                    enabled = isPasteEnabled,
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_paste),
+                        contentDescription = stringResource(id = android.R.string.paste)
+                    )
+                }
+            }
+
+            OutlinedTextField(
+                value = textFieldValue,
+                onValueChange = { textFieldValue = it },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        onOk(textFieldValue.text.trim())
+                    }
+                ),
+                singleLine = true
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                TextButton(
+                    onClick = onCancel,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(id = R.string.cancel))
+                }
+                TextButton(
+                    onClick = { onOk(textFieldValue.text.trim()) },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(id = R.string.ok))
+                }
+            }
+        }
     }
 }

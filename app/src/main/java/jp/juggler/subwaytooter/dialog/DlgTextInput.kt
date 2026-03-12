@@ -2,93 +2,170 @@ package jp.juggler.subwaytooter.dialog
 
 import android.app.Dialog
 import android.graphics.Bitmap
-import android.graphics.Typeface
-import android.view.Gravity
 import android.view.WindowManager
-import android.view.inputmethod.EditorInfo
-import android.widget.Button
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.Button
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.R
+import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.util.coroutine.cancellationException
 import jp.juggler.util.coroutine.launchAndShowError
-import jp.juggler.util.data.notEmpty
 import jp.juggler.util.ui.dismissSafe
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resumeWithException
 
-private fun ComponentActivity.createTextInputDialogViews(
+private fun Int?.toKeyboardType(): KeyboardType {
+    if (this == null) return KeyboardType.Text
+    val clazz = this and android.text.InputType.TYPE_MASK_CLASS
+    val variation = this and android.text.InputType.TYPE_MASK_VARIATION
+    return when (clazz) {
+        android.text.InputType.TYPE_CLASS_NUMBER -> {
+            if ((this and android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL) != 0) {
+                KeyboardType.Decimal
+            } else {
+                KeyboardType.Number
+            }
+        }
+        android.text.InputType.TYPE_CLASS_PHONE -> KeyboardType.Phone
+        android.text.InputType.TYPE_CLASS_DATETIME -> KeyboardType.Number
+        android.text.InputType.TYPE_CLASS_TEXT -> {
+            when (variation) {
+                android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD,
+                android.text.InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD -> KeyboardType.Password
+                android.text.InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS -> KeyboardType.Email
+                android.text.InputType.TYPE_TEXT_VARIATION_URI -> KeyboardType.Uri
+                else -> KeyboardType.Text
+            }
+        }
+        else -> KeyboardType.Text
+    }
+}
+
+private fun Int?.isMultiLine(): Boolean {
+    if (this == null) return false
+    return (this and android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE) != 0
+}
+
+@Composable
+private fun AppTheme(content: @Composable () -> Unit) {
+    StThemedContent(content = content)
+}
+
+@Composable
+private fun TextInputDialogContent(
     title: CharSequence,
     initialText: CharSequence?,
     inputType: Int?,
-): Triple<LinearLayout, EditText, Pair<Button, Button>> {
-    val density = resources.displayMetrics.density
-    val dp6 = (6 * density + 0.5f).toInt()
-    val dp12 = (12 * density + 0.5f).toInt()
+    bitmap: Bitmap? = null,
+    onCancel: () -> Unit,
+    onOk: (String) -> Unit
+) {
+    var text by remember { mutableStateOf(initialText?.toString() ?: "") }
+    val focusRequester = remember { FocusRequester() }
 
-    val tvCaption = TextView(this).apply {
-        text = title
-        setTypeface(null, Typeface.BOLD)
-        setPadding(0, 0, 0, dp6)
-    }
-
-    val etInput = EditText(this).apply {
-        importantForAutofill = EditText.IMPORTANT_FOR_AUTOFILL_NO
-        imeOptions = EditorInfo.IME_ACTION_DONE
-        this.inputType = inputType ?: android.text.InputType.TYPE_CLASS_TEXT
-        gravity = Gravity.CENTER_VERTICAL
-    }
-    initialText?.notEmpty()?.let {
-        etInput.setText(it)
-        etInput.setSelection(it.length)
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
     }
 
-    val innerLayout = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        setPadding(dp12, dp6, dp12, dp6)
-        addView(tvCaption, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ))
-        addView(etInput, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ))
-    }
+    val isMultiline = inputType.isMultiLine()
 
-    val scrollView = ScrollView(this).apply {
-        addView(innerLayout)
-    }
+    Surface {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth()
+        ) {
+            Text(
+                text = title.toString(),
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
 
-    val btnCancel = Button(this, null, android.R.attr.buttonBarButtonStyle).apply {
-        setText(R.string.cancel)
-    }
-    val btnOk = Button(this, null, android.R.attr.buttonBarButtonStyle).apply {
-        setText(R.string.ok)
-    }
+            Column(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(focusRequester),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = inputType.toKeyboardType(),
+                        imeAction = if (isMultiline) ImeAction.Default else ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            if (!isMultiline) {
+                                onOk(text)
+                            }
+                        }
+                    ),
+                    singleLine = !isMultiline,
+                    maxLines = if (isMultiline) Int.MAX_VALUE else 1
+                )
 
-    val buttonBar = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL
-        addView(btnCancel, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        addView(btnOk, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-    }
+                if (bitmap != null) {
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp)
+                    )
+                }
+            }
 
-    val root = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        addView(scrollView, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f,
-        ))
-        addView(buttonBar, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ))
+            Row(
+                horizontalArrangement = Arrangement.End,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp)
+            ) {
+                Button(onClick = onCancel) {
+                    Text(stringResource(R.string.cancel))
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Button(onClick = { onOk(text) }) {
+                    Text(stringResource(R.string.ok))
+                }
+            }
+        }
     }
-
-    return Triple(root, etInput, btnOk to btnCancel)
 }
 
 suspend fun ComponentActivity.showTextInputDialog(
@@ -100,36 +177,36 @@ suspend fun ComponentActivity.showTextInputDialog(
     // returns true if we can close dialog
     onOk: suspend (String) -> Boolean,
 ) {
-    val (root, etInput, buttons) = createTextInputDialogViews(title, initialText, inputType)
-    val (btnOk, btnCancel) = buttons
-
-    etInput.setOnEditorActionListener { _, actionId, _ ->
-        if (actionId == EditorInfo.IME_ACTION_DONE) {
-            btnOk.performClick()
-            true
-        } else {
-            false
-        }
-    }
     val dialog = Dialog(this)
-    dialog.setContentView(root)
-    dialog.window?.setLayout(
-        WindowManager.LayoutParams.MATCH_PARENT,
-        WindowManager.LayoutParams.WRAP_CONTENT
-    )
     suspendCancellableCoroutine { cont ->
-        btnOk.setOnClickListener {
-            launchAndShowError {
-                val text = etInput.text.toString().trim { it <= ' ' }
-                if (text.isEmpty() && !allowEmpty) {
-                    onEmptyText()
-                } else if (onOk(text)) {
-                    if (cont.isActive) cont.resume(Unit) { _, _, _ -> }
-                    dialog.dismissSafe()
+        val composeView = ComposeView(this).apply {
+            setContent {
+                AppTheme {
+                    TextInputDialogContent(
+                        title = title,
+                        initialText = initialText,
+                        inputType = inputType,
+                        onCancel = { dialog.cancel() },
+                        onOk = { text ->
+                            launchAndShowError {
+                                val trimmedText = text.trim { it <= ' ' }
+                                if (trimmedText.isEmpty() && !allowEmpty) {
+                                    onEmptyText()
+                                } else if (onOk(trimmedText)) {
+                                    if (cont.isActive) cont.resume(Unit) { _, _, _ -> }
+                                    dialog.dismissSafe()
+                                }
+                            }
+                        }
+                    )
                 }
             }
         }
-        btnCancel.setOnClickListener { dialog.cancel() }
+        dialog.setContentView(composeView)
+        dialog.window?.setLayout(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.WRAP_CONTENT
+        )
         dialog.setOnDismissListener {
             if (cont.isActive) cont.resumeWithException(cancellationException())
         }
@@ -148,60 +225,42 @@ suspend fun ComponentActivity.showMediaDescEditDialog(
     // returns true if we can close dialog
     onOk: suspend (String) -> Boolean,
 ) {
-    val (root, etInput, buttons) = createTextInputDialogViews(title, initialText, inputType)
-    val (btnOk, btnCancel) = buttons
-
+    val dialog = Dialog(this)
+    
     // multiline input for media description
-    etInput.inputType = inputType
+    val actualInputType = inputType
         ?: (android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE)
 
-    // Add bitmap preview if provided
-    bitmap?.let { bmp ->
-        val density = resources.displayMetrics.density
-        val dp32 = (32 * density + 0.5f).toInt()
-        val scrollView = root.getChildAt(0) as? ScrollView
-        val innerLayout = scrollView?.getChildAt(0) as? LinearLayout
-        innerLayout?.addView(
-            ImageView(this).apply {
-                setImageBitmap(bmp)
-                adjustViewBounds = true
-                scaleType = ImageView.ScaleType.FIT_START
-                setPadding(dp32, dp32, dp32, dp32)
-            },
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ),
-        )
-    }
-
-    etInput.setOnEditorActionListener { _, actionId, _ ->
-        if (actionId == EditorInfo.IME_ACTION_DONE) {
-            btnOk.performClick()
-            true
-        } else {
-            false
-        }
-    }
-    val dialog = Dialog(this)
-    dialog.setContentView(root)
-    dialog.window?.setLayout(
-        WindowManager.LayoutParams.MATCH_PARENT,
-        WindowManager.LayoutParams.WRAP_CONTENT
-    )
     suspendCancellableCoroutine { cont ->
-        btnOk.setOnClickListener {
-            launchAndShowError {
-                val text = etInput.text.toString().trim { it <= ' ' }
-                if (text.isEmpty() && !allowEmpty) {
-                    onEmptyText()
-                } else if (onOk(text)) {
-                    if (cont.isActive) cont.resume(Unit) { _, _, _ -> }
-                    dialog.dismissSafe()
+        val composeView = ComposeView(this).apply {
+            setContent {
+                AppTheme {
+                    TextInputDialogContent(
+                        title = title,
+                        initialText = initialText,
+                        inputType = actualInputType,
+                        bitmap = bitmap,
+                        onCancel = { dialog.cancel() },
+                        onOk = { text ->
+                            launchAndShowError {
+                                val trimmedText = text.trim { it <= ' ' }
+                                if (trimmedText.isEmpty() && !allowEmpty) {
+                                    onEmptyText()
+                                } else if (onOk(trimmedText)) {
+                                    if (cont.isActive) cont.resume(Unit) { _, _, _ -> }
+                                    dialog.dismissSafe()
+                                }
+                            }
+                        }
+                    )
                 }
             }
         }
-        btnCancel.setOnClickListener { dialog.cancel() }
+        dialog.setContentView(composeView)
+        dialog.window?.setLayout(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.WRAP_CONTENT
+        )
         dialog.setOnDismissListener {
             if (cont.isActive) cont.resumeWithException(cancellationException())
         }

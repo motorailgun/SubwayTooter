@@ -32,7 +32,6 @@ import jp.juggler.subwaytooter.column.Column
 import jp.juggler.subwaytooter.column.getContentColor
 import jp.juggler.subwaytooter.pref.PrefB
 import jp.juggler.subwaytooter.pref.PrefI
-import jp.juggler.subwaytooter.stylerBoostAlpha
 import jp.juggler.util.data.notZero
 import jp.juggler.util.ui.applyAlphaMultiplier
 

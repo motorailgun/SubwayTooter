@@ -43,7 +43,6 @@ import jp.juggler.subwaytooter.column.getContentColor
 import jp.juggler.subwaytooter.pref.PrefB
 import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.subwaytooter.setFollowIcon
-import jp.juggler.subwaytooter.stylerBoostAlpha
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.table.UserRelation
 import jp.juggler.subwaytooter.table.daoUserRelation
@@ -170,7 +169,7 @@ class StatusButtons(
             btnConversation,
             R.drawable.ic_forum,
             color = colorTextContent,
-            alphaMultiplier = stylerBoostAlpha
+            alphaMultiplier = 1f
         )
     }
 
@@ -180,7 +179,7 @@ class StatusButtons(
             btnMore,
             R.drawable.ic_more,
             color = colorTextContent,
-            alphaMultiplier = stylerBoostAlpha
+            alphaMultiplier = 1f
         )
     }
 
@@ -390,7 +389,7 @@ class StatusButtons(
                 relation,
                 account,
                 colorTextContent,
-                alphaMultiplier = stylerBoostAlpha
+                alphaMultiplier = 1f
             )
             relation
         }
@@ -416,7 +415,7 @@ class StatusButtons(
                         this@StatusButtons.activity,
                         R.drawable.ic_question,
                         colorTextContent,
-                        stylerBoostAlpha
+                        1f
                     )
                 )
                 ++optionalButtonCount
@@ -516,7 +515,7 @@ class StatusButtons(
         count: String,
         contentDescription: String,
     ) {
-        val alpha = stylerBoostAlpha
+        val alpha = 1f
         val d = createColoredDrawable(
             activity,
             drawableId,
@@ -537,7 +536,7 @@ class StatusButtons(
         drawableId: Int,
         contentDescription: String,
     ) {
-        val alpha = stylerBoostAlpha
+        val alpha = 1f
         val d = createColoredDrawable(
             activity,
             drawableId,

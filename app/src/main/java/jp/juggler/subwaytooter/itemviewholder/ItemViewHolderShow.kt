@@ -329,7 +329,7 @@ fun ItemViewHolder.showAccount(whoRef: TootAccountRef) {
         relation,
         who,
         colorTextContent,
-        alphaMultiplier = stylerBoostAlpha
+        alphaMultiplier = 1f
     )
 
     if (column.type == ColumnType.FOLLOW_REQUESTS) {
@@ -366,7 +366,7 @@ fun ItemViewHolder.showBoost(
         ivBoosted,
         iconId,
         color = colorTextContent,
-        alphaMultiplier = stylerBoostAlpha
+        alphaMultiplier = 1f
     )
 
     ivBoostAvatar.vg(showAvatar)?.let { v ->
@@ -435,7 +435,7 @@ fun ItemViewHolder.showAggBoost(
         ivBoosted,
         iconId,
         color = colorTextContent,
-        alphaMultiplier = stylerBoostAlpha
+        alphaMultiplier = 1f
     )
 
     ivBoostAvatar.vg(showAvatar)?.let { v ->
@@ -619,7 +619,7 @@ fun ItemViewHolder.showReply(
         ivReply,
         iconId,
         color = colorTextContent,
-        alphaMultiplier = stylerBoostAlpha
+        alphaMultiplier = 1f
     )
 
     ivReplyAvatar.vg(target != null && target.avatar != replyer?.avatar)?.let { v ->
@@ -933,7 +933,7 @@ fun ItemViewHolder.showScheduled(item: TootScheduled) {
                 btnHideMedia,
                 R.drawable.ic_close,
                 color = colorTextContent,
-                alphaMultiplier = stylerBoostAlpha
+                alphaMultiplier = 1f
             )
         }
 

@@ -15,7 +15,6 @@ object PrefI {
 
     val ipBackButtonAction = IntPref("back_button_action", BACK_CLOSE_COLUMN)
 
-    val ipUiTheme = IntPref("ui_theme", 2, noRemove = true)
 
 //	val ipResizeImage = IntPref("resize_image", 4)
 

@@ -16,8 +16,6 @@ import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.subwaytooter.pref.PrefS
 import jp.juggler.subwaytooter.pref.impl.StringPref
 import jp.juggler.subwaytooter.span.MyClickableSpan
-import jp.juggler.subwaytooter.stylerBoostAlpha
-import jp.juggler.subwaytooter.stylerRoundRatio
 import jp.juggler.subwaytooter.util.CustomShare
 import jp.juggler.subwaytooter.view.ListDivider
 import jp.juggler.util.data.clip
@@ -81,33 +79,7 @@ fun ActMain.reloadIconSize() {
     ActMain.stripIconSize = parseIconSize(PrefS.spStripIconSize)
     ActMain.screenBottomPadding = parseIconSize(PrefS.spScreenBottomPadding, minDp = 0f)
 
-    ActMain.eventFadeAlpha = PrefS.spEventTextAlpha.value
-        .toFloatOrNull()
-        ?.takeIf { it.isFinite() }
-        ?.clip(0f, 1f)
-        ?: 1f
-}
-
-// initUIから呼ばれる
-fun reloadRoundRatio() {
-    val sizeDp = when {
-        PrefB.bpDontRound.value -> 0f
-        else -> PrefS.spRoundRatio.value
-            .toFloatOrNull()
-            ?.takeIf { it.isFinite() }
-            ?: 33f
-    }
-    stylerRoundRatio = (sizeDp / 100f).clip(0f, 1f) * 0.5f
-}
-
-// initUI から呼ばれる
-fun reloadBoostAlpha() {
-    stylerBoostAlpha = PrefS.spBoostAlpha.value
-        .toIntOrNull()
-        ?.toFloat()
-        ?.let { (it + 0.5f) / 100f }
-        ?.takeIf { it > 0f && it < 1f }
-        ?: 1f
+    ActMain.eventFadeAlpha = 1f
 }
 
 fun ActMain.reloadMediaHeight() {

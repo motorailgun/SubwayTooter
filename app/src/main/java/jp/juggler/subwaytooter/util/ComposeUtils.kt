@@ -1,55 +1,37 @@
 package jp.juggler.subwaytooter.util
 
 import android.app.Activity
+import android.content.res.Configuration
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import jp.juggler.subwaytooter.App1
-import jp.juggler.subwaytooter.pref.PrefI
-import jp.juggler.subwaytooter.pref.lazyPref
 
 /**
- * Composable function that observes the UI theme preference reactively.
- *
- * Returns the appropriate M3 ColorScheme based on the current theme setting,
- * and automatically recomposes when the preference changes (no app restart needed).
+ * Composable function that returns the appropriate M3 ColorScheme.
  */
 @Composable
 fun stColorScheme(): ColorScheme {
-    val themeState = remember { mutableIntStateOf(PrefI.ipUiTheme.value) }
-    DisposableEffect(Unit) {
-        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-            if (key == PrefI.ipUiTheme.key) {
-                themeState.intValue = PrefI.ipUiTheme.value
-            }
-        }
-        lazyPref.registerOnSharedPreferenceChangeListener(listener)
-        onDispose {
-            lazyPref.unregisterOnSharedPreferenceChangeListener(listener)
-        }
-    }
-    return themeToColorScheme(themeState.intValue)
+    return themeToColorScheme(isSystemInDarkTheme())
 }
 
 /**
  * Non-composable version for use outside of @Composable scope
- * (e.g., ViewModel data processing, View-based dialogs).
  */
 fun Activity.getStColorTheme(): ColorScheme {
     App1.prepare(applicationContext, "getStColorTheme")
-    return themeToColorScheme(PrefI.ipUiTheme.value)
+    val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
+    return themeToColorScheme(isDark)
 }
 
-private fun themeToColorScheme(nTheme: Int): ColorScheme = when (nTheme) {
-    2 -> mastodonDarkColorScheme()
-    1 -> darkColorScheme()
-    else -> lightColorScheme()
+private fun themeToColorScheme(isDark: Boolean): ColorScheme = if (isDark) {
+    mastodonDarkColorScheme()
+} else {
+    lightColorScheme()
 }
 
 /**

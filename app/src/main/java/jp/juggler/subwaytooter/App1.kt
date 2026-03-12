@@ -66,7 +66,6 @@ class App1 : Application() {
         super.onCreate()
         initializeToastUtils(this)
         prepare(applicationContext, "App1.onCreate")
-        registerActivityLifecycleCallbacks(themeLifecycleCallbacks)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -79,33 +78,9 @@ class App1 : Application() {
         super.onTerminate()
     }
 
-    private val themeLifecycleCallbacks = object : ActivityLifecycleCallbacks {
-        override fun onActivityResumed(activity: Activity) {
-            val applied = appliedThemes[activity] ?: return
-            var newTheme = PrefI.ipUiTheme.value
-            if (applied.forceDark && newTheme == 0) newTheme = 1
-            if (newTheme != applied.effectiveTheme) {
-                activity.recreate()
-            }
-        }
-
-        override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
-        override fun onActivityStarted(activity: Activity) {}
-        override fun onActivityPaused(activity: Activity) {}
-        override fun onActivityStopped(activity: Activity) {}
-        override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
-        override fun onActivityDestroyed(activity: Activity) {
-            appliedThemes.remove(activity)
-        }
-    }
-
     companion object {
 
         internal val log = LogCategory("App1")
-
-        private data class AppliedTheme(val effectiveTheme: Int, val forceDark: Boolean)
-
-        private val appliedThemes = WeakHashMap<Activity, AppliedTheme>()
 
         private fun Context.userAgentInterceptor() =
             Interceptor { chain ->
@@ -282,21 +257,15 @@ class App1 : Application() {
             forceDark: Boolean = false,
         ) {
             prepare(activity.applicationContext, "setActivityTheme")
-
-            var nTheme = PrefI.ipUiTheme.value
-            if (forceDark && nTheme == 0) nTheme = 1
+            
             activity.setTheme(
-                when (nTheme) {
-                    2 -> R.style.AppTheme_Mastodon
-                    1 -> R.style.AppTheme_Dark
-                    /* 0 */ else -> R.style.AppTheme_Light
+                if (forceDark) {
+                    R.style.AppTheme_Dark
+                } else {
+                    R.style.AppTheme_Light
                 }
             )
             activity.enableEdgeToEdgeEx(forceDark = forceDark)
-            appliedThemes[activity] = AppliedTheme(
-                effectiveTheme = nTheme,
-                forceDark = forceDark,
-            )
         }
 
         internal val CACHE_CONTROL = CacheControl.Builder()

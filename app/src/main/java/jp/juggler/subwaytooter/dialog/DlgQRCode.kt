@@ -3,13 +3,28 @@ package jp.juggler.subwaytooter.dialog
 import android.app.Dialog
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.view.Gravity
-import android.view.View
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.toBitmap
 import com.github.alexzhirkevich.customqrgenerator.QrData
 import com.github.alexzhirkevich.customqrgenerator.vector.QrCodeDrawable
 import com.github.alexzhirkevich.customqrgenerator.vector.createQrVectorOptions
@@ -20,6 +35,7 @@ import com.github.alexzhirkevich.customqrgenerator.vector.style.QrVectorLogoPadd
 import com.github.alexzhirkevich.customqrgenerator.vector.style.QrVectorLogoShape
 import com.github.alexzhirkevich.customqrgenerator.vector.style.QrVectorPixelShape
 import jp.juggler.subwaytooter.R
+import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.withProgress
@@ -36,93 +52,75 @@ fun ComponentActivity.dialogQrCode(
     message: CharSequence,
     url: String,
 ) = launchAndShowError("dialogQrCode failed.") {
-    val drawable = withProgress(
+    val bitmap = withProgress(
         caption = getString(R.string.generating_qr_code),
     ) {
         withContext(AppDispatchers.DEFAULT) {
-            QrCodeDrawable(data = QrData.Url(url), options = qrCodeOptions())
+            val drawable = QrCodeDrawable(data = QrData.Url(url), options = qrCodeOptions())
+            drawable.toBitmap(512, 512)
         }
     }
+
     val dialog = Dialog(this@dialogQrCode)
 
-    val density = resources.displayMetrics.density
-    val dp6 = (6 * density + 0.5f).toInt()
-    val dp10 = (10 * density + 0.5f).toInt()
-    val dp12 = (12 * density + 0.5f).toInt()
-    val dp280 = (280 * density + 0.5f).toInt()
-    val dp1 = (1 * density + 0.5f).toInt()
+    val composeView = ComposeView(this@dialogQrCode).apply {
+        setContent {
+            StThemedContent {
+                Surface {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+                    ) {
+                        Text(
+                            text = message.toString(),
+                            fontSize = 16.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
+                        
+                        Text(
+                            text = "[ $url ]",
+                            fontSize = 10.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 12.dp)
+                        )
 
-    val root = LinearLayout(this@dialogQrCode).apply {
-        orientation = LinearLayout.VERTICAL
-        setPadding(0, dp6, 0, 0)
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier
+                                .padding(10.dp)
+                                .size(280.dp)
+                        )
+
+                        val context = LocalContext.current
+                        HorizontalDivider(
+                            modifier = Modifier.fillMaxWidth(),
+                            thickness = 1.dp,
+                            color = androidx.compose.ui.graphics.Color(context.attrColor(R.attr.colorSettingDivider))
+                        )
+
+                        TextButton(
+                            onClick = { dialog.cancel() },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(stringResource(id = R.string.close))
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    root.addView(
-        TextView(this@dialogQrCode).apply {
-            text = message
-            textSize = 16f
-            gravity = Gravity.CENTER
-            setPadding(dp12, 0, dp12, 0)
-        },
-        LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ),
+    dialog.setContentView(composeView)
+    dialog.window?.setLayout(
+        WindowManager.LayoutParams.MATCH_PARENT,
+        WindowManager.LayoutParams.WRAP_CONTENT
     )
-
-    root.addView(
-        TextView(this@dialogQrCode).apply {
-            text = "[ $url ]" // なぜか素のURLだと@以降が表示されない
-            textSize = 10f
-            gravity = Gravity.CENTER
-            setPadding(dp12, 0, dp12, 0)
-        },
-        LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ),
-    )
-
-    root.addView(
-        ImageView(this@dialogQrCode).apply {
-            setImageDrawable(drawable)
-            scaleType = ImageView.ScaleType.CENTER_INSIDE
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-        },
-        LinearLayout.LayoutParams(dp280, dp280).apply {
-            setMargins(dp10, dp10, dp10, dp10)
-        },
-    )
-
-    root.addView(
-        View(this@dialogQrCode).apply {
-            setBackgroundColor(attrColor(R.attr.colorSettingDivider))
-        },
-        LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            dp1,
-        ),
-    )
-
-    root.addView(
-        Button(this@dialogQrCode).apply {
-            setText(R.string.close)
-            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
-            isAllCaps = false
-            setOnClickListener { dialog.cancel() }
-        },
-        LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ),
-    )
-
-    dialog.apply {
-        setContentView(root)
-        setCancelable(true)
-        setCanceledOnTouchOutside(true)
-        show()
-    }
+    dialog.setCancelable(true)
+    dialog.setCanceledOnTouchOutside(true)
+    dialog.show()
 }
 
 private fun ComponentActivity.qrCodeOptions() = createQrVectorOptions {

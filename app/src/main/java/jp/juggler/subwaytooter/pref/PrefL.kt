@@ -8,5 +8,4 @@ object PrefL {
     val lpDefaultPostAccount = LongPref("tablet_toot_default_account", -1L)
 
     // long
-    val lpThemeDefaultChangedWarnTime = LongPref("lpThemeDefaultChangedWarnTime", -1L)
 }
