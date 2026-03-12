@@ -3,7 +3,7 @@ package jp.juggler.subwaytooter.util
 import android.os.Handler
 import android.os.SystemClock
 import androidx.annotation.WorkerThread
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.TootApiCallback
 import jp.juggler.subwaytooter.api.TootApiClient
@@ -47,7 +47,7 @@ import java.nio.channels.ClosedChannelException
 import kotlin.coroutines.coroutineContext
 
 class AttachmentUploader(
-    activity: AppCompatActivity,
+    activity: ComponentActivity,
     private val handler: Handler,
 ) {
     companion object {

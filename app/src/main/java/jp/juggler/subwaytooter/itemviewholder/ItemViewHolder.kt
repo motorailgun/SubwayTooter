@@ -10,6 +10,7 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -29,16 +30,11 @@ import jp.juggler.subwaytooter.pref.PrefB
 import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.util.NetworkEmojiInvalidator
-import jp.juggler.subwaytooter.util.blurhashView
-import jp.juggler.subwaytooter.util.compatButton
 import jp.juggler.subwaytooter.util.endMargin
 import jp.juggler.subwaytooter.util.minHeightCompat
-import jp.juggler.subwaytooter.util.myNetworkImageView
-import jp.juggler.subwaytooter.util.myTextView
 import jp.juggler.subwaytooter.util.setPaddingStartEnd
 import jp.juggler.subwaytooter.util.startMargin
 import jp.juggler.subwaytooter.util.startPadding
-import jp.juggler.subwaytooter.util.trendTagHistoryView
 import jp.juggler.subwaytooter.view.BlurhashView
 import jp.juggler.subwaytooter.view.MyLinkMovementMethod
 import jp.juggler.subwaytooter.view.MyNetworkImageView
@@ -48,26 +44,8 @@ import jp.juggler.util.log.Benchmark
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.applyAlphaMultiplier
 import jp.juggler.util.ui.attrColor
+import jp.juggler.util.ui.dp
 import jp.juggler.util.ui.resDrawable
-import org.jetbrains.anko.UI
-import org.jetbrains.anko._LinearLayout
-import org.jetbrains.anko.allCaps
-import org.jetbrains.anko.backgroundDrawable
-import org.jetbrains.anko.backgroundResource
-import org.jetbrains.anko.bottomPadding
-import org.jetbrains.anko.button
-import org.jetbrains.anko.dip
-import org.jetbrains.anko.frameLayout
-import org.jetbrains.anko.imageButton
-import org.jetbrains.anko.imageResource
-import org.jetbrains.anko.imageView
-import org.jetbrains.anko.linearLayout
-import org.jetbrains.anko.matchParent
-import org.jetbrains.anko.padding
-import org.jetbrains.anko.textColor
-import org.jetbrains.anko.verticalLayout
-import org.jetbrains.anko.verticalMargin
-import org.jetbrains.anko.wrapContent
 
 class ItemViewHolder(
     val activity: ActMain,
@@ -399,104 +377,117 @@ class ItemViewHolder(
 
     /////////////////////////////////////////////////////////////////////
 
-    private fun _LinearLayout.inflateBoosted() {
-        llBoosted = linearLayout {
-            lparams(matchParent, wrapContent) {
-                bottomMargin = dip(6)
-            }
-            backgroundResource = R.drawable.btn_bg_transparent_round6dp
+    private fun LinearLayout.inflateBoosted() {
+        llBoosted = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
             gravity = Gravity.CENTER_VERTICAL
 
-            ivBoosted = imageView {
+            ivBoosted = ImageView(context).apply {
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }.lparams(dip(32), dip(32)) {}
+            }.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(32), context.dp(32)))
+            }
 
-            ivBoostAvatar = myNetworkImageView {
+            ivBoostAvatar = MyNetworkImageView(context).apply {
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }.lparams(dip(32), dip(32)) {}
+            }.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(32), context.dp(32)))
+            }
 
-            verticalLayout {
-                lparams(dip(0), wrapContent) {
-                    weight = 1f
-                    startMargin = dip(4)
-                }
+            LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
 
-                linearLayout {
-                    lparams(matchParent, wrapContent)
+                LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL
 
-                    tvBoostedAcct = myTextView {
+                    tvBoostedAcct = MyTextView(context).apply {
                         ellipsize = TextUtils.TruncateAt.END
                         gravity = Gravity.END
                         maxLines = 1
                         textSize = 12f // textSize の単位はSP
-                        // tools:text ="who@hoge"
-                    }.lparams(dip(0), wrapContent) {
-                        weight = 1f
+                    }.also {
+                        addView(it, LinearLayout.LayoutParams(context.dp(0), ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                            weight = 1f
+                        })
                     }
 
-                    tvBoostedTime = myTextView {
-
-                        startPadding = dip(2)
-
+                    tvBoostedTime = MyTextView(context).apply {
+                        startPadding = context.dp(2)
                         gravity = Gravity.END
                         textSize = 12f // textSize の単位はSP
-                        // tools:ignore="RtlSymmetry"
-                        // tools:text="2017-04-16 09:37:14"
-                    }.lparams(wrapContent, wrapContent)
+                    }.also {
+                        addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+                    }
+                }.also {
+                    addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
                 }
 
-                tvBoosted = myTextView {
-                    // tools:text = "～にブーストされました"
-                }.lparams(matchParent, wrapContent) {
-                    gravity = Gravity.CENTER_VERTICAL
+                tvBoosted = MyTextView(context).apply {
+                }.also {
+                    addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                        gravity = Gravity.CENTER_VERTICAL
+                    })
                 }
+            }.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(0), ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    weight = 1f
+                    startMargin = context.dp(4)
+                })
             }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                bottomMargin = context.dp(6)
+            })
         }
     }
 
-    private fun _LinearLayout.inflateFollowed() {
-        llFollow = linearLayout {
-            lparams(matchParent, wrapContent)
-
+    private fun LinearLayout.inflateFollowed() {
+        llFollow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
             background = resDrawable(R.drawable.btn_bg_transparent_round6dp)
             gravity = Gravity.CENTER_VERTICAL
 
-            ivFollow = myNetworkImageView {
+            ivFollow = MyNetworkImageView(context).apply {
                 contentDescription = context.getString(R.string.thumbnail)
                 scaleType = ImageView.ScaleType.FIT_END
-            }.lparams(dip(48), dip(40)) {
-                endMargin = dip(4)
+            }.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(48), context.dp(40)).apply {
+                    endMargin = context.dp(4)
+                })
             }
 
-            verticalLayout {
+            LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
 
-                lparams(dip(0), wrapContent) {
+                tvFollowerName = MyTextView(context).apply {
+                }.also {
+                    addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+                }
+
+                tvFollowerAcct = MyTextView(context).apply {
+                    setPaddingStartEnd(context.dp(4), context.dp(4))
+                    textSize = 12f // SP
+                }.also {
+                    addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+                }
+
+                tvLastStatusAt = MyTextView(context).apply {
+                    setPaddingStartEnd(context.dp(4), context.dp(4))
+                    textSize = 12f // SP
+                }.also {
+                    addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+                }
+            }.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(0), ViewGroup.LayoutParams.WRAP_CONTENT).apply {
                     weight = 1f
-                }
-
-                tvFollowerName = myTextView {
-                    // tools:text="Follower Name"
-                }.lparams(matchParent, wrapContent)
-
-                tvFollowerAcct = myTextView {
-                    setPaddingStartEnd(dip(4), dip(4))
-                    textSize = 12f // SP
-                }.lparams(matchParent, wrapContent)
-
-                tvLastStatusAt = myTextView {
-                    setPaddingStartEnd(dip(4), dip(4))
-                    textSize = 12f // SP
-                }.lparams(matchParent, wrapContent)
+                })
             }
 
-            frameLayout {
-                lparams(dip(40), dip(40)) {
-                    startMargin = dip(4)
-                }
-
-                btnFollow = imageButton {
+            FrameLayout(context).apply {
+                btnFollow = ImageButton(context).apply {
                     background =
                         ContextCompat.getDrawable(
                             context,
@@ -504,213 +495,276 @@ class ItemViewHolder(
                         )
                     contentDescription = context.getString(R.string.follow)
                     scaleType = ImageView.ScaleType.CENTER
-                    // tools:src="?attr/ic_follow_plus"
-                }.lparams(matchParent, matchParent)
+                }.also {
+                    addView(it, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+                }
 
-                ivFollowedBy = imageView {
+                ivFollowedBy = ImageView(context).apply {
                     scaleType = ImageView.ScaleType.CENTER
-                    // tools:src="?attr/ic_followed_by"
                     importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-                }.lparams(matchParent, matchParent)
+                }.also {
+                    addView(it, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+                }
+            }.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(40), context.dp(40)).apply {
+                    startMargin = context.dp(4)
+                })
             }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
     }
 
-    private fun _LinearLayout.inflateVerticalMedia(thumbnailHeight: Int) =
-        frameLayout {
-            lparams(matchParent, wrapContent) {
-                topMargin = dip(3)
-            }
-            llMedia = verticalLayout {
-                lparams(matchParent, matchParent)
+    private fun LinearLayout.inflateVerticalMedia(thumbnailHeight: Int) =
+        FrameLayout(context).apply {
+            llMedia = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
 
-                btnHideMedia = imageButton {
+                btnHideMedia = ImageButton(context).apply {
                     background = resDrawable(R.drawable.btn_bg_transparent_round6dp)
                     contentDescription = context.getString(R.string.hide)
-                    imageResource = R.drawable.ic_close
-                }.lparams(dip(32), dip(32)) {
-                    gravity = Gravity.END
+                    setImageResource(R.drawable.ic_close)
+                }.also {
+                    addView(it, LinearLayout.LayoutParams(context.dp(32), context.dp(32)).apply {
+                        gravity = Gravity.END
+                    })
                 }
                 ivMediaThumbnails.clear()
                 repeat(MEDIA_VIEW_COUNT) {
-                    myNetworkImageView {
+                    MyNetworkImageView(context).apply {
                         background = resDrawable(R.drawable.bg_thumbnail)
                         contentDescription = context.getString(R.string.thumbnail)
                         scaleType = ImageView.ScaleType.CENTER_CROP
-                    }.lparams(matchParent, thumbnailHeight) {
-                        topMargin = dip(3)
-                    }.let { ivMediaThumbnails.add(it) }
+                    }.also { iv ->
+                        addView(iv, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, thumbnailHeight).apply {
+                            topMargin = context.dp(3)
+                        })
+                        ivMediaThumbnails.add(iv)
+                    }
                 }
+            }.also {
+                addView(it, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             }
 
-            btnShowMedia = blurhashView {
+            btnShowMedia = BlurhashView(context).apply {
                 errorColor = context.attrColor(R.attr.colorShowMediaBackground)
                 gravity = Gravity.CENTER
-                textColor = context.attrColor(R.attr.colorShowMediaText)
-                minHeightCompat = dip(48)
-            }.lparams(matchParent, thumbnailHeight)
+                setTextColor(context.attrColor(R.attr.colorShowMediaText))
+                minHeightCompat = context.dp(48)
+            }.also {
+                addView(it, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, thumbnailHeight))
+            }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                topMargin = context.dp(3)
+            })
         }
 
-    private fun _LinearLayout.inflateHorizontalMedia(thumbnailHeight: Int) =
-        frameLayout {
-            lparams(matchParent, thumbnailHeight) { topMargin = dip(3) }
-            llMedia = linearLayout {
-                lparams(matchParent, matchParent)
+    private fun LinearLayout.inflateHorizontalMedia(thumbnailHeight: Int) =
+        FrameLayout(context).apply {
+            llMedia = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
                 ivMediaThumbnails.clear()
 
                 repeat(MEDIA_VIEW_COUNT) { idx ->
-                    myNetworkImageView {
+                    MyNetworkImageView(context).apply {
                         background = resDrawable(R.drawable.bg_thumbnail)
                         contentDescription = context.getString(R.string.thumbnail)
                         scaleType = ImageView.ScaleType.CENTER_CROP
-                    }.lparams(0, matchParent) {
-                        weight = 1f
-                        if (idx > 0) startMargin = dip(8)
-                    }.let { ivMediaThumbnails.add(it) }
+                    }.also { iv ->
+                        addView(iv, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT).apply {
+                            weight = 1f
+                            if (idx > 0) startMargin = context.dp(8)
+                        })
+                        ivMediaThumbnails.add(iv)
+                    }
                 }
 
-                btnHideMedia = imageButton {
+                btnHideMedia = ImageButton(context).apply {
                     background = ContextCompat.getDrawable(
                         context,
                         R.drawable.btn_bg_transparent_round6dp
                     )
                     contentDescription = context.getString(R.string.hide)
-                    imageResource = R.drawable.ic_close
-                }.lparams(dip(32), matchParent) {
-                    startMargin = dip(8)
+                    setImageResource(R.drawable.ic_close)
+                }.also {
+                    addView(it, LinearLayout.LayoutParams(context.dp(32), ViewGroup.LayoutParams.MATCH_PARENT).apply {
+                        startMargin = context.dp(8)
+                    })
                 }
+            }.also {
+                addView(it, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
             }
 
-            btnShowMedia = blurhashView {
+            btnShowMedia = BlurhashView(context).apply {
                 errorColor = context.attrColor(R.attr.colorShowMediaBackground)
-                textColor = context.attrColor(R.attr.colorShowMediaText)
+                setTextColor(context.attrColor(R.attr.colorShowMediaText))
                 gravity = Gravity.CENTER
-            }.lparams(matchParent, matchParent)
+            }.also {
+                addView(it, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+            }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, thumbnailHeight).apply {
+                topMargin = context.dp(3)
+            })
         }
 
-    private fun _LinearLayout.inflateCard(actMain: ActMain) {
-        llCardOuter = verticalLayout {
-            lparams(matchParent, wrapContent) {
-                topMargin = dip(3)
-                startMargin = dip(12)
-                endMargin = dip(6)
-            }
-            padding = dip(3)
-            bottomPadding = dip(6)
+    private fun LinearLayout.inflateCard(actMain: ActMain) {
+        llCardOuter = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            val p = context.dp(3)
+            setPadding(p, p, p, p)
+            setPadding(paddingLeft, paddingTop, paddingRight, context.dp(6))
 
             background = PreviewCardBorder()
 
-            tvCardText = myTextView {
-            }.lparams(matchParent, wrapContent) {
+            tvCardText = MyTextView(context).apply {
+            }.also {
+                addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
             }
 
-            flCardImage = frameLayout {
-                lparams(matchParent, actMain.appState.mediaThumbHeight) {
-                    topMargin = dip(3)
-                }
+            flCardImage = FrameLayout(context).apply {
 
-                llCardImage = linearLayout {
-                    lparams(matchParent, matchParent)
+                llCardImage = LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL
 
-                    ivCardImage = myNetworkImageView {
+                    ivCardImage = MyNetworkImageView(context).apply {
                         contentDescription = context.getString(R.string.thumbnail)
                         scaleType = when {
                             PrefB.bpDontCropMediaThumb.value -> ImageView.ScaleType.FIT_CENTER
                             else -> ImageView.ScaleType.CENTER_CROP
                         }
-                    }.lparams(0, matchParent) {
-                        weight = 1f
+                    }.also {
+                        addView(it, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT).apply {
+                            weight = 1f
+                        })
                     }
-                    btnCardImageHide = imageButton {
+                    btnCardImageHide = ImageButton(context).apply {
                         background =
                             ContextCompat.getDrawable(
                                 context,
                                 R.drawable.btn_bg_transparent_round6dp
                             )
                         contentDescription = context.getString(R.string.hide)
-                        imageResource = R.drawable.ic_close
-                    }.lparams(dip(32), matchParent) {
-                        startMargin = dip(4)
+                        setImageResource(R.drawable.ic_close)
+                    }.also {
+                        addView(it, LinearLayout.LayoutParams(context.dp(32), ViewGroup.LayoutParams.MATCH_PARENT).apply {
+                            startMargin = context.dp(4)
+                        })
                     }
+                }.also {
+                    addView(it, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
                 }
 
-                btnCardImageShow = blurhashView {
+                btnCardImageShow = BlurhashView(context).apply {
                     errorColor = context.attrColor(R.attr.colorShowMediaBackground)
-                    textColor = context.attrColor(R.attr.colorShowMediaText)
+                    setTextColor(context.attrColor(R.attr.colorShowMediaText))
                     gravity = Gravity.CENTER
-                }.lparams(matchParent, matchParent)
+                }.also {
+                    addView(it, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+                }
+            }.also {
+                addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, actMain.appState.mediaThumbHeight).apply {
+                    topMargin = context.dp(3)
+                })
             }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                topMargin = context.dp(3)
+                startMargin = context.dp(12)
+                endMargin = context.dp(6)
+            })
         }
     }
 
-    private fun _LinearLayout.inflateStatusReplyInfo() {
-        llReply = linearLayout {
-            lparams(matchParent, wrapContent) {}
-            minimumHeight = dip(40)
-            padding = dip(4)
+    private fun LinearLayout.inflateStatusReplyInfo() {
+        llReply = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            minimumHeight = context.dp(40)
+            val p = context.dp(4)
+            setPadding(p, p, p, p)
             background = resDrawable(R.drawable.btn_bg_transparent_round6dp)
             gravity = Gravity.CENTER_VERTICAL
-            ivReply = imageView {
+            ivReply = ImageView(context).apply {
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }.lparams(dip(32), dip(32)) {
+            }.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(32), context.dp(32)))
             }
 
-            ivReplyAvatar = myNetworkImageView {
+            ivReplyAvatar = MyNetworkImageView(context).apply {
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }.lparams(dip(32), dip(32)) {
-                startMargin = dip(2)
+            }.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(32), context.dp(32)).apply {
+                    startMargin = context.dp(2)
+                })
             }
 
-            tvReply = myTextView {
-            }.lparams(dip(0), wrapContent) {
-                startMargin = dip(4)
-                weight = 1f
-            }
-        }
-    }
-
-    private fun _LinearLayout.inflateStatusContentWarning() {
-        llContentWarning = linearLayout {
-            lparams(matchParent, wrapContent) {
-                topMargin = dip(3)
-                isBaselineAligned = false
-            }
-            gravity = Gravity.CENTER_VERTICAL
-
-            btnContentWarning = imageButton {
-                backgroundDrawable = resDrawable(R.drawable.bg_button_cw)
-                contentDescription = context.getString(R.string.show)
-                imageResource = R.drawable.ic_eye
-                imageTintList = ColorStateList.valueOf(context.attrColor(R.attr.colorTextContent))
-            }.lparams(dip(40), dip(40)) {
-                endMargin = dip(8)
-            }
-
-            verticalLayout {
-                lparams(dip(0), wrapContent) {
+            tvReply = MyTextView(context).apply {
+            }.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(0), ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    startMargin = context.dp(4)
                     weight = 1f
-                }
-
-                tvMentions = myTextView {}.lparams(matchParent, wrapContent)
-
-                tvContentWarning = myTextView {
-                }.lparams(matchParent, wrapContent) {
-                    topMargin = dip(3)
-                }
+                })
             }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
     }
 
-    private fun _LinearLayout.inflateStatusContents(actMain: ActMain) {
-        llContents = verticalLayout {
-            lparams(matchParent, wrapContent)
+    private fun LinearLayout.inflateStatusContentWarning() {
+        llContentWarning = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            isBaselineAligned = false
 
-            tvContent = myTextView {
+            btnContentWarning = AppCompatImageButton(context).apply {
+                background = resDrawable(R.drawable.bg_button_cw)
+                contentDescription = context.getString(R.string.show)
+                setImageResource(R.drawable.ic_eye)
+                imageTintList = ColorStateList.valueOf(context.attrColor(R.attr.colorTextContent))
+            }.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(40), context.dp(40)).apply {
+                    endMargin = context.dp(8)
+                })
+            }
+
+            LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+
+                tvMentions = MyTextView(context).apply {}.also {
+                    addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+                }
+
+                tvContentWarning = MyTextView(context).apply {
+                }.also {
+                    addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                        topMargin = context.dp(3)
+                    })
+                }
+            }.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(0), ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    weight = 1f
+                })
+            }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                topMargin = context.dp(3)
+            })
+        }
+    }
+
+    private fun LinearLayout.inflateStatusContents(actMain: ActMain) {
+        llContents = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+
+            tvContent = MyTextView(context).apply {
                 setLineSpacing(lineSpacingExtra, 1.1f)
-            }.lparams(matchParent, wrapContent) {
-                topMargin = dip(3)
+            }.also {
+                addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    topMargin = context.dp(3)
+                })
             }
 
             val thumbnailHeight = actMain.appState.mediaThumbHeight
@@ -719,45 +773,55 @@ class ItemViewHolder(
                 else -> inflateHorizontalMedia(thumbnailHeight)
             }
 
-            tvMediaCount = myTextView {
+            tvMediaCount = MyTextView(context).apply {
                 gravity = Gravity.END
                 includeFontPadding = false
-            }.lparams(matchParent, wrapContent) {
-                verticalMargin = dip(3)
+            }.also {
+                addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    topMargin = context.dp(3)
+                    bottomMargin = context.dp(3)
+                })
             }
 
             tvMediaDescriptions.clear()
             repeat(MEDIA_VIEW_COUNT) {
                 tvMediaDescriptions.add(
-                    button {
+                    AppCompatButton(context).apply {
                         gravity = Gravity.START or Gravity.CENTER_VERTICAL
-                        allCaps = false
+                        isAllCaps = false
                         background =
                             ContextCompat.getDrawable(
                                 context,
                                 R.drawable.btn_bg_transparent_round6dp
                             )
-                        minHeightCompat = dip(48)
-                        padding = dip(4)
-                    }.lparams(matchParent, wrapContent)
+                        minHeightCompat = context.dp(48)
+                        val p = context.dp(4)
+                        setPadding(p, p, p, p)
+                    }.also {
+                        addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+                    }
                 )
             }
 
             inflateCard(actMain)
 
-            llExtra = verticalLayout {
-                lparams(matchParent, wrapContent) {
-                    topMargin = dip(0)
-                }
+            llExtra = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+            }.also {
+                addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    topMargin = context.dp(0)
+                })
             }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
     }
 
-    private fun _LinearLayout.inflateStatusButtons(actMain: ActMain) {
+    private fun LinearLayout.inflateStatusButtons(actMain: ActMain) {
         // compatButton bar
         statusButtonsViewHolder = StatusButtonsViewHolder(
             actMain,
-            matchParent,
+            ViewGroup.LayoutParams.MATCH_PARENT,
             3f,
             justifyContent = when (PrefI.ipBoostButtonJustify.value) {
                 0 -> JustifyContent.FLEX_START
@@ -769,76 +833,87 @@ class ItemViewHolder(
         addView(llButtonBar)
     }
 
-    private fun _LinearLayout.inflateOpenSticker() {
+    private fun LinearLayout.inflateOpenSticker() {
 
-        llOpenSticker = linearLayout {
-            lparams(matchParent, wrapContent)
+        llOpenSticker = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            isBaselineAligned = false
 
-            ivOpenSticker = myNetworkImageView {
-            }.lparams(dip(16), dip(16)) {
-                isBaselineAligned = false
+            ivOpenSticker = MyNetworkImageView(context).apply {
+            }.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(16), context.dp(16)))
             }
 
-            tvOpenSticker = myTextView {
+            tvOpenSticker = MyTextView(context).apply {
                 setTextSize(TypedValue.COMPLEX_UNIT_DIP, 10f)
                 gravity = Gravity.CENTER_VERTICAL
-                setPaddingStartEnd(dip(4f), dip(4f))
-            }.lparams(0, dip(16)) {
-                isBaselineAligned = false
-                weight = 1f
+                setPaddingStartEnd(context.dp(4f), context.dp(4f))
+            }.also {
+                addView(it, LinearLayout.LayoutParams(0, context.dp(16)).apply {
+                    weight = 1f
+                })
             }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
     }
 
-    private fun _LinearLayout.inflateStatusAcctTime() {
-        linearLayout {
-            lparams(matchParent, wrapContent)
-            tvAcct = myTextView {
+    private fun LinearLayout.inflateStatusAcctTime() {
+        LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            tvAcct = MyTextView(context).apply {
                 ellipsize = TextUtils.TruncateAt.END
                 gravity = Gravity.END
                 maxLines = 1
                 textSize = 12f // SP
-                // tools:text="who@hoge"
-            }.lparams(dip(0), wrapContent) {
-                weight = 1f
+            }.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(0), ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    weight = 1f
+                })
             }
 
-            tvTime = myTextView {
+            tvTime = MyTextView(context).apply {
                 gravity = Gravity.END
-                startPadding = dip(2)
+                startPadding = context.dp(2)
                 textSize = 12f // SP
-                // tools:ignore="RtlSymmetry"
-                // tools:text="2017-04-16 09:37:14"
-            }.lparams(wrapContent, wrapContent)
+            }.also {
+                addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+            }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
     }
 
-    private fun _LinearLayout.inflateStatusAvatar() {
-        ivAvatar = myNetworkImageView {
+    private fun LinearLayout.inflateStatusAvatar() {
+        ivAvatar = MyNetworkImageView(context).apply {
             background = resDrawable(R.drawable.btn_bg_transparent_round6dp)
             contentDescription = context.getString(R.string.thumbnail)
             scaleType = ImageView.ScaleType.CENTER_CROP
-        }.lparams(dip(48), dip(48)) {
-            topMargin = dip(4)
-            endMargin = dip(4)
+        }.also {
+            addView(it, LinearLayout.LayoutParams(context.dp(48), context.dp(48)).apply {
+                topMargin = context.dp(4)
+                endMargin = context.dp(4)
+            })
         }
     }
 
-    private fun _LinearLayout.inflateStatus(actMain: ActMain) {
-        llStatus = verticalLayout {
-            lparams(matchParent, wrapContent)
+    private fun LinearLayout.inflateStatus(actMain: ActMain) {
+        llStatus = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
 
             inflateStatusAcctTime()
 
             // horizontal split : avatar and other
-            linearLayout {
-                lparams(matchParent, wrapContent)
+            LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
                 inflateStatusAvatar()
-                verticalLayout {
-                    lparams(0, wrapContent) { weight = 1f }
+                LinearLayout(context).apply {
+                    orientation = LinearLayout.VERTICAL
 
-                    tvName = myTextView {}
-                        .lparams(matchParent, wrapContent)
+                    tvName = MyTextView(context).apply {}
+                        .also {
+                            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+                        }
 
                     inflateOpenSticker()
                     inflateStatusReplyInfo()
@@ -846,32 +921,44 @@ class ItemViewHolder(
                     inflateStatusContents(actMain)
                     inflateStatusButtons(actMain)
 
-                    tvApplication = myTextView {
+                    tvApplication = MyTextView(context).apply {
                         gravity = Gravity.END
-                    }.lparams(matchParent, wrapContent)
+                    }.also {
+                        addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+                    }
+                }.also {
+                    addView(it, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT).apply { weight = 1f })
                 }
+            }.also {
+                addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
             }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
     }
 
-    private fun _LinearLayout.inflateConversationIconOne() =
-        myNetworkImageView {
+    private fun LinearLayout.inflateConversationIconOne() =
+        MyNetworkImageView(context).apply {
             scaleType = ImageView.ScaleType.CENTER_CROP
-        }.lparams(dip(24), dip(24)) {
-            endMargin = dip(3)
+        }.also {
+            addView(it, LinearLayout.LayoutParams(context.dp(24), context.dp(24)).apply {
+                endMargin = context.dp(3)
+            })
         }
 
-    private fun _LinearLayout.inflateConversationIcons() {
-        llConversationIcons = linearLayout {
-            lparams(matchParent, dip(40))
+    private fun LinearLayout.inflateConversationIcons() {
+        llConversationIcons = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
 
             isBaselineAligned = false
             gravity = Gravity.START or Gravity.CENTER_VERTICAL
 
-            tvConversationParticipants = myTextView {
+            tvConversationParticipants = MyTextView(context).apply {
                 text = context.getString(R.string.participants)
-            }.lparams(wrapContent, wrapContent) {
-                endMargin = dip(3)
+            }.also {
+                addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    endMargin = context.dp(3)
+                })
             }
 
             ivConversationIcon1 = inflateConversationIconOne()
@@ -879,163 +966,211 @@ class ItemViewHolder(
             ivConversationIcon3 = inflateConversationIconOne()
             ivConversationIcon4 = inflateConversationIconOne()
 
-            tvConversationIconsMore = myTextView {}.lparams(wrapContent, wrapContent)
+            tvConversationIconsMore = MyTextView(context).apply {}.also {
+                addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+            }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, context.dp(40)))
         }
     }
 
-    private fun _LinearLayout.inflateSearchTag() {
-        llSearchTag = linearLayout {
-            lparams(matchParent, wrapContent)
+    private fun LinearLayout.inflateSearchTag() {
+        llSearchTag = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
             isBaselineAligned = false
             gravity = Gravity.CENTER_VERTICAL or Gravity.START
 
-            btnSearchTag = compatButton {
+            btnSearchTag = AppCompatButton(context).apply {
                 background =
                     resDrawable(R.drawable.btn_bg_transparent_round6dp)
-                allCaps = false
-            }.lparams(0, wrapContent) {
-                weight = 1f
+                isAllCaps = false
+            }.also {
+                addView(it, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    weight = 1f
+                })
             }
 
-            verticalLayout {
-                btnGapHead = imageButton {
+            LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                btnGapHead = ImageButton(context).apply {
                     background = ContextCompat.getDrawable(
                         context,
                         R.drawable.btn_bg_transparent_round6dp
                     )
                     contentDescription = context.getString(R.string.read_gap_head)
-                    imageResource = R.drawable.ic_arrow_drop_down
-                }.lparams(dip(36), dip(36))
-                btnGapTail = imageButton {
+                    setImageResource(R.drawable.ic_arrow_drop_down)
+                }.also {
+                    addView(it, LinearLayout.LayoutParams(context.dp(36), context.dp(36)))
+                }
+                btnGapTail = ImageButton(context).apply {
                     background = ContextCompat.getDrawable(
                         context,
                         R.drawable.btn_bg_transparent_round6dp
                     )
                     contentDescription = context.getString(R.string.read_gap_tail)
-                    imageResource = R.drawable.ic_arrow_drop_up
-                }.lparams(dip(36), dip(36))
-            }.lparams(wrapContent, wrapContent) {
-                startMargin = dip(8)
-                topMargin = dip(3)
+                    setImageResource(R.drawable.ic_arrow_drop_up)
+                }.also {
+                    addView(it, LinearLayout.LayoutParams(context.dp(36), context.dp(36)))
+                }
+            }.also {
+                addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    startMargin = context.dp(8)
+                    topMargin = context.dp(3)
+                })
             }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
     }
 
-    private fun _LinearLayout.inflateTrendTag() {
-        llTrendTag = linearLayout {
-            lparams(matchParent, wrapContent)
+    private fun LinearLayout.inflateTrendTag() {
+        llTrendTag = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
 
             gravity = Gravity.CENTER_VERTICAL
             background = resDrawable(R.drawable.btn_bg_transparent_round6dp)
 
-            verticalLayout {
-                lparams(0, wrapContent) {
-                    weight = 1f
+            LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+
+                tvTrendTagName = MyTextView(context).apply {}.also {
+                    addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
                 }
 
-                tvTrendTagName = myTextView {}.lparams(matchParent, wrapContent)
-
-                tvTrendTagDesc = myTextView {
+                tvTrendTagDesc = MyTextView(context).apply {
                     textSize = 12f // SP
-                }.lparams(matchParent, wrapContent)
+                }.also {
+                    addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+                }
+            }.also {
+                addView(it, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    weight = 1f
+                })
             }
-            tvTrendTagCount = myTextView {}.lparams(wrapContent, wrapContent) {
-                startMargin = dip(6)
-                endMargin = dip(6)
+            tvTrendTagCount = MyTextView(context).apply {}.also {
+                addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    startMargin = context.dp(6)
+                    endMargin = context.dp(6)
+                })
             }
 
-            cvTagHistory = trendTagHistoryView {}.lparams(dip(64), dip(32))
+            cvTagHistory = TagHistoryView(context).apply {}.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(64), context.dp(32)))
+            }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
     }
 
-    private fun _LinearLayout.inflateList() {
-        llList = linearLayout {
-            lparams(matchParent, wrapContent)
+    private fun LinearLayout.inflateList() {
+        llList = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
 
             gravity = Gravity.CENTER_VERTICAL
             isBaselineAligned = false
-            minimumHeight = dip(40)
+            minimumHeight = context.dp(40)
 
-            btnListTL = compatButton {
+            btnListTL = AppCompatButton(context).apply {
                 background = resDrawable(R.drawable.btn_bg_transparent_round6dp)
-                allCaps = false
-            }.lparams(0, wrapContent) {
-                weight = 1f
+                isAllCaps = false
+            }.also {
+                addView(it, LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                    weight = 1f
+                })
             }
 
-            btnListMore = imageButton {
+            btnListMore = ImageButton(context).apply {
                 background = resDrawable(R.drawable.btn_bg_transparent_round6dp)
-                imageResource = R.drawable.ic_more
+                setImageResource(R.drawable.ic_more)
                 contentDescription = context.getString(R.string.more)
-            }.lparams(dip(40), matchParent) {
-                startMargin = dip(4)
+            }.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(40), ViewGroup.LayoutParams.MATCH_PARENT).apply {
+                    startMargin = context.dp(4)
+                })
             }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
     }
 
-    private fun _LinearLayout.inflateMessageHolder() {
-        tvMessageHolder = myTextView {
-            padding = dip(4)
-            compoundDrawablePadding = dip(4)
-        }.lparams(matchParent, wrapContent)
+    private fun LinearLayout.inflateMessageHolder() {
+        tvMessageHolder = MyTextView(context).apply {
+            val p = context.dp(4)
+            setPadding(p, p, p, p)
+            compoundDrawablePadding = context.dp(4)
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+        }
     }
 
-    private fun _LinearLayout.inflateFollowRequest() {
-        llFollowRequest = linearLayout {
-            lparams(matchParent, wrapContent) {
-                topMargin = dip(6)
-            }
+    private fun LinearLayout.inflateFollowRequest() {
+        llFollowRequest = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.END
 
-            btnFollowRequestAccept = imageButton {
+            btnFollowRequestAccept = ImageButton(context).apply {
                 background = resDrawable(R.drawable.btn_bg_transparent_round6dp)
                 contentDescription = context.getString(R.string.follow_accept)
-                imageResource = R.drawable.ic_check
+                setImageResource(R.drawable.ic_check)
                 setPadding(0, 0, 0, 0)
-            }.lparams(dip(48f), dip(32f))
+            }.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(48f), context.dp(32f)))
+            }
 
-            btnFollowRequestDeny = imageButton {
+            btnFollowRequestDeny = ImageButton(context).apply {
                 background = resDrawable(R.drawable.btn_bg_transparent_round6dp)
                 contentDescription = context.getString(R.string.follow_deny)
-                imageResource = R.drawable.ic_close
+                setImageResource(R.drawable.ic_close)
                 setPadding(0, 0, 0, 0)
-            }.lparams(dip(48f), dip(32f)) {
-                startMargin = dip(4)
+            }.also {
+                addView(it, LinearLayout.LayoutParams(context.dp(48f), context.dp(32f)).apply {
+                    startMargin = context.dp(4)
+                })
             }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                topMargin = context.dp(6)
+            })
         }
     }
 
-    private fun _LinearLayout.inflateFilter() {
-        llFilter = verticalLayout {
-            lparams(matchParent, wrapContent) {
-            }
-            minimumHeight = dip(40)
+    private fun LinearLayout.inflateFilter() {
+        llFilter = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            minimumHeight = context.dp(40)
 
-            tvFilterPhrase = myTextView {
+            tvFilterPhrase = MyTextView(context).apply {
                 typeface = Typeface.DEFAULT_BOLD
-            }.lparams(matchParent, wrapContent)
+            }.also {
+                addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+            }
 
-            tvFilterDetail = myTextView {
+            tvFilterDetail = MyTextView(context).apply {
                 textSize = 12f // SP
-            }.lparams(matchParent, wrapContent)
+            }.also {
+                addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
+            }
+        }.also {
+            addView(it, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT))
         }
     }
 
-    fun inflate(actMain: ActMain) = with(actMain.UI {}) {
-        inflateBench.bench {
-            verticalLayout {
+    fun inflate(actMain: ActMain): View {
+        return inflateBench.bench {
+            LinearLayout(actMain).apply {
+                orientation = LinearLayout.VERTICAL
                 // トップレベルのViewGroupのlparamsはイニシャライザ内部に置く
                 layoutParams = androidx.recyclerview.widget.RecyclerView.LayoutParams(
-                    matchParent,
-                    wrapContent,
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
                 ).apply {
-                    marginStart = dip(8)
-                    marginEnd = dip(8)
-                    topMargin = dip(2f)
-                    bottomMargin = dip(1f)
+                    marginStart = context.dp(8)
+                    marginEnd = context.dp(8)
+                    topMargin = context.dp(2f)
+                    bottomMargin = context.dp(1f)
                 }
 
-                setPaddingRelative(dip(4), dip(1f), dip(4), dip(2f))
+                setPaddingRelative(context.dp(4), context.dp(1f), context.dp(4), context.dp(2f))
 
                 descendantFocusability = ViewGroup.FOCUS_BLOCK_DESCENDANTS
 

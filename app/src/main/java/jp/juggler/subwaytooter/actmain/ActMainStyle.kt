@@ -27,8 +27,6 @@ import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.getAdaptiveRippleDrawableRound
 import jp.juggler.util.ui.resDrawable
 import jp.juggler.util.ui.wrapAndTint
-import org.jetbrains.anko.backgroundColor
-import org.jetbrains.anko.backgroundDrawable
 import java.util.*
 import kotlin.math.max
 
@@ -208,7 +206,7 @@ fun ActMain.reloadColors() {
     MyClickableSpan.showLinkUnderline = PrefB.bpShowLinkUnderline.value
     MyClickableSpan.defaultLinkColor = attrColor(R.attr.colorLink)
 
-    views.llFormRoot.backgroundColor = attrColor(R.attr.colorMainBackground)
+    views.llFormRoot.setBackgroundColor(attrColor(R.attr.colorMainBackground))
 
     CustomShare.reloadCache(this)
 }
@@ -225,15 +223,15 @@ fun ActMain.showFooterColor() {
 
     val colorButtonFg = attrColor(R.attr.colorRippleEffect)
 
-    views.btnMenu.backgroundDrawable =
+    views.btnMenu.background =
         getAdaptiveRippleDrawableRound(this, colorButtonBg, colorButtonFg)
-    views.btnToot.backgroundDrawable =
+    views.btnToot.background =
         getAdaptiveRippleDrawableRound(this, colorButtonBg, colorButtonFg)
-    views.btnQuickToot.backgroundDrawable =
+    views.btnQuickToot.background =
         getAdaptiveRippleDrawableRound(this, colorButtonBg, colorButtonFg)
-    views.ivQuickTootAccount.backgroundDrawable =
+    views.ivQuickTootAccount.background =
         getAdaptiveRippleDrawableRound(this, colorButtonBg, colorButtonFg)
-    views.btnQuickTootMenu.backgroundDrawable =
+    views.btnQuickTootMenu.background =
         getAdaptiveRippleDrawableRound(this, colorButtonBg, colorButtonFg)
 
     val c = attrColor(R.attr.colorTextContent)

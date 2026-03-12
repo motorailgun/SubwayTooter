@@ -1,7 +1,7 @@
 package jp.juggler.subwaytooter.util
 
 import android.os.SystemClock
-import androidx.appcompat.app.AppCompatActivity
+import android.app.Activity
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.TootApiClient
 import jp.juggler.subwaytooter.api.TootApiResultException
@@ -66,7 +66,7 @@ sealed class PostResult {
 
 @Suppress("LongParameterList")
 class PostImpl(
-    val activity: AppCompatActivity,
+    val activity: Activity,
     val account: SavedAccount,
     val content: String,
 

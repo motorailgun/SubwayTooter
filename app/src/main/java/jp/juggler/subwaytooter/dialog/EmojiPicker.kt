@@ -16,7 +16,7 @@ import android.widget.HorizontalScrollView
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.appcompat.widget.AppCompatTextView
@@ -44,7 +44,7 @@ import kotlin.math.abs
 import kotlin.math.sign
 
 private class EmojiPicker(
-    private val activity: AppCompatActivity,
+    private val activity: ComponentActivity,
     private val accessInfo: SavedAccount?,
     private val closeOnSelected: Boolean,
     private val onPicked: suspend (EmojiBase, bInstanceHasCustomEmoji: Boolean) -> Unit,
@@ -1037,7 +1037,7 @@ private class EmojiPicker(
 }
 
 fun launchEmojiPicker(
-    activity: AppCompatActivity,
+    activity: ComponentActivity,
     accessInfo: SavedAccount?,
     closeOnSelected: Boolean,
     onPicked: suspend (EmojiBase, bInstanceHasCustomEmoji: Boolean) -> Unit,

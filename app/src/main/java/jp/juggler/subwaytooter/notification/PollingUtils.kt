@@ -3,7 +3,7 @@ package jp.juggler.subwaytooter.notification
 import android.app.NotificationManager
 import android.content.Context
 import android.net.Uri
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.WorkQuery
@@ -52,7 +52,7 @@ suspend fun setImportProtector(context: Context, newProtect: Boolean) {
     }
 }
 
-fun AppCompatActivity.resetNotificationTracking(account: SavedAccount) {
+fun ComponentActivity.resetNotificationTracking(account: SavedAccount) {
     if (importProtector.get()) {
         log.w("resetNotificationTracking: abort by importProtector.")
         return

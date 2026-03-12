@@ -9,7 +9,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.auth.CreateUserParams
 import jp.juggler.subwaytooter.api.entity.Host
@@ -21,13 +21,13 @@ import jp.juggler.util.data.*
 import jp.juggler.util.log.showToast
 
 class DlgCreateAccount(
-    val activity: AppCompatActivity,
+    val activity: ComponentActivity,
     val apiHost: Host,
     val onClickOk: (dialog: Dialog, params: CreateUserParams) -> Unit,
 ) {
 
     companion object {
-        fun AppCompatActivity.showUserCreateDialog(
+        fun ComponentActivity.showUserCreateDialog(
             apiHost: Host,
             onClickOk: (dialog: Dialog, params: CreateUserParams) -> Unit,
         ) = DlgCreateAccount(this, apiHost, onClickOk).show()

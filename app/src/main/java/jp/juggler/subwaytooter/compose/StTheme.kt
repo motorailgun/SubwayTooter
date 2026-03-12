@@ -1,6 +1,7 @@
 package jp.juggler.subwaytooter.compose
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -28,6 +29,7 @@ import jp.juggler.subwaytooter.util.stColorScheme
 fun StScreen(
     title: String = "",
     onBack: (() -> Unit)? = null,
+    actions: @Composable RowScope.() -> Unit = {},
     content: @Composable (PaddingValues) -> Unit,
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -47,6 +49,7 @@ fun StScreen(
                             }
                         }
                     },
+                    actions = actions,
                     scrollBehavior = scrollBehavior,
                 )
             },

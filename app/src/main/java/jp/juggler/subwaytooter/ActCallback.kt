@@ -3,7 +3,7 @@ package jp.juggler.subwaytooter
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import androidx.core.content.FileProvider
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import jp.juggler.subwaytooter.pref.FILE_PROVIDER_AUTHORITY
@@ -16,7 +16,7 @@ import java.io.FileOutputStream
 import java.util.*
 import java.util.concurrent.atomic.AtomicReference
 
-class ActCallback : AppCompatActivity() {
+class ActCallback : ComponentActivity() {
 
     companion object {
         private val log = LogCategory("ActCallback")

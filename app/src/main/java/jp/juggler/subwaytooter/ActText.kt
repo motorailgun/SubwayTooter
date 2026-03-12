@@ -2,27 +2,54 @@ package jp.juggler.subwaytooter
 
 import android.app.SearchManager
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
-import android.text.Spanned
-import android.text.style.BackgroundColorSpan
-import android.view.Menu
-import android.view.MenuItem
 import android.view.WindowManager
-import android.widget.FrameLayout
-import android.widget.ImageButton
-import android.widget.LinearLayout
-import android.widget.TextView
-import android.widget.ToggleButton
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
-import androidx.core.view.get
-import androidx.core.view.size
-import androidx.core.widget.addTextChangedListener
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import jp.juggler.subwaytooter.api.entity.TootAccount
 import jp.juggler.subwaytooter.api.entity.TootStatus
+import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.pickAccount
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.table.daoMutedWord
@@ -31,22 +58,23 @@ import jp.juggler.subwaytooter.util.CustomShare
 import jp.juggler.subwaytooter.util.CustomShareTarget
 import jp.juggler.subwaytooter.util.TootTextEncoder
 import jp.juggler.subwaytooter.util.copyToClipboard
-import jp.juggler.subwaytooter.view.MyEditText
-import jp.juggler.subwaytooter.view.wrapTitleTextView
-import jp.juggler.util.*
+import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.launchMain
-import jp.juggler.util.data.*
+import jp.juggler.util.data.notEmpty
+import jp.juggler.util.int
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
-import jp.juggler.util.ui.*
+import jp.juggler.util.long
+import jp.juggler.util.string
+import jp.juggler.util.ui.attrColor
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-class ActText : AppCompatActivity() {
+class ActText : ComponentActivity() {
 
     companion object {
 
@@ -79,8 +107,6 @@ class ActText : AppCompatActivity() {
             TootTextEncoder.encodeAccount(this, activity, accessInfo, who)
         }
     }
-
-    private class SearchResultSpan(color: Int) : BackgroundColorSpan(color)
 
     private class SearchResult(
         val items: List<IntRange> = emptyList(),
@@ -147,196 +173,58 @@ class ActText : AppCompatActivity() {
         }
     }
 
-    private lateinit var toolbar: Toolbar
-    private lateinit var etText: MyEditText
-    private lateinit var etSearch: MyEditText
-    private lateinit var btnSearchClear: ImageButton
-    private lateinit var btnSearchPrev: ImageButton
-    private lateinit var btnSearchNext: ImageButton
-    private lateinit var btnToggleRegex: ToggleButton
-    private lateinit var llSearchResult: LinearLayout
-    private lateinit var tvSearchCount: TextView
-    private lateinit var tvSearchError: TextView
-    private lateinit var rootView: LinearLayout
+    // State
+    private var fullText = ""
+    private var textFieldValue by mutableStateOf(TextFieldValue())
+    private var searchQuery by mutableStateOf("")
+    private var useRegex by mutableStateOf(false)
+    private var searchResult by mutableStateOf(SearchResult())
+    private var currentMatchIndex by mutableIntStateOf(-1)
+    private var searchErrorText by mutableStateOf<String?>(null)
 
     private val searchTextChannel = Channel<Long>(capacity = Channel.CONFLATED)
 
     private var account: SavedAccount? = null
 
-    private var searchResult = SearchResult()
+    // Theme colors resolved once in onCreate
+    private var colorMatchBg = 0
+    private var colorHighlightBg = 0
+    private var colorSearchFormBg = 0
+    private var colorTextContent = 0
+    private var colorErrorText = 0
 
-    private fun createViews() {
-        val pad12 = dp(12)
-        val size48 = dp(48)
-
-        toolbar = Toolbar(this).apply {
-            val tv = android.util.TypedValue()
-            theme.resolveAttribute(android.R.attr.actionBarSize, tv, true)
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                resources.getDimensionPixelSize(tv.resourceId)
-            )
-            setBackgroundResource(R.drawable.action_bar_bg)
-            elevation = dpFloat(4)
+    /**
+     * 選択範囲、またはテキスト全体
+     */
+    private val selectionOrAll: String
+        get() {
+            val sel = textFieldValue.selection
+            return when {
+                sel.collapsed -> fullText
+                else -> fullText.substring(
+                    sel.min.coerceIn(0, fullText.length),
+                    sel.max.coerceIn(0, fullText.length),
+                )
+            }
         }
-
-        etSearch = MyEditText(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f
-            )
-            setHint(R.string.search)
-            inputType = android.text.InputType.TYPE_CLASS_TEXT
-        }
-
-        btnToggleRegex = ToggleButton(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            minimumWidth = size48
-            minimumHeight = size48
-            elevation = 0f
-            stateListAnimator = null
-            textOn = getString(R.string.toggle_regexp)
-            textOff = getString(R.string.toggle_regexp)
-            setTextSize(android.util.TypedValue.COMPLEX_UNIT_DIP, 14f)
-            setTypeface(typeface, android.graphics.Typeface.BOLD)
-        }
-
-        btnSearchClear = ImageButton(this).apply {
-            layoutParams = LinearLayout.LayoutParams(size48, size48)
-            contentDescription = getString(R.string.clear)
-            setImageDrawable(
-                resDrawable(R.drawable.ic_close).wrapAndTint(attrColor(R.attr.colorTextContent))
-            )
-        }
-
-        val searchRow = LinearLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.CENTER_VERTICAL
-            isBaselineAligned = false
-            addView(etSearch)
-            addView(btnToggleRegex)
-            addView(btnSearchClear)
-        }
-
-        tvSearchError = TextView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            setTextColor(attrColor(R.attr.colorRegexFilterError))
-        }
-
-        tvSearchCount = TextView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                0,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                1f
-            )
-            gravity = android.view.Gravity.END
-            includeFontPadding = false
-        }
-
-        btnSearchPrev = ImageButton(this).apply {
-            layoutParams = LinearLayout.LayoutParams(size48, size48)
-            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
-            contentDescription = getString(R.string.previous)
-            setImageDrawable(
-                resDrawable(R.drawable.ic_arrow_drop_up).wrapAndTint(attrColor(R.attr.colorTextContent))
-            )
-        }
-
-        btnSearchNext = ImageButton(this).apply {
-            layoutParams = LinearLayout.LayoutParams(size48, size48)
-            setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
-            contentDescription = getString(R.string.next)
-            setImageDrawable(
-                resDrawable(R.drawable.ic_arrow_drop_down).wrapAndTint(attrColor(R.attr.colorTextContent))
-            )
-        }
-
-        llSearchResult = LinearLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.CENTER_VERTICAL
-            isBaselineAligned = false
-            addView(tvSearchCount)
-            addView(btnSearchPrev)
-            addView(btnSearchNext)
-        }
-
-        val searchArea = LinearLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(attrColor(R.attr.colorSearchFormBackground))
-            setPadding(pad12, 0, pad12, 0)
-            addView(searchRow)
-            addView(tvSearchError)
-            addView(llSearchResult)
-        }
-
-        etText = MyEditText(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-            inputType = android.text.InputType.TYPE_NULL
-            setPadding(pad12, pad12, pad12, pad12)
-            setTextColor(attrColor(R.attr.colorTextContent))
-        }
-
-        val contentFrame = FrameLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0,
-                1f
-            )
-            setBackgroundColor(attrColor(R.attr.colorMainBackground))
-            addView(etText)
-        }
-
-        rootView = LinearLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
-            )
-            orientation = LinearLayout.VERTICAL
-            addView(toolbar)
-            addView(searchArea)
-            addView(contentFrame)
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        createViews()
-        setContentViewAndInsets(rootView)
-        setSupportActionBar(toolbar)
-        wrapTitleTextView()
-        setNavigationBack(toolbar)
-        fixHorizontalMargin(etText)
+        backPressed { finish() }
+
+        // Resolve theme colors
+        colorMatchBg = attrColor(R.attr.colorButtonBgCw)
+        colorHighlightBg = attrColor(R.attr.colorSearchFormBackground)
+        colorSearchFormBg = attrColor(R.attr.colorSearchFormBackground)
+        colorTextContent = attrColor(R.attr.colorTextContent)
+        colorErrorText = attrColor(R.attr.colorRegexFilterError)
+
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
 
-        etSearch.addTextChangedListener { postSearchText() }
-        btnSearchClear.setOnClickListener { etSearch.setText("") }
-        btnSearchPrev.setOnClickListener { searchPrev() }
-        btnSearchNext.setOnClickListener { searchNext() }
-        btnToggleRegex.setOnCheckedChangeListener { _, _ -> postSearchText() }
+        setContent { ActTextScreen() }
 
+        // Search channel processing
         lifecycleScope.launch {
             while (true) {
                 try {
@@ -349,88 +237,344 @@ class ActText : AppCompatActivity() {
             }
         }
 
+        // Load content from intent
         launchAndShowError {
             account = intent.long(EXTRA_ACCOUNT_DB_ID)
                 ?.let { daoSavedAccount.loadAccount(it) }
 
             if (savedInstanceState == null) {
-                showSearchResult(null)
-
                 val sv = intent.string(EXTRA_TEXT) ?: ""
                 val contentStart = intent.int(EXTRA_CONTENT_START) ?: 0
                 val contentEnd = intent.int(EXTRA_CONTENT_END) ?: sv.length
-                etText.setText(sv)
+                fullText = sv
+                textFieldValue = TextFieldValue(
+                    annotatedString = AnnotatedString(sv),
+                    selection = androidx.compose.ui.text.TextRange(
+                        contentStart.coerceIn(0, sv.length),
+                        contentEnd.coerceIn(0, sv.length),
+                    ),
+                )
+            }
+        }
+    }
 
-                // Android 9 以降ではフォーカスがないとsetSelectionできない
-                if (Build.VERSION.SDK_INT >= 28) {
-                    etText.requestFocus()
-                    etText.hideKeyboard()
+    @Composable
+    private fun ActTextScreen() {
+        var menuExpanded by remember { mutableStateOf(false) }
+
+        StScreen(
+            title = getString(R.string.select_and_copy),
+            onBack = { finish() },
+            actions = {
+                IconButton(onClick = { menuExpanded = true }) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = stringResource(R.string.more),
+                    )
                 }
-
-                etText.setSelection(contentStart, contentEnd)
+                DropdownMenu(
+                    expanded = menuExpanded,
+                    onDismissRequest = { menuExpanded = false },
+                ) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.copy_st)) },
+                        onClick = { menuExpanded = false; copy() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.send)) },
+                        onClick = { menuExpanded = false; send() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.search_web)) },
+                        onClick = { menuExpanded = false; searchWeb() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.toot_search_notestock)) },
+                        onClick = { menuExpanded = false; searchToot(RESULT_SEARCH_NOTESTOCK) },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.translate)) },
+                        onClick = {
+                            menuExpanded = false
+                            CustomShare.invokeText(
+                                CustomShareTarget.Translate,
+                                this@ActText,
+                                selectionOrAll,
+                            )
+                        },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.mute_word)) },
+                        onClick = { menuExpanded = false; muteWord() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.keyword_filter)) },
+                        onClick = { menuExpanded = false; keywordFilter() },
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.highlight_word)) },
+                        onClick = { menuExpanded = false; highlight() },
+                    )
+                }
+            },
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+            ) {
+                SearchBar()
+                TextContent(Modifier.weight(1f))
             }
         }
     }
 
-    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
-        super.onRestoreInstanceState(savedInstanceState)
-        postSearchText()
-    }
+    @Composable
+    private fun SearchBar() {
+        val hasKeyword = searchQuery.isNotEmpty()
+        val result = searchResult
 
-    override fun onCreateOptionsMenu(menu: Menu): Boolean {
-        menuInflater.inflate(R.menu.act_text, menu)
-        for (i in 0 until menu.size) {
-            val menuItem = menu[i]
-            menuItem.icon = menuItem.icon?.wrapAndTint(
-                color = attrColor(R.attr.colorTextContent),
-            )
-        }
-        super.onCreateOptionsMenu(menu)
-        return true
-    }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color(colorSearchFormBg))
+                .padding(horizontal = 12.dp),
+        ) {
+            // Search input row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextField(
+                    value = searchQuery,
+                    onValueChange = {
+                        searchQuery = it
+                        postSearchText()
+                    },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text(stringResource(R.string.search)) },
+                    singleLine = true,
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Checkbox(
+                        checked = useRegex,
+                        onCheckedChange = {
+                            useRegex = it
+                            postSearchText()
+                        },
+                    )
+                    Text(
+                        text = stringResource(R.string.toggle_regexp),
+                        style = TextStyle(fontSize = androidx.compose.ui.unit.TextUnit(14f, androidx.compose.ui.unit.TextUnitType.Sp)),
+                    )
+                }
+                IconButton(
+                    onClick = { searchQuery = ""; postSearchText() },
+                    enabled = hasKeyword,
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Close,
+                        contentDescription = stringResource(R.string.clear),
+                    )
+                }
+            }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.miCopy -> selectionOrAll.copyToClipboard(this)
-            R.id.miSearch -> search()
-            R.id.miSend -> send()
-            R.id.miMuteWord -> muteWord()
-            R.id.miSearchNotestock -> searchToot(RESULT_SEARCH_NOTESTOCK)
-            R.id.miKeywordFilter -> keywordFilter()
-            R.id.miHighlight -> highlight()
-            // MSP検索ボタン -> searchToot(RESULT_SEARCH_MSP)
-            // R.id.btnSearchTS -> searchToot(RESULT_SEARCH_TS)
+            // Error row
+            val error = searchErrorText
+            if (hasKeyword && !error.isNullOrBlank()) {
+                Text(
+                    text = error,
+                    color = Color(colorErrorText),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
 
-            R.id.miTranslate -> CustomShare.invokeText(
-                CustomShareTarget.Translate,
-                this,
-                selectionOrAll,
-            )
-
-            else -> return super.onOptionsItemSelected(item)
-        }
-        return true
-    }
-
-    /**
-     * 選択範囲、またはテキスト全体
-     */
-    private val selectionOrAll: String
-        get() {
-            val et = etText
-            val s = et.selectionStart
-            val e = et.selectionEnd
-            val text = et.text.toString()
-            return when (s) {
-                e -> text
-                else -> text.substring(s, e)
+            // Result count and navigation
+            if (hasKeyword) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Spacer(Modifier.weight(1f))
+                    Text(
+                        text = getString(
+                            R.string.search_result,
+                            if (currentMatchIndex >= 0) currentMatchIndex + 1 else 0,
+                            result.size,
+                            if (result.hasMore) "+" else "",
+                        ),
+                    )
+                    IconButton(
+                        onClick = { searchPrev() },
+                        enabled = result.size > 1,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowUp,
+                            contentDescription = stringResource(R.string.previous),
+                        )
+                    }
+                    IconButton(
+                        onClick = { searchNext() },
+                        enabled = result.size > 1,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = stringResource(R.string.next),
+                        )
+                    }
+                }
             }
         }
+    }
+
+    @Composable
+    private fun TextContent(modifier: Modifier) {
+        BasicTextField(
+            value = textFieldValue,
+            onValueChange = { newValue ->
+                // Read-only: only accept selection changes
+                textFieldValue = TextFieldValue(
+                    annotatedString = textFieldValue.annotatedString,
+                    selection = newValue.selection,
+                )
+            },
+            readOnly = true,
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            textStyle = TextStyle(color = Color(colorTextContent)),
+            cursorBrush = SolidColor(Color(colorTextContent)),
+        )
+    }
+
+    // =====================================================
+    // Search logic
+    // =====================================================
+
+    private fun postSearchText() {
+        lifecycleScope.launch {
+            try {
+                searchTextChannel.send(SystemClock.elapsedRealtime())
+            } catch (ex: Throwable) {
+                log.e(ex, "postSearchText failed.")
+            }
+        }
+    }
+
+    private suspend fun searchTextImpl() {
+        val keyword = searchQuery
+        val content = fullText
+        val regexMode = useRegex
+        val result = withContext(AppDispatchers.IO) {
+            try {
+                val limit = 1000
+                var hasMore = false
+                val items = buildList {
+                    when {
+                        keyword.isEmpty() -> Unit
+
+                        regexMode -> {
+                            val re = keyword.toRegex(RegexOption.IGNORE_CASE)
+                            var nextStart = 0
+                            while (nextStart < content.length) {
+                                val mr = re.find(content, startIndex = nextStart) ?: break
+                                if (size >= limit) {
+                                    hasMore = true
+                                    break
+                                }
+                                add(mr.range)
+                                nextStart = mr.range.last + 1
+                            }
+                        }
+
+                        else -> {
+                            var nextStart = 0
+                            while (nextStart < content.length) {
+                                val pos = content.indexOf(
+                                    keyword,
+                                    startIndex = nextStart,
+                                    ignoreCase = true
+                                )
+                                if (pos == -1) break
+                                if (size >= limit) {
+                                    hasMore = true
+                                    break
+                                }
+                                val end = pos + keyword.length
+                                add(pos until end)
+                                nextStart = end
+                            }
+                        }
+                    }
+                }
+                SearchResult(items = items, hasMore = hasMore)
+            } catch (ex: Throwable) {
+                log.e(ex, "search error.")
+                SearchResult(error = ex.message)
+            }
+        }
+        searchResult = result
+        searchErrorText = result.error
+
+        val newPos = result.findNext(textFieldValue.selection.start, allowEqual = true)
+            ?: result.items.firstOrNull()
+        updateHighlightsAndSelection(newPos)
+    }
+
+    private fun searchNext() {
+        val newPos = searchResult.findNext(textFieldValue.selection.start, allowEqual = false)
+            ?: searchResult.items.firstOrNull()
+        updateHighlightsAndSelection(newPos)
+    }
+
+    private fun searchPrev() {
+        val newPos = searchResult.findPrev(textFieldValue.selection.start, allowEqual = false)
+            ?: searchResult.items.lastOrNull()
+        updateHighlightsAndSelection(newPos)
+    }
+
+    private fun updateHighlightsAndSelection(newPos: IntRange?) {
+        currentMatchIndex = newPos?.let { searchResult.index(it.first) } ?: -1
+
+        val styledText = buildAnnotatedString {
+            append(fullText)
+            searchResult.items.forEach { range ->
+                val bgColor = if (range == newPos) Color(colorHighlightBg) else Color(colorMatchBg)
+                val end = (range.last + 1).coerceAtMost(fullText.length)
+                val start = range.first.coerceAtMost(end)
+                addStyle(SpanStyle(background = bgColor), start, end)
+            }
+        }
+
+        val selection = if (newPos != null) {
+            val end = fullText.length
+            androidx.compose.ui.text.TextRange(
+                newPos.first.coerceIn(0, end),
+                (newPos.last + 1).coerceIn(0, end),
+            )
+        } else {
+            textFieldValue.selection
+        }
+
+        textFieldValue = TextFieldValue(
+            annotatedString = styledText,
+            selection = selection,
+        )
+    }
+
+    // =====================================================
+    // Action handlers
+    // =====================================================
+
+    private fun copy() {
+        selectionOrAll.copyToClipboard(this)
+    }
 
     private fun send() {
         selectionOrAll.trim().notEmpty()?.let {
             try {
-
                 val intent = Intent()
                 intent.action = Intent.ACTION_SEND
                 intent.type = "text/plain"
@@ -443,7 +587,7 @@ class ActText : AppCompatActivity() {
         }
     }
 
-    private fun search() {
+    private fun searchWeb() {
         selectionOrAll.trim().notEmpty()?.also {
             try {
                 val intent = Intent(Intent.ACTION_WEB_SEARCH)
@@ -505,148 +649,6 @@ class ActText : AppCompatActivity() {
     private fun highlight() {
         selectionOrAll.trim().notEmpty()?.let {
             startActivity(ActHighlightWordEdit.createIntent(this, it))
-        }
-    }
-
-    private fun postSearchText() {
-        lifecycleScope.launch {
-            try {
-                searchTextChannel.send(SystemClock.elapsedRealtime())
-            } catch (ex: Throwable) {
-                log.e(ex, "postSearchText failed.")
-            }
-        }
-    }
-
-    private suspend fun searchTextImpl() {
-        val keyword = etSearch.text?.toString() ?: ""
-        val content = etText.text?.toString() ?: ""
-        val useRegex = btnToggleRegex.isChecked
-        this.searchResult = withContext(AppDispatchers.IO) {
-            try {
-                val limit = 1000
-                var hasMore = false
-                val items = buildList {
-                    when {
-                        // 空欄
-                        keyword.isEmpty() -> Unit
-
-                        // 正規表現
-                        useRegex -> {
-                            val re = keyword.toRegex(RegexOption.IGNORE_CASE)
-                            var nextStart = 0
-                            while (nextStart < content.length) {
-                                val mr = re.find(content, startIndex = nextStart) ?: break
-                                if (size >= limit) {
-                                    hasMore = true
-                                    break
-                                }
-                                add(mr.range)
-                                nextStart = mr.range.last + 1
-                            }
-                        }
-                        // 生テキスト
-                        else -> {
-                            var nextStart = 0
-                            while (nextStart < content.length) {
-                                val pos = content.indexOf(
-                                    keyword,
-                                    startIndex = nextStart,
-                                    ignoreCase = true
-                                )
-                                if (pos == -1) break
-                                if (size >= limit) {
-                                    hasMore = true
-                                    break
-                                }
-                                val end = pos + keyword.length
-                                add(pos until end)
-                                nextStart = end
-                            }
-                        }
-                    }
-                }
-                SearchResult(items = items, hasMore = hasMore)
-            } catch (ex: Throwable) {
-                log.e(ex, "search error.")
-                SearchResult(error = ex.message)
-            }
-        }
-        showSearchResult {
-            searchResult.findNext(etText.selectionStart, allowEqual = true)
-                ?: searchResult.items.firstOrNull()
-        }
-    }
-
-    private fun searchNext() {
-        showSearchResult {
-            searchResult.findNext(etText.selectionStart, allowEqual = false)
-                ?: searchResult.items.firstOrNull()
-        }
-    }
-
-    private fun searchPrev() {
-        showSearchResult {
-            searchResult.findPrev(etText.selectionStart, allowEqual = false)
-                ?: searchResult.items.lastOrNull()
-        }
-    }
-
-    private fun showSearchResult(newPosFinder: (() -> IntRange?)?) {
-        val newPos: IntRange? = try {
-            newPosFinder?.invoke()
-        } catch (ex: Throwable) {
-            log.e(ex, "newPosFinder failed.")
-            null
-        }
-        val hasKeyword = !etSearch.text.isNullOrEmpty()
-
-        btnSearchClear.isEnabledAlpha = hasKeyword
-
-        llSearchResult.vg(hasKeyword)?.let {
-            btnSearchPrev.isEnabledAlpha = searchResult.size > 1
-            btnSearchNext.isEnabledAlpha = searchResult.size > 1
-
-            val idx = newPos?.let {
-                val end = etText.text?.length ?: 0
-                etText.setSelection(
-                    it.first.clip(0, end),
-                    (it.last + 1).clip(0, end),
-                )
-                searchResult.index(it.first)
-            }
-
-            tvSearchCount.text = getString(
-                R.string.search_result,
-                idx?.plus(1) ?: 0,
-                searchResult.size,
-                if (searchResult.hasMore) "+" else ""
-            )
-        }
-
-        val error = searchResult.error
-        tvSearchError.vg(hasKeyword && !error.isNullOrBlank())
-            ?.text = error
-
-        etText.text?.let { e ->
-            for (span in e.getSpans(0, e.length, SearchResultSpan::class.java)) {
-                try {
-                    e.removeSpan(span)
-                } catch (ignored: Throwable) {
-                }
-            }
-            for (pos in searchResult.items) {
-                val attrId = when (newPos) {
-                    pos -> R.attr.colorSearchFormBackground
-                    else -> R.attr.colorButtonBgCw
-                }
-                e.setSpan(
-                    SearchResultSpan(attrColor(attrId)),
-                    pos.first,
-                    pos.last + 1,
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-                )
-            }
         }
     }
 }

@@ -6,7 +6,7 @@ import android.graphics.BitmapFactory
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.LinearLayout
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.*
 import jp.juggler.subwaytooter.api.entity.TootAttachment
@@ -48,7 +48,7 @@ fun decodeAttachmentBitmap(
     return BitmapFactory.decodeByteArray(data, 0, data.size, options)
 }
 
-suspend fun AppCompatActivity.focusPointDialog(
+suspend fun ComponentActivity.focusPointDialog(
     attachment: TootAttachment,
     callback: suspend (x: Float, y: Float) -> Boolean,
 ) {

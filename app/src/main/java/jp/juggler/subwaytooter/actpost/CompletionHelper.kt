@@ -4,7 +4,7 @@ import android.os.Handler
 import android.text.*
 import android.text.style.ForegroundColorSpan
 import android.view.View
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import jp.juggler.subwaytooter.App1
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootTag
@@ -31,7 +31,7 @@ import kotlin.math.min
 
 // 入力補完機能
 class CompletionHelper(
-    private val activity: AppCompatActivity,
+    private val activity: ComponentActivity,
     private val handler: Handler,
 ) {
     companion object {

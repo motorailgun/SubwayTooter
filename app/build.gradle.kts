@@ -117,10 +117,8 @@ android {
 
 dependencies {
     implementation(project(":base"))
-    implementation(project(":colorpicker"))
     implementation(project(":emoji"))
     implementation(project(":apng_android"))
-    implementation(project(":anko"))
 
     // 各種ライブラリのBoM
     implementation(platform(libs.koin.bom))
@@ -275,12 +273,10 @@ tasks.register<Detekt>("detektAll") {
 
     setSource(
         files(
-            "$rootDir/anko/src",
             "$rootDir/apng/src",
             "$rootDir/apng_android/src",
             "$rootDir/app/src",
             "$rootDir/base/src",
-            "$rootDir/colorpicker/src",
             "$rootDir/emoji/src",
             "$rootDir/icon_material_symbols/src",
             "$rootDir/sample_apng/src",

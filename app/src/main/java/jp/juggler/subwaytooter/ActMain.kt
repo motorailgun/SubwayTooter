@@ -18,7 +18,7 @@ import android.widget.HorizontalScrollView
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
@@ -119,7 +119,7 @@ import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import java.util.LinkedList
 
-class ActMain : AppCompatActivity(),
+class ActMain : ComponentActivity(),
     View.OnClickListener,
     ViewPager.OnPageChangeListener,
     DrawerLayout.DrawerListener,
@@ -164,7 +164,7 @@ class ActMain : AppCompatActivity(),
     var notificationTlIconSize: Int = 0
 
     // マルチウィンドウモードで子ウィンドウを閉じるのに使う
-    val closeList = LinkedList<WeakReference<AppCompatActivity>>()
+    val closeList = LinkedList<WeakReference<Activity>>()
 
     // onResume() .. onPause() の間なら真
     private var isResumed = false
@@ -587,7 +587,7 @@ class ActMain : AppCompatActivity(),
         log.d("onCreate")
         installSplashScreen()
         refActMain = WeakReference(this)
-        supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
+        // supportRequestWindowFeature not needed without AppCompat
         super.onCreate(savedInstanceState)
         backPressed { onBackPressedImpl() }
 

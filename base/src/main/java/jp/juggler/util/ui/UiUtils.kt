@@ -22,12 +22,12 @@ import android.util.DisplayMetrics
 import android.util.SparseArray
 import android.view.View
 import android.widget.ImageButton
+import android.app.Activity
 import android.widget.ImageView
 import androidx.activity.ComponentActivity
 import androidx.activity.result.ActivityResult
 import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.content.ContextCompat
 import jp.juggler.util.data.clip
@@ -318,7 +318,7 @@ var View.isEnabledAlpha: Boolean
 
 /////////////////////////////////////////////////
 
-val AppCompatActivity.isLiveActivity: Boolean
+val Activity.isLiveActivity: Boolean
     get() = !(isFinishing || isDestroyed)
 
 /**

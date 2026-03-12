@@ -13,7 +13,6 @@ import jp.juggler.util.data.notZero
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
 import jp.juggler.util.ui.getAdaptiveRippleDrawable
-import org.jetbrains.anko.backgroundDrawable
 
 private val log = LogCategory("ColumnExtra1")
 
@@ -113,7 +112,7 @@ fun Column.getHeaderNameColor() = headerFgColor.notZero() ?: Column.defaultColor
 fun Column.getHeaderBackgroundColor() = headerBgColor.notZero() ?: Column.defaultColorHeaderBg
 
 fun Column.setHeaderBackground(view: View) {
-    view.backgroundDrawable = getAdaptiveRippleDrawable(
+    view.background = getAdaptiveRippleDrawable(
         getHeaderBackgroundColor(),
         getHeaderNameColor()
     )

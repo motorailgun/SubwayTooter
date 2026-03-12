@@ -29,10 +29,8 @@ import jp.juggler.subwaytooter.util.startMargin
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.attrColor
+import jp.juggler.util.ui.dp
 import jp.juggler.util.ui.getAdaptiveRippleDrawableRound
-import org.jetbrains.anko.allCaps
-import org.jetbrains.anko.dip
-import org.jetbrains.anko.wrapContent
 
 private val log = LogCategory("ItemViewHolderReaction")
 
@@ -66,7 +64,7 @@ fun ItemViewHolder.makeReactionsView(status: TootStatus) {
 
     if (reactionSet?.isEmpty() != false) {
         val v = View(act).apply {
-            layoutParams = FlexboxLayout.LayoutParams(0, wrapContent)
+            layoutParams = FlexboxLayout.LayoutParams(0, FlexboxLayout.LayoutParams.WRAP_CONTENT)
             setPadding(paddingH, 0, paddingH, 0)
         }
         box.addView(v)
@@ -88,10 +86,10 @@ fun ItemViewHolder.makeReactionsView(status: TootStatus) {
         val b = AppCompatButton(act).apply {
             layoutParams = FlexboxLayout.LayoutParams(
                 FlexboxLayout.LayoutParams.WRAP_CONTENT,
-                wrapContent,
+                FlexboxLayout.LayoutParams.WRAP_CONTENT,
             ).apply {
                 if (index > 0) startMargin = marginBetween
-                bottomMargin = dip(3)
+                bottomMargin = act.dp(3)
             }
             gravity = Gravity.CENTER
             minWidthCompat = textHeight.round()
@@ -114,7 +112,7 @@ fun ItemViewHolder.makeReactionsView(status: TootStatus) {
             setTextColor(colorTextContent)
             setPadding(paddingH, 0, paddingH, 0)
             setTextSize(TypedValue.COMPLEX_UNIT_PX, textHeight)
-            allCaps = false
+            isAllCaps = false
             tag = reaction
             setOnClickListener {
                 val taggedReaction = it.tag as? TootReaction

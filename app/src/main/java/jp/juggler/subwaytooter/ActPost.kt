@@ -25,7 +25,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import androidx.core.content.ContextCompat
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
@@ -670,7 +670,7 @@ fun createActPostViews(context: Context): ActPostViews {
     )
 }
 
-class ActPost : AppCompatActivity(),
+class ActPost : ComponentActivity(),
     View.OnClickListener,
     PostAttachment.Callback,
     MyClickableSpanHandler {

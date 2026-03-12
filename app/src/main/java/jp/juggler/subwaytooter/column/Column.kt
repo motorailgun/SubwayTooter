@@ -2,7 +2,6 @@ package jp.juggler.subwaytooter.column
 
 import android.content.Context
 import android.util.SparseArray
-import androidx.appcompat.app.AppCompatActivity
 import jp.juggler.subwaytooter.AppState
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.DuplicateMap
@@ -90,7 +89,7 @@ class Column(
         var defaultColorContentAcct = 0
         var defaultColorContentText = 0
 
-        fun reloadDefaultColor(activity: AppCompatActivity) {
+        fun reloadDefaultColor(activity: Context) {
             defaultColorHeaderBg = activity.attrColor(R.attr.color_column_header)
             defaultColorHeaderName = activity.attrColor(R.attr.colorColumnHeaderName)
             defaultColorHeaderPageNumber = activity.attrColor(R.attr.colorColumnHeaderPageNumber)

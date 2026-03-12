@@ -1,6 +1,7 @@
 package jp.juggler.subwaytooter.dialog
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.Dialog
 import android.content.DialogInterface
 import android.text.Spannable
@@ -12,7 +13,6 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.table.*
@@ -30,7 +30,7 @@ import kotlin.coroutines.suspendCoroutine
 private val log = LogCategory("pickAccount")
 
 @SuppressLint("InflateParams")
-suspend fun AppCompatActivity.pickAccount(
+suspend fun Activity.pickAccount(
     bAllowPseudo: Boolean = false,
     bAllowMisskey: Boolean = true,
     bAllowMastodon: Boolean = true,

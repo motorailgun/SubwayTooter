@@ -10,7 +10,7 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -25,7 +25,6 @@ import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.dismissSafe
 import jp.juggler.util.ui.dp
 import kotlinx.coroutines.suspendCancellableCoroutine
-import org.jetbrains.anko.backgroundColor
 import kotlin.coroutines.resumeWithException
 
 private val log = LogCategory("DlgAttachmentRearrange")
@@ -34,7 +33,7 @@ private val log = LogCategory("DlgAttachmentRearrange")
  * 投稿画面で添付メディアを並べ替えるダイアログを開き、OKボタンが押されるまで非同期待機する。
  * OK以外の方法で閉じたらCancellationExceptionを投げる。
  */
-suspend fun AppCompatActivity.dialogAttachmentRearrange(
+suspend fun ComponentActivity.dialogAttachmentRearrange(
     initialList: List<PostAttachment>,
 ): List<PostAttachment> = suspendCancellableCoroutine { cont ->
     val dp8 = dp(8)
@@ -247,8 +246,9 @@ private class RearrangeAdapter(
             // ドラッグ中は背景色を変える
             rootLayout.apply {
                 when {
-                    draggingItem === item -> backgroundColor =
+                    draggingItem === item -> setBackgroundColor(
                         context.attrColor(R.attr.colorSearchFormBackground)
+                    )
 
                     else -> background = null
                 }

@@ -1,13 +1,13 @@
 package jp.juggler.util.coroutine
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlin.coroutines.CoroutineContext
 
-abstract class AsyncActivity : AppCompatActivity(), CoroutineScope {
+abstract class AsyncActivity : ComponentActivity(), CoroutineScope {
     private lateinit var activityJob: Job
 
     override val coroutineContext: CoroutineContext

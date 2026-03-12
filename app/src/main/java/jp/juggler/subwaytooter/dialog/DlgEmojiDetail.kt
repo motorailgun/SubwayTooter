@@ -8,14 +8,14 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.appcompat.widget.AppCompatTextView
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.view.NetworkEmojiView
 import jp.juggler.util.ui.dismissSafe
 
-fun AppCompatActivity.showEmojiDetailDialog(
+fun ComponentActivity.showEmojiDetailDialog(
     detail: String,
     initialzeNiv: (NetworkEmojiView.() -> Unit)? = null,
     initializeImage: (AppCompatImageView.() -> Unit)? = null,

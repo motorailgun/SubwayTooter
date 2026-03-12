@@ -6,23 +6,49 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
-import android.text.Editable
-import android.text.InputType
-import android.text.TextWatcher
-import android.view.Gravity
-import android.view.View
-import android.view.inputmethod.EditorInfo
-import android.widget.Button
-import android.widget.EditText
-import android.widget.FrameLayout
 import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.SeekBar
-import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
-import com.jrummyapps.android.colorpicker.dialogColorPicker
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import jp.juggler.subwaytooter.api.TootApiResult
 import jp.juggler.subwaytooter.api.runApiTask
 import jp.juggler.subwaytooter.column.Column
@@ -33,14 +59,11 @@ import jp.juggler.subwaytooter.column.getContentColor
 import jp.juggler.subwaytooter.column.getHeaderBackgroundColor
 import jp.juggler.subwaytooter.column.getHeaderNameColor
 import jp.juggler.subwaytooter.column.getIconId
-import jp.juggler.subwaytooter.column.setHeaderBackground
-import jp.juggler.subwaytooter.view.MyTextView
-import jp.juggler.subwaytooter.view.wrapTitleTextView
+import jp.juggler.subwaytooter.compose.ColorPickerDialog
+import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.util.backPressed
-import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.data.checkMimeTypeAndGrant
-import jp.juggler.util.data.defaultLocale
 import jp.juggler.util.data.intentGetContent
 import jp.juggler.util.data.mayUri
 import jp.juggler.util.data.notZero
@@ -49,21 +72,19 @@ import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
 import jp.juggler.util.log.withCaption
 import jp.juggler.util.media.createResizedBitmap
-import jp.juggler.util.ui.*
+import jp.juggler.util.ui.ActivityResultHandler
+import jp.juggler.util.ui.isNotOk
 import java.io.File
 import java.io.FileOutputStream
 import java.text.NumberFormat
+import java.util.Locale
 import kotlin.math.max
 
-class ActColumnCustomize : AppCompatActivity() {
+class ActColumnCustomize : ComponentActivity() {
 
     companion object {
-
         internal val log = LogCategory("ActColumnCustomize")
-
         internal const val EXTRA_COLUMN_INDEX = "column_index"
-
-        internal const val PROGRESS_MAX = 65536
 
         fun createIntent(activity: ActMain, idx: Int) =
             Intent(activity, ActColumnCustomize::class.java).apply {
@@ -72,37 +93,12 @@ class ActColumnCustomize : AppCompatActivity() {
     }
 
     private var columnIndex: Int = 0
-    internal lateinit var column: Column
-    internal lateinit var appState: AppState
-    internal var density: Float = 0f
+    private lateinit var column: Column
+    private lateinit var appState: AppState
+    private var density: Float = 0f
 
-    private lateinit var toolbar: Toolbar
-    private lateinit var svContent: ScrollView
-    private lateinit var llColumnHeader: LinearLayout
-    private lateinit var ivColumnHeader: ImageView
-    private lateinit var tvColumnName: TextView
-    private lateinit var btnHeaderBackgroundEdit: Button
-    private lateinit var btnHeaderBackgroundReset: Button
-    private lateinit var btnHeaderTextEdit: Button
-    private lateinit var btnHeaderTextReset: Button
-    private lateinit var btnColumnBackgroundColor: Button
-    private lateinit var btnColumnBackgroundColorReset: Button
-    private lateinit var btnColumnBackgroundImage: Button
-    private lateinit var btnColumnBackgroundImageReset: Button
-    private lateinit var btnAcctColor: Button
-    private lateinit var btnAcctColorReset: Button
-    private lateinit var btnContentColor: Button
-    private lateinit var btnContentColorReset: Button
-    private lateinit var flColumnBackground: FrameLayout
-    private lateinit var ivColumnBackground: ImageView
-    private lateinit var tvSampleAcct: TextView
-    private lateinit var tvSampleContent: MyTextView
-    private lateinit var etAlpha: EditText
-    private lateinit var sbColumnBackgroundAlpha: SeekBar
-    private lateinit var tvBackgroundError: TextView
-    private lateinit var rootView: LinearLayout
-
-    internal var loadingBusy: Boolean = false
+    // Compose state triggers
+    private var revision = mutableIntStateOf(0)
 
     private var lastImageUri: String? = null
     private var lastImageBitmap: Bitmap? = null
@@ -119,6 +115,10 @@ class ActColumnCustomize : AppCompatActivity() {
         setResult(RESULT_OK, data)
     }
 
+    private fun refreshUi() {
+        revision.intValue++
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         backPressed {
@@ -127,21 +127,341 @@ class ActColumnCustomize : AppCompatActivity() {
         }
         arColumnBackgroundImage.register(this)
         App1.setActivityTheme(this)
-        createViews()
-        setContentViewAndInsets(rootView)
-        initUI()
 
         appState = App1.getAppState(this)
         density = appState.density
         columnIndex = intent.int(EXTRA_COLUMN_INDEX) ?: 0
         column = appState.column(columnIndex)!!
-        show()
+
+        setContent {
+            StScreen(
+                title = stringResource(R.string.color_and_background),
+                onBack = {
+                    makeResult()
+                    finish()
+                },
+            ) { innerPadding ->
+                ColumnCustomizeContent(
+                    modifier = Modifier.padding(innerPadding),
+                )
+            }
+        }
     }
 
     override fun onDestroy() {
         closeBitmaps()
         super.onDestroy()
     }
+
+    // ---- Color picker dialog state ----
+
+    private enum class ColorTarget {
+        HeaderBg, HeaderFg, ColumnBg, Acct, Content
+    }
+
+    @Composable
+    private fun ColumnCustomizeContent(modifier: Modifier = Modifier) {
+        // Read revision to trigger recomposition
+        val rev = revision.intValue
+
+        var colorPickerTarget by remember { mutableStateOf<ColorTarget?>(null) }
+
+        // Alpha state
+        var alphaText by remember { mutableStateOf("%.4f".format(column.columnBgImageAlpha)) }
+        var alphaSlider by remember { mutableFloatStateOf(column.columnBgImageAlpha) }
+
+        fun syncAlpha(newAlpha: Float, updateText: Boolean, updateSlider: Boolean) {
+            val a = if (newAlpha.isNaN()) 1f else newAlpha.coerceIn(0f, 1f)
+            column.columnBgImageAlpha = a
+            if (updateText) alphaText = "%.4f".format(a)
+            if (updateSlider) alphaSlider = a
+            refreshUi()
+        }
+
+        // Color picker dialogs
+        colorPickerTarget?.let { target ->
+            val (initialColor, alphaEnabled) = when (target) {
+                ColorTarget.HeaderBg -> column.getHeaderBackgroundColor() to false
+                ColorTarget.HeaderFg -> column.getHeaderNameColor() to false
+                ColorTarget.ColumnBg -> (column.columnBgColor.notZero()
+                    ?: Column.defaultColorHeaderBg) to false
+                ColorTarget.Acct -> column.getAcctColor() to true
+                ColorTarget.Content -> column.getContentColor() to true
+            }
+            ColorPickerDialog(
+                colorInitial = initialColor,
+                alphaEnabled = alphaEnabled,
+                onDismiss = { colorPickerTarget = null },
+                onColorSelected = { color ->
+                    when (target) {
+                        ColorTarget.HeaderBg -> column.headerBgColor = Color.BLACK or color
+                        ColorTarget.HeaderFg -> column.headerFgColor = Color.BLACK or color
+                        ColorTarget.ColumnBg -> column.columnBgColor = Color.BLACK or color
+                        ColorTarget.Acct -> column.acctColor = color.notZero() ?: 1
+                        ColorTarget.Content -> column.contentColor = color.notZero() ?: 1
+                    }
+                    colorPickerTarget = null
+                    refreshUi()
+                },
+            )
+        }
+
+        val scrollState = rememberScrollState()
+
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .verticalScroll(scrollState)
+                .padding(12.dp),
+        ) {
+            // ---- Column Header Section ----
+            HorizontalDivider()
+            SectionLabel(stringResource(R.string.column_header))
+
+            // Header preview
+            val headerBgColor = column.getHeaderBackgroundColor()
+            val headerFgColor = column.getHeaderNameColor()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(androidx.compose.ui.graphics.Color(headerBgColor))
+                    .padding(12.dp, 3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    painter = painterResource(column.getIconId()),
+                    contentDescription = null,
+                    tint = androidx.compose.ui.graphics.Color(headerFgColor),
+                    modifier = Modifier.size(32.dp),
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = column.getColumnName(false),
+                    color = androidx.compose.ui.graphics.Color(headerFgColor),
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+
+            // Header background color
+            IndentedLabel(stringResource(R.string.background_color))
+            ColorEditRow(
+                onEdit = { colorPickerTarget = ColorTarget.HeaderBg },
+                onReset = {
+                    column.headerBgColor = 0
+                    refreshUi()
+                },
+            )
+
+            // Header foreground color
+            IndentedLabel(stringResource(R.string.foreground_color))
+            ColorEditRow(
+                onEdit = { colorPickerTarget = ColorTarget.HeaderFg },
+                onReset = {
+                    column.headerFgColor = 0
+                    refreshUi()
+                },
+            )
+
+            // ---- Column Section ----
+            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+            SectionLabel(stringResource(R.string.column))
+
+            // Column background preview
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .then(
+                        if (column.columnBgColor != 0) {
+                            Modifier.background(
+                                androidx.compose.ui.graphics.Color(column.columnBgColor)
+                            )
+                        } else Modifier
+                    ),
+            ) {
+                // Background image (AndroidView for bitmap)
+                val bgImage = column.columnBgImage
+                val bgAlpha = column.columnBgImageAlpha
+                if (bgImage.isNotEmpty()) {
+                    AndroidView(
+                        factory = { ctx ->
+                            ImageView(ctx).apply {
+                                scaleType = ImageView.ScaleType.CENTER_CROP
+                            }
+                        },
+                        modifier = Modifier.matchParentSize(),
+                        update = { iv ->
+                            iv.alpha = if (bgAlpha.isNaN()) 1f else bgAlpha
+                            loadImage(iv, bgImage)
+                        },
+                    )
+                }
+                // Sample content
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = stringResource(R.string.acct_sample),
+                        color = androidx.compose.ui.graphics.Color(column.getAcctColor()),
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                    )
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        text = stringResource(R.string.content_sample),
+                        color = androidx.compose.ui.graphics.Color(column.getContentColor()),
+                        lineHeight = 20.sp,
+                    )
+                }
+            }
+            Spacer(Modifier.height(6.dp))
+
+            // Column background color
+            FormLabel(stringResource(R.string.background_color))
+            ColorEditRow(
+                onEdit = { colorPickerTarget = ColorTarget.ColumnBg },
+                onReset = {
+                    column.columnBgColor = 0
+                    refreshUi()
+                },
+            )
+
+            // Column background image
+            FormLabel(stringResource(R.string.background_image))
+            Row(modifier = Modifier.padding(start = 32.dp)) {
+                Button(onClick = {
+                    val intent = intentGetContent(
+                        false,
+                        getString(R.string.pick_image),
+                        arrayOf("image/*")
+                    )
+                    arColumnBackgroundImage.launch(intent)
+                }) {
+                    Text(stringResource(R.string.pick_image))
+                }
+                Spacer(Modifier.width(8.dp))
+                OutlinedButton(onClick = {
+                    column.columnBgImage = ""
+                    refreshUi()
+                }) {
+                    Text(stringResource(R.string.reset))
+                }
+            }
+
+            // Background image alpha
+            FormLabel(stringResource(R.string.background_image_alpha))
+            Row(
+                modifier = Modifier.padding(start = 32.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val keyboardController = LocalSoftwareKeyboardController.current
+                TextField(
+                    value = alphaText,
+                    onValueChange = { text ->
+                        alphaText = text
+                        try {
+                            val f = NumberFormat.getInstance(Locale.getDefault())
+                                .parse(text)?.toFloat()
+                            if (f != null && !f.isNaN()) {
+                                syncAlpha(f, updateText = false, updateSlider = true)
+                            }
+                        } catch (_: Throwable) {
+                        }
+                    },
+                    modifier = Modifier.width(100.dp),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = { keyboardController?.hide() },
+                    ),
+                )
+                Spacer(Modifier.width(8.dp))
+                Slider(
+                    value = alphaSlider,
+                    onValueChange = { v ->
+                        syncAlpha(v, updateText = true, updateSlider = false)
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            // Alpha warning
+            val alpha = column.columnBgImageAlpha
+            if (alpha < 0.3f && column.columnBgImage.isNotEmpty()) {
+                Text(
+                    text = stringResource(R.string.image_alpha_too_low),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(start = 32.dp),
+                )
+            }
+
+            // Acct color
+            FormLabel(stringResource(R.string.acct_color))
+            ColorEditRow(
+                onEdit = { colorPickerTarget = ColorTarget.Acct },
+                onReset = {
+                    column.acctColor = 0
+                    refreshUi()
+                },
+            )
+
+            // Content color
+            FormLabel(stringResource(R.string.content_color))
+            ColorEditRow(
+                onEdit = { colorPickerTarget = ColorTarget.Content },
+                onReset = {
+                    column.contentColor = 0
+                    refreshUi()
+                },
+            )
+
+            HorizontalDivider(Modifier.padding(vertical = 12.dp))
+        }
+    }
+
+    @Composable
+    private fun SectionLabel(text: String) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier.padding(vertical = 4.dp),
+        )
+    }
+
+    @Composable
+    private fun IndentedLabel(text: String) {
+        Text(
+            text = text,
+            fontSize = 14.sp,
+            modifier = Modifier.padding(start = 48.dp, top = 3.dp),
+        )
+    }
+
+    @Composable
+    private fun FormLabel(text: String) {
+        Text(
+            text = text,
+            fontSize = 14.sp,
+            modifier = Modifier.padding(start = 32.dp, top = 4.dp),
+        )
+    }
+
+    @Composable
+    private fun ColorEditRow(
+        onEdit: () -> Unit,
+        onReset: () -> Unit,
+    ) {
+        Row(modifier = Modifier.padding(start = 32.dp)) {
+            Button(onClick = onEdit) {
+                Text(stringResource(R.string.edit))
+            }
+            Spacer(Modifier.width(8.dp))
+            OutlinedButton(onClick = onReset) {
+                Text(stringResource(R.string.reset))
+            }
+        }
+    }
+
+    // ---- Background image handling ----
 
     private fun updateBackground(uriArg: Uri) {
         launchMain {
@@ -160,7 +480,6 @@ class ActColumnCustomize : AppCompatActivity() {
                         }
                     }
 
-                    // リサイズや回転が必要ならする
                     client.publishApiProgress("check resize/rotation…")
 
                     val size = (max(
@@ -196,465 +515,16 @@ class ActColumnCustomize : AppCompatActivity() {
                     null -> showToast(true, result.error ?: "?")
                     else -> {
                         column.columnBgImage = bgUri
-                        show()
+                        refreshUi()
                     }
                 }
             }
-        }
-    }
-
-    private fun createViews() {
-        val pad6 = dp(6)
-        val pad12 = dp(12)
-        val pad3 = dp(3)
-        val pad32 = dp(32)
-        val size32 = dp(32)
-        val size48 = dp(48)
-
-        val tv = android.util.TypedValue()
-        theme.resolveAttribute(android.R.attr.actionBarSize, tv, true)
-
-        toolbar = Toolbar(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                resources.getDimensionPixelSize(tv.resourceId)
-            )
-            setBackgroundResource(R.drawable.action_bar_bg)
-            elevation = dpFloat(4)
-        }
-
-        fun makeDivider() = View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, dp(1)
-            ).also {
-                it.topMargin = pad12
-                it.bottomMargin = pad12
-            }
-            setBackgroundColor(attrColor(R.attr.colorSettingDivider))
-        }
-
-        fun makeLabel(textRes: Int, indent: Boolean = false) = TextView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also {
-                if (indent) it.topMargin = pad3
-            }
-            if (indent) {
-                setPadding(size48, 0, 0, 0)
-            }
-            textSize = 14f
-            setText(textRes)
-        }
-
-        fun makeFormRow() = LinearLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also {
-                it.marginStart = pad32
-            }
-            orientation = LinearLayout.HORIZONTAL
-            isBaselineAligned = true
-        }
-
-        fun makeButton(textRes: Int) = Button(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            setText(textRes)
-            isAllCaps = false
-        }
-
-        // Column Header section
-        ivColumnHeader = ImageView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(size32, size32).also {
-                it.marginEnd = dp(4)
-            }
-            importantForAccessibility = ImageView.IMPORTANT_FOR_ACCESSIBILITY_NO
-        }
-
-        tvColumnName = TextView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-
-        llColumnHeader = LinearLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.bottomMargin = pad6 }
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(pad12, pad3, pad12, pad3)
-            addView(ivColumnHeader)
-            addView(tvColumnName)
-        }
-
-        btnHeaderBackgroundEdit = makeButton(R.string.edit)
-        btnHeaderBackgroundReset = makeButton(R.string.reset)
-        btnHeaderTextEdit = makeButton(R.string.edit)
-        btnHeaderTextReset = makeButton(R.string.reset)
-
-        // Column section
-        ivColumnBackground = ImageView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-            scaleType = ImageView.ScaleType.CENTER_CROP
-            importantForAccessibility = ImageView.IMPORTANT_FOR_ACCESSIBILITY_NO
-        }
-
-        tvSampleAcct = TextView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            gravity = Gravity.START
-            maxLines = 1
-            setText(R.string.acct_sample)
-            setTextColor(attrColor(R.attr.colorTimeSmall))
-            textSize = 12f
-        }
-
-        tvSampleContent = MyTextView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.topMargin = pad3 }
-            gravity = Gravity.START
-            setLineSpacing(0f, 1.1f)
-            setText(R.string.content_sample)
-            setTextColor(attrColor(R.attr.colorTextContent))
-        }
-
-        val sampleContent = LinearLayout(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
-            )
-            orientation = LinearLayout.VERTICAL
-            setPadding(pad12, pad12, pad12, pad12)
-            addView(tvSampleAcct)
-            addView(tvSampleContent)
-        }
-
-        flColumnBackground = FrameLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            addView(ivColumnBackground)
-            addView(sampleContent)
-        }
-
-        btnColumnBackgroundColor = makeButton(R.string.edit)
-        btnColumnBackgroundColorReset = makeButton(R.string.reset)
-        btnColumnBackgroundImage = makeButton(R.string.pick_image)
-        btnColumnBackgroundImageReset = makeButton(R.string.reset)
-
-        etAlpha = EditText(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.marginEnd = dp(4) }
-            inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-            maxLines = 1
-            minLines = 1
-            imeOptions = EditorInfo.IME_ACTION_DONE
-            minWidth = dp(64)
-            importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
-        }
-
-        sbColumnBackgroundAlpha = SeekBar(this).apply {
-            layoutParams = LinearLayout.LayoutParams(0, size48, 1f)
-            setPadding(pad32, 0, pad32, 0)
-        }
-
-        tvBackgroundError = TextView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).also { it.marginStart = pad32 }
-            setTextColor(attrColor(R.attr.colorRegexFilterError))
-            visibility = View.GONE
-        }
-
-        btnAcctColor = makeButton(R.string.edit)
-        btnAcctColorReset = makeButton(R.string.reset)
-        btnContentColor = makeButton(R.string.edit)
-        btnContentColorReset = makeButton(R.string.reset)
-
-        // Build the scroll content
-        val scrollContent = LinearLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            orientation = LinearLayout.VERTICAL
-            setPadding(pad12, pad6, pad12, pad6)
-
-            addView(makeDivider())
-            addView(makeLabel(R.string.column_header))
-            addView(makeFormRow().apply {
-                addView(llColumnHeader)
-            })
-            addView(makeLabel(R.string.background_color, indent = true))
-            addView(makeFormRow().apply {
-                addView(btnHeaderBackgroundEdit)
-                addView(btnHeaderBackgroundReset)
-            })
-            addView(makeLabel(R.string.foreground_color, indent = true))
-            addView(makeFormRow().apply {
-                addView(btnHeaderTextEdit)
-                addView(btnHeaderTextReset)
-            })
-            addView(makeDivider())
-            addView(makeLabel(R.string.column))
-            addView(makeFormRow().apply {
-                (layoutParams as LinearLayout.LayoutParams).bottomMargin = pad6
-                orientation = LinearLayout.VERTICAL
-                addView(flColumnBackground)
-            })
-            addView(makeFormRow().apply { addView(makeLabel(R.string.background_color)) })
-            addView(makeFormRow().apply {
-                addView(btnColumnBackgroundColor)
-                addView(btnColumnBackgroundColorReset)
-            })
-            addView(makeFormRow().apply { addView(makeLabel(R.string.background_image)) })
-            addView(makeFormRow().apply {
-                addView(btnColumnBackgroundImage)
-                addView(btnColumnBackgroundImageReset)
-            })
-            addView(makeFormRow().apply { addView(makeLabel(R.string.background_image_alpha)) })
-            addView(makeFormRow().apply {
-                layoutParams = (layoutParams as LinearLayout.LayoutParams).also {
-                    it.height = size48
-                }
-                gravity = Gravity.CENTER_VERTICAL
-                isBaselineAligned = false
-                addView(etAlpha)
-                addView(sbColumnBackgroundAlpha)
-            })
-            addView(tvBackgroundError)
-            addView(makeFormRow().apply { addView(makeLabel(R.string.acct_color)) })
-            addView(makeFormRow().apply {
-                addView(btnAcctColor)
-                addView(btnAcctColorReset)
-            })
-            addView(makeFormRow().apply { addView(makeLabel(R.string.content_color)) })
-            addView(makeFormRow().apply {
-                addView(btnContentColor)
-                addView(btnContentColorReset)
-            })
-            addView(makeDivider())
-        }
-
-        svContent = ScrollView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0, 1f
-            )
-            setBackgroundColor(attrColor(R.attr.colorMainBackground))
-            isFillViewport = true
-            isScrollbarFadingEnabled = false
-            scrollBarStyle = ScrollView.SCROLLBARS_OUTSIDE_OVERLAY
-            addView(scrollContent)
-        }
-
-        rootView = LinearLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
-            )
-            orientation = LinearLayout.VERTICAL
-            addView(toolbar)
-            addView(svContent)
-        }
-    }
-
-    private fun initUI() {
-        setSupportActionBar(toolbar)
-        wrapTitleTextView()
-        setNavigationBack(toolbar)
-        fixHorizontalMargin(svContent)
-
-        btnHeaderBackgroundEdit.setOnClickListener {
-            launchAndShowError {
-                column.headerBgColor = Color.BLACK or dialogColorPicker(
-                    colorInitial = column.getHeaderBackgroundColor(),
-                    alphaEnabled = false,
-                )
-            }
-        }
-        btnHeaderBackgroundReset.setOnClickListener {
-            column.headerBgColor = 0
-            show()
-        }
-        btnHeaderTextEdit.setOnClickListener {
-            launchAndShowError {
-                column.headerFgColor = Color.BLACK or dialogColorPicker(
-                    colorInitial = column.getHeaderNameColor(),
-                    alphaEnabled = false,
-                )
-            }
-        }
-        btnHeaderTextReset.setOnClickListener {
-            column.headerFgColor = 0
-            show()
-        }
-        btnColumnBackgroundColor.setOnClickListener {
-            launchAndShowError {
-                column.columnBgColor = Color.BLACK or dialogColorPicker(
-                    colorInitial = column.columnBgColor.notZero(),
-                    alphaEnabled = false,
-                )
-            }
-        }
-        btnColumnBackgroundColorReset.setOnClickListener {
-            column.columnBgColor = 0
-            show()
-        }
-        btnAcctColor.setOnClickListener {
-            launchAndShowError {
-                column.acctColor = dialogColorPicker(
-                    colorInitial = column.getAcctColor(),
-                    alphaEnabled = true,
-                ).notZero() ?: 1
-            }
-        }
-        btnAcctColorReset.setOnClickListener {
-            column.acctColor = 0
-            show()
-        }
-        btnContentColor.setOnClickListener {
-            launchAndShowError {
-                column.contentColor = dialogColorPicker(
-                    colorInitial = column.getContentColor(),
-                    alphaEnabled = true,
-                ).notZero() ?: 1
-            }
-        }
-        btnContentColorReset.setOnClickListener {
-            column.contentColor = 0
-            show()
-        }
-        btnColumnBackgroundImage.setOnClickListener {
-            val intent = intentGetContent(
-                false,
-                getString(R.string.pick_image),
-                arrayOf("image/*")
-            )
-            arColumnBackgroundImage.launch(intent)
-        }
-        btnColumnBackgroundImageReset.setOnClickListener {
-            column.columnBgImage = ""
-            show()
-        }
-
-        sbColumnBackgroundAlpha.max = PROGRESS_MAX
-
-        sbColumnBackgroundAlpha.setOnSeekBarChangeListener(object :
-            SeekBar.OnSeekBarChangeListener {
-            override fun onStartTrackingTouch(seekBar: SeekBar) {}
-
-            override fun onStopTrackingTouch(seekBar: SeekBar) {}
-
-            override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
-                if (loadingBusy) return
-                if (!fromUser) return
-                column.columnBgImageAlpha = progress / PROGRESS_MAX.toFloat()
-                showAlpha(updateText = true, updateSeek = false)
-            }
-        })
-
-        etAlpha.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {}
-
-            override fun afterTextChanged(s: Editable) {
-                if (loadingBusy) return
-                try {
-                    var f = NumberFormat.getInstance(defaultLocale(this@ActColumnCustomize))
-                        .parse(etAlpha.text.toString())?.toFloat()
-                    if (f != null && !f.isNaN()) {
-                        if (f < 0f) f = 0f
-                        if (f > 1f) f = 1f
-                        column.columnBgImageAlpha = f
-                        showAlpha(updateText = false, updateSeek = true)
-                    }
-                } catch (ex: Throwable) {
-                    log.e(ex, "alpha parse failed.")
-                }
-            }
-        })
-
-        etAlpha.setOnEditorActionListener { _, actionId, _ ->
-            when (actionId) {
-                EditorInfo.IME_ACTION_DONE -> {
-                    etAlpha.hideKeyboard()
-                    true
-                }
-
-                else -> false
-            }
-        }
-    }
-
-    private fun show() {
-        try {
-            loadingBusy = true
-
-            column.setHeaderBackground(llColumnHeader)
-
-            val c = column.getHeaderNameColor()
-            tvColumnName.setTextColor(c)
-            ivColumnHeader.setImageResource(column.getIconId())
-            ivColumnHeader.imageTintList = ColorStateList.valueOf(c)
-
-            tvColumnName.text = column.getColumnName(false)
-
-            when (column.columnBgColor) {
-                0 -> flColumnBackground.background = null
-                else -> flColumnBackground.setBackgroundColor(column.columnBgColor)
-            }
-
-            showAlpha(updateText = true, updateSeek = true)
-
-            loadImage(ivColumnBackground, column.columnBgImage)
-
-            tvSampleAcct.setTextColor(column.getAcctColor())
-            tvSampleContent.setTextColor(column.getContentColor())
-        } finally {
-            loadingBusy = false
-        }
-    }
-
-    private fun showAlpha(updateText: Boolean, updateSeek: Boolean) {
-        var alpha = column.columnBgImageAlpha
-        if (alpha.isNaN()) {
-            alpha = 1f
-            column.columnBgImageAlpha = alpha
-        }
-        ivColumnBackground.alpha = alpha
-        val hasAlphaWarning = alpha < 0.3 && column.columnBgImage.isNotEmpty()
-        tvBackgroundError.vg(hasAlphaWarning)?.text =
-            getString(R.string.image_alpha_too_low)
-        if (updateText) {
-            etAlpha.setText("%.4f".format(column.columnBgImageAlpha))
-        }
-        if (updateSeek) {
-            sbColumnBackgroundAlpha.progress = (0.5f + alpha * PROGRESS_MAX).toInt()
         }
     }
 
     private fun closeBitmaps() {
         try {
-            ivColumnBackground.setImageDrawable(null)
             lastImageUri = null
-
             lastImageBitmap?.recycle()
             lastImageBitmap = null
         } catch (ex: Throwable) {
@@ -662,26 +532,27 @@ class ActColumnCustomize : AppCompatActivity() {
         }
     }
 
-    private fun loadImage(ivColumnBackground: ImageView, url: String) {
+    private fun loadImage(iv: ImageView, url: String) {
         try {
             if (url.isEmpty()) {
+                iv.setImageDrawable(null)
                 closeBitmaps()
                 return
             } else if (url == lastImageUri) {
-                // 今表示してるのと同じ
+                if (lastImageBitmap != null) {
+                    iv.setImageBitmap(lastImageBitmap)
+                }
                 return
             }
 
-            // 直前のBitmapを掃除する
             closeBitmaps()
 
             val uri = url.mayUri() ?: return
 
-            // 画像をロードして、成功したら表示してURLを覚える
             val resizeMax = (0.5f + 64f * density).toInt()
             lastImageBitmap = createResizedBitmap(this, uri, resizeMax)
             if (lastImageBitmap != null) {
-                ivColumnBackground.setImageBitmap(lastImageBitmap)
+                iv.setImageBitmap(lastImageBitmap)
                 lastImageUri = url
             }
         } catch (ex: Throwable) {

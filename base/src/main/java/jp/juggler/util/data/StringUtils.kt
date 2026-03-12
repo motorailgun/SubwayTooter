@@ -1,6 +1,7 @@
 package jp.juggler.util.data
 
 import android.content.Context
+import android.graphics.Color
 import android.net.Uri
 import android.util.Base64
 import androidx.core.net.toUri
@@ -321,3 +322,27 @@ fun Matcher.findOrNull() = if (find()) this else null
 @Suppress("ForbiddenMethodCall")
 fun Float.toString(format: String): String =
     java.lang.String.format(Locale.JAPANESE, format, this)
+
+/**
+ * Parse a hex color string to an ARGB Int.
+ * Supports formats: "", "8", "56", "123", "1234", "12345", "123456",
+ * "1234567", "12345678", with or without leading "#".
+ */
+fun String.parseColor(): Int {
+    val start = if (startsWith("#")) 1 else 0
+    fun c1(offset: Int) = substring(start + offset, start + offset + 1).toInt(16) * 0x11
+    fun c2(offset: Int) = substring(start + offset, start + offset + 2).toInt(16)
+
+    return when (length - start) {
+        0 -> Color.BLACK
+        1 -> Color.argb(255, c1(0), c1(0), c1(0))
+        2 -> Color.argb(255, c1(0), c1(1), 0x80)
+        3 -> Color.argb(255, c1(0), c1(1), c1(2))
+        4 -> Color.argb(c1(0), c1(1), c1(2), c1(3))
+        5 -> Color.argb(255, c2(0), c2(2), c1(4))
+        6 -> Color.argb(255, c2(0), c2(2), c2(4))
+        7 -> Color.argb(c2(0), c2(2), c2(4), c1(6))
+        8 -> Color.argb(c2(0), c2(2), c2(4), c2(6))
+        else -> Color.WHITE
+    }
+}

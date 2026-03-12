@@ -37,9 +37,6 @@ import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.setIconDrawableId
 import jp.juggler.util.ui.textOrGone
 import jp.juggler.util.ui.vg
-import org.jetbrains.anko.backgroundColor
-import org.jetbrains.anko.imageResource
-import org.jetbrains.anko.textColor
 
 private val log = LogCategory("ItemViewHolderShowStatus")
 
@@ -104,7 +101,7 @@ fun ItemViewHolder.showStatus(
             TootVisibility.Limited -> ItemViewHolder.toot_color_follower
             else -> 0
         }.notZero()
-    }?.let { viewRoot.backgroundColor = it }
+    }?.let { viewRoot.setBackgroundColor(it) }
 
     showStatusTime(activity, tvTime, who = status.account, status = status)
 
@@ -223,8 +220,9 @@ fun ItemViewHolder.setContentVisibility(shown: Boolean) {
     llContents.visibility = if (shown) View.VISIBLE else View.GONE
     btnContentWarning.contentDescription =
         activity.getString(if (shown) R.string.hide else R.string.show)
-    btnContentWarning.imageResource =
+    btnContentWarning.setImageResource(
         if (shown) R.drawable.outline_compress_24 else R.drawable.outline_expand_24
+    )
 
     statusShowing?.let { status ->
         val r = status.auto_cw
@@ -279,7 +277,7 @@ private fun ItemViewHolder.showOpenSticker(who: TootAccount) {
         val item = OpenSticker.lastList[host.ascii] ?: return
 
         tvOpenSticker.text = item.name
-        tvOpenSticker.textColor = item.fontColor
+        tvOpenSticker.setTextColor(item.fontColor)
 
         val density = activity.density
 

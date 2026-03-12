@@ -21,13 +21,19 @@ import android.widget.ImageButton
 import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
-import androidx.appcompat.widget.Toolbar
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import com.jrummyapps.android.colorpicker.dialogColorPicker
+import jp.juggler.subwaytooter.compose.StScreen
+import jp.juggler.subwaytooter.dialog.dialogColorPicker
 import jp.juggler.subwaytooter.api.TootApiClient
 import jp.juggler.subwaytooter.api.TootApiResult
 import jp.juggler.subwaytooter.api.TootParser
@@ -44,7 +50,6 @@ import jp.juggler.subwaytooter.api.entity.parseItem
 import jp.juggler.subwaytooter.api.runApiTask
 import jp.juggler.subwaytooter.api.runApiTask2
 import jp.juggler.subwaytooter.api.showApiError
-import jp.juggler.subwaytooter.view.ActionBarCustomTitle
 import jp.juggler.subwaytooter.view.MyNetworkImageView
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.subwaytooter.dialog.actionsDialog
@@ -57,7 +62,6 @@ import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.table.daoAcctColor
 import jp.juggler.subwaytooter.table.daoSavedAccount
 import jp.juggler.subwaytooter.util.*
-import jp.juggler.subwaytooter.view.subtitle
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError
@@ -84,8 +88,6 @@ import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.isEnabledAlpha
 import jp.juggler.util.ui.isOk
 import jp.juggler.util.ui.scan
-import jp.juggler.util.ui.setContentViewAndInsets
-import jp.juggler.util.ui.setNavigationBack
 import jp.juggler.util.ui.vg
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -104,7 +106,7 @@ import kotlin.math.max
 
 class ActAccountSettingViews(
     val root: View,
-    val toolbar: Toolbar,
+    val toolbar: View,
     val svContent: ScrollView,
     val tvUserCustom: TextView,
     val etDisplayName: EditText,
@@ -137,7 +139,7 @@ class ActAccountSettingViews(
     val btnNotificationAccentColorReset: View,
 )
 
-class ActAccountSetting : AppCompatActivity(),
+class ActAccountSetting : ComponentActivity(),
     View.OnClickListener,
     CompoundButton.OnCheckedChangeListener,
     AdapterView.OnItemSelectedListener {
@@ -266,7 +268,8 @@ class ActAccountSetting : AppCompatActivity(),
 
     internal var visibility = TootVisibility.Public
 
-    private var customTitleBar: ActionBarCustomTitle? = null
+    @Suppress("unused")
+    private var customTitleBar: Any? = null // removed: ActionBarCustomTitle
 
     var density = 1f
 
@@ -302,11 +305,12 @@ class ActAccountSetting : AppCompatActivity(),
             ?.let { state = kJson.decodeFromString(it) }
 
         App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
-        setSupportActionBar(views.toolbar)
-        // customTitleBar = wrapTitleTextView()
-        setNavigationBack(views.toolbar)
-        setSwitchColor(views.root)
+
+        // Build the View tree and hide the embedded toolbar (StScreen provides it)
+        val rootView = views.root
+        views.toolbar.visibility = View.GONE
+
+        setSwitchColor(rootView)
         fixHorizontalPadding(views.svContent)
         initUI()
 
@@ -316,11 +320,25 @@ class ActAccountSetting : AppCompatActivity(),
             return
         }
 
-        customTitleBar?.subtitle = a.acct.pretty
         views.btnOpenBrowser.text = getString(
             R.string.open_instance_website,
             a.apiHost.pretty,
         )
+
+        setContent {
+            StScreen(
+                title = a.acct.pretty,
+                onBack = { handleBackPressed() },
+            ) { innerPadding ->
+                AndroidView(
+                    factory = { rootView },
+                    modifier = Modifier
+                        .padding(innerPadding)
+                        .fillMaxSize(),
+                )
+            }
+        }
+
         launchAndShowError {
             val ti = loadInstance(a) // may null
             loadUIFromData(a, ti)

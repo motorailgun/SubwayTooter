@@ -20,7 +20,6 @@ import jp.juggler.subwaytooter.column.Column
 import jp.juggler.util.data.*
 import jp.juggler.util.log.*
 import jp.juggler.util.ui.*
-import org.jetbrains.anko.matchParent
 import kotlin.math.max
 
 internal class StatusButtonsPopup(
@@ -85,7 +84,7 @@ internal class StatusButtonsPopup(
         }
 
         @SuppressLint("InflateParams")
-        val statusButtonsViewHolder = StatusButtonsViewHolder(activity, matchParent, 0f)
+        val statusButtonsViewHolder = StatusButtonsViewHolder(activity, LinearLayout.LayoutParams.MATCH_PARENT, 0f)
         llBarPlaceHolder.addView(statusButtonsViewHolder.viewRoot)
         this.buttonsForStatus = StatusButtons(
             activity,

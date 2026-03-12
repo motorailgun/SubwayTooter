@@ -25,8 +25,6 @@ import jp.juggler.util.data.buildJsonObject
 import jp.juggler.util.log.showToast
 import jp.juggler.util.network.toPostRequestBuilder
 import jp.juggler.util.ui.isEnabledAlpha
-import org.jetbrains.anko.backgroundDrawable
-import org.jetbrains.anko.padding
 
 fun ItemViewHolder.showEnqueteItems(status: TootStatus, enquete: TootPolls) {
     val items = enquete.items ?: return
@@ -129,7 +127,7 @@ fun ItemViewHolder.makeEnqueteChoiceView(
 
         val b = AppCompatTextView(activity)
         b.layoutParams = lp
-        b.padding = (activity.density * 3f + 0.5f).toInt()
+        (activity.density * 3f + 0.5f).toInt().let { b.setPadding(it, it, it, it) }
 
         val invalidator = NetworkEmojiInvalidator(activity.handler, b)
         extraInvalidatorList.add(invalidator)
@@ -157,7 +155,7 @@ fun ItemViewHolder.makeEnqueteChoiceView(
         }
 
         if (ratio != null) {
-            b.backgroundDrawable = PollPlotDrawable(
+            b.background = PollPlotDrawable(
                 color = (colorTextContent and 0xFFFFFF) or 0x20000000,
                 ratio = ratio,
                 isRtl = b.layoutDirection == View.LAYOUT_DIRECTION_RTL,

@@ -25,7 +25,6 @@ import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.bold
 import jp.juggler.util.ui.getSpannedString
 import jp.juggler.util.ui.joinToSpannedString
-import org.jetbrains.anko.backgroundColor
 
 private val log = LogCategory("ItemViewHolderShowNotification")
 
@@ -479,7 +478,7 @@ private fun ItemViewHolder.showNotificationSeveredRelationship(
     // この通知のための色設定はない
     val colorBg = 0
     // statusがなくても背景色は変えておく
-    viewRoot.backgroundColor = colorBg
+    viewRoot.setBackgroundColor(colorBg)
     // statusはないはずだが、あれば一応表示する
     nStatus?.let { showNotificationStatus(it, colorBg) }
 

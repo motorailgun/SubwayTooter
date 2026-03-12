@@ -28,10 +28,6 @@ rootProject.name = "SubwayTooter"
 // base utilities
 include(":base")
 
-// old libraries
-include(":anko")
-include(":colorpicker")
-
 // apng decoder
 include(":apng")
 include(":apng_android")

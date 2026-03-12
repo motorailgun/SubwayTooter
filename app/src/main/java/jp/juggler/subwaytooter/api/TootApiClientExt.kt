@@ -1,6 +1,6 @@
 package jp.juggler.subwaytooter.api
 
-import androidx.appcompat.app.AppCompatActivity
+import android.app.Activity
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.action.isAndroid7TlsBug
 import jp.juggler.subwaytooter.util.DecodeOptions
@@ -330,7 +330,7 @@ suspend fun ResponseWith<String?>.stringToJsonObject(): JsonObject =
         }
     }
 
-fun AppCompatActivity.showApiError(ex: Throwable) {
+fun Activity.showApiError(ex: Throwable) {
     try {
         log.e(ex, "showApiError")
         val errorText = ex.message

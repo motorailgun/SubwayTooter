@@ -12,7 +12,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import jp.juggler.subwaytooter.R
 import jp.juggler.util.coroutine.cancellationException
 import jp.juggler.util.coroutine.launchAndShowError
@@ -21,7 +21,7 @@ import jp.juggler.util.ui.dismissSafe
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resumeWithException
 
-private fun AppCompatActivity.createTextInputDialogViews(
+private fun ComponentActivity.createTextInputDialogViews(
     title: CharSequence,
     initialText: CharSequence?,
     inputType: Int?,
@@ -91,7 +91,7 @@ private fun AppCompatActivity.createTextInputDialogViews(
     return Triple(root, etInput, btnOk to btnCancel)
 }
 
-suspend fun AppCompatActivity.showTextInputDialog(
+suspend fun ComponentActivity.showTextInputDialog(
     title: CharSequence,
     initialText: CharSequence?,
     allowEmpty: Boolean = false,
@@ -138,7 +138,7 @@ suspend fun AppCompatActivity.showTextInputDialog(
     }
 }
 
-suspend fun AppCompatActivity.showMediaDescEditDialog(
+suspend fun ComponentActivity.showMediaDescEditDialog(
     title: CharSequence,
     initialText: CharSequence?,
     allowEmpty: Boolean = false,

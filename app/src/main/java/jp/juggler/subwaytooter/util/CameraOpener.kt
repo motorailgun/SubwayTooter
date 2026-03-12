@@ -4,7 +4,7 @@ import android.content.ContentValues
 import android.content.Intent
 import android.provider.MediaStore
 import androidx.activity.result.ActivityResult
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import jp.juggler.subwaytooter.pref.PrefDevice
 import jp.juggler.subwaytooter.pref.prefDevice
 import jp.juggler.util.coroutine.launchAndShowError
@@ -21,7 +21,7 @@ class CameraOpener(
         private val log = LogCategory("LogCategory")
     }
 
-    private lateinit var activity: AppCompatActivity
+    private lateinit var activity: ComponentActivity
 
     private val prefDevice: PrefDevice
         get() = activity.prefDevice
@@ -29,7 +29,7 @@ class CameraOpener(
     private val prCameraImage = permissionSpecCamera.requester { open() }
     private val arCameraImage = ActivityResultHandler(log) { handleCameraResult(it) }
 
-    fun register(activity: AppCompatActivity) {
+    fun register(activity: ComponentActivity) {
         this.activity = activity
         prCameraImage.register(activity)
         arCameraImage.register(activity)

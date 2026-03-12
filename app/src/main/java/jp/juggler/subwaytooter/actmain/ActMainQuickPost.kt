@@ -19,7 +19,6 @@ import jp.juggler.subwaytooter.util.PostImpl
 import jp.juggler.subwaytooter.util.PostResult
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.ui.hideKeyboard
-import org.jetbrains.anko.imageResource
 
 // 簡易投稿入力のテキスト
 val ActMain.quickPostText: String
@@ -72,11 +71,12 @@ fun ActMain.initUIQuickPost() {
 }
 
 fun ActMain.showQuickPostVisibility() {
-    views.btnQuickTootMenu.imageResource =
+    views.btnQuickTootMenu.setImageResource(
         when (val resId = quickPostVisibility.getVisibilityIconId(false)) {
             R.drawable.ic_question -> R.drawable.ic_description
             else -> resId
         }
+    )
 }
 
 fun ActMain.toggleQuickPostMenu() {

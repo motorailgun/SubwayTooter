@@ -1,6 +1,6 @@
 package jp.juggler.subwaytooter.action
 
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import jp.juggler.subwaytooter.api.entity.Acct
 import jp.juggler.subwaytooter.api.entity.Host
 import jp.juggler.subwaytooter.api.entity.TootInstance
@@ -19,12 +19,12 @@ private val log = LogCategory("ActionUtils")
 // 疑似アカウントを作成する
 // 既に存在する場合は再利用する
 // 実アカウントを返すことはない
-internal suspend fun AppCompatActivity.addPseudoAccount(
+internal suspend fun ComponentActivity.addPseudoAccount(
     host: Host,
     instanceInfoArg: TootInstance? = null,
 ): SavedAccount? {
     try {
-        suspend fun AppCompatActivity.getInstanceInfo(): TootInstance? {
+        suspend fun ComponentActivity.getInstanceInfo(): TootInstance? {
             return try {
                 runApiTask2(host) { TootInstance.getOrThrow(it) }
             } catch (ex: Throwable) {

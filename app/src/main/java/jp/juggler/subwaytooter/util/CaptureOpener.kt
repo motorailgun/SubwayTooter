@@ -2,7 +2,7 @@ package jp.juggler.subwaytooter.util
 
 import android.content.Intent
 import androidx.activity.result.ActivityResult
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import jp.juggler.subwaytooter.pref.PrefDevice
 import jp.juggler.subwaytooter.pref.prefDevice
 import jp.juggler.util.coroutine.launchAndShowError
@@ -24,7 +24,7 @@ class CaptureOpener(
         private val log = LogCategory("CaptureOpener")
     }
 
-    private lateinit var activity: AppCompatActivity
+    private lateinit var activity: ComponentActivity
 
     private val prefDevice: PrefDevice
         get() = activity.prefDevice
@@ -38,7 +38,7 @@ class CaptureOpener(
 
     private val arCapture = ActivityResultHandler(log) { handleCaptureResult(it) }
 
-    fun register(activity: AppCompatActivity) {
+    fun register(activity: ComponentActivity) {
         this.activity = activity
         prCapture.register(activity)
         arCapture.register(activity)

@@ -16,7 +16,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.annotation.StringRes
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import androidx.appcompat.widget.AppCompatAutoCompleteTextView
 import androidx.core.widget.TextViewCompat
 import androidx.core.widget.addTextChangedListener
@@ -53,7 +53,7 @@ import java.io.InputStreamReader
 import java.net.IDN
 
 class LoginForm(
-    val activity: AppCompatActivity,
+    val activity: ComponentActivity,
     val onClickOk: (
         dialog: Dialog,
         apiHost: Host,
@@ -67,7 +67,7 @@ class LoginForm(
         @Suppress("RegExpSimplifiable")
         val reBadChars = """([^\p{L}\p{N}A-Za-z0-9:;._-]+)""".toRegex()
 
-        fun AppCompatActivity.showLoginForm(
+        fun ComponentActivity.showLoginForm(
             onClickOk: (
                 dialog: Dialog,
                 apiHost: Host,

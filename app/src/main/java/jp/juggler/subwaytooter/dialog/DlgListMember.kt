@@ -37,7 +37,6 @@ import jp.juggler.util.ui.*
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
-import org.jetbrains.anko.textColor
 import java.util.*
 
 private val log = LogCategory("DlgListMember")
@@ -572,8 +571,9 @@ class DlgListMember(
             } else {
                 btnListOwner.setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
             }
-            btnListOwner.textColor = ac.colorFg.notZero()
-                ?: activity.attrColor(android.R.attr.textColorPrimary)
+            btnListOwner.setTextColor(
+                ac.colorFg.notZero() ?: activity.attrColor(android.R.attr.textColorPrimary)
+            )
         }
         // リスト一覧を取得する
         listOwner = a

@@ -1,7 +1,6 @@
 package jp.juggler.subwaytooter.util
 
 import androidx.activity.ComponentActivity
-import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -35,16 +34,6 @@ inline fun <reified T : ViewModel> provideViewModel(
     key: String,
     noinline creator: () -> T,
 ) = ViewModelProvider(owner, viewModelFactory(T::class.java, creator))[key, T::class.java]
-
-fun <T : Any?> AppCompatActivity.collectOnLifeCycle(
-    flow: Flow<T>,
-    state: Lifecycle.State = Lifecycle.State.STARTED,
-    block: suspend (T) -> Unit,
-) = lifecycleScope.launch {
-    lifecycle.repeatOnLifecycle(state = state) {
-        flow.collect { block(it) }
-    }
-}
 
 fun <T : Any?> ComponentActivity.collectOnLifeCycle(
     flow: Flow<T>,

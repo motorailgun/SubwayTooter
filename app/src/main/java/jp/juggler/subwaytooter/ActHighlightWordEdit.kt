@@ -19,7 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.jrummyapps.android.colorpicker.dialogColorPicker
+import jp.juggler.subwaytooter.dialog.dialogColorPicker
 import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.table.HighlightWord
 import jp.juggler.subwaytooter.table.daoHighlightWord

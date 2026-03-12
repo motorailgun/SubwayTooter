@@ -35,8 +35,6 @@ import jp.juggler.subwaytooter.view.MyNetworkImageView
 import jp.juggler.util.data.*
 import jp.juggler.util.log.*
 import jp.juggler.util.ui.*
-import org.jetbrains.anko.backgroundColor
-import org.jetbrains.anko.textColor
 import kotlin.math.max
 
 private val log = LogCategory("ItemViewHolderShow")
@@ -344,7 +342,7 @@ fun ItemViewHolder.showAccount(whoRef: TootAccountRef) {
 fun ItemViewHolder.showAntenna(a: MisskeyAntenna) {
     llList.visibility = View.VISIBLE
     btnListTL.text = a.name
-    btnListTL.textColor = colorTextContent
+    btnListTL.setTextColor(colorTextContent)
     btnListMore.imageTintList = contentColorCsl
 }
 
@@ -515,7 +513,7 @@ fun ItemViewHolder.showMessageHolder(item: TootMessageHolder) =
 fun ItemViewHolder.showList(list: TootList) {
     llList.visibility = View.VISIBLE
     btnListTL.text = list.title
-    btnListTL.textColor = colorTextContent
+    btnListTL.setTextColor(colorTextContent)
     btnListMore.imageTintList = contentColorCsl
 }
 
@@ -592,7 +590,7 @@ fun ItemViewHolder.showGap() {
         ?.imageTintList = contentColorCsl
 
     val c = 0
-    if (c != 0) this.viewRoot.backgroundColor = c
+    if (c != 0) this.viewRoot.setBackgroundColor(c)
 }
 
 fun ItemViewHolder.showSearchGap(item: TootSearchGap) {
@@ -1002,7 +1000,7 @@ fun ItemViewHolder.setAcct(tv: TextView, accessInfo: SavedAccount, who: TootAcco
         PrefB.bpShortAcctLocalUser.value -> "@${who.acct.pretty}"
         else -> "@${ac.nickname}"
     }
-    tv.textColor = ac.colorFg.notZero() ?: this.acctColor
+    tv.setTextColor(ac.colorFg.notZero() ?: this.acctColor)
 
     tv.setBackgroundColor(ac.colorBg) // may 0
     tv.setPaddingRelative(activity.acctPadLr, 0, activity.acctPadLr, 0)

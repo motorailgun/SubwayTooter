@@ -17,7 +17,6 @@ import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
 import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.getAdaptiveRippleDrawableRound
-import org.jetbrains.anko.textColor
 import kotlin.math.max
 
 private val log = LogCategory("ActPostAccount")
@@ -47,8 +46,9 @@ fun ActPost.selectAccount(a: SavedAccount?) {
             views.btnAccount.setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
         }
 
-        views.btnAccount.textColor = ac.colorFg.notZero()
-            ?: attrColor(android.R.attr.textColorPrimary)
+        views.btnAccount.setTextColor(
+            ac.colorFg.notZero() ?: attrColor(android.R.attr.textColorPrimary)
+        )
     }
     updateTextCount()
     updateFeaturedTags()

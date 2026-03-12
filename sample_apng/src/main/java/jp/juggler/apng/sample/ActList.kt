@@ -12,7 +12,7 @@ import android.widget.AdapterView
 import android.widget.BaseAdapter
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -23,7 +23,7 @@ import jp.juggler.util.coroutine.AppDispatchers
 import kotlinx.coroutines.*
 import kotlin.coroutines.CoroutineContext
 
-class ActList : AppCompatActivity(), CoroutineScope {
+class ActList : ComponentActivity(), CoroutineScope {
 
     companion object {
         const val TAG = "ActList"

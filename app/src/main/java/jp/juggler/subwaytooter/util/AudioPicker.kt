@@ -1,6 +1,6 @@
 package jp.juggler.subwaytooter.util
 
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import jp.juggler.subwaytooter.R
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.UriAndType
@@ -18,7 +18,7 @@ class AudioPicker(
         private val log = LogCategory("AudioPicker")
     }
 
-    private lateinit var activity: AppCompatActivity
+    private lateinit var activity: ComponentActivity
 
     private val prPickAudio = permissionSpecAudioPicker.requester {
         activity.launchAndShowError {
@@ -33,7 +33,7 @@ class AudioPicker(
         }
     }
 
-    fun register(activity: AppCompatActivity) {
+    fun register(activity: ComponentActivity) {
         this.activity = activity
         prPickAudio.register(activity)
         arPickAudio.register(activity)

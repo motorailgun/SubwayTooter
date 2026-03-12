@@ -4,53 +4,84 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
-import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
-import android.text.Editable
 import android.text.InputType
-import android.text.TextWatcher
 import android.util.JsonWriter
-import android.view.Gravity
 import android.view.KeyEvent
-import android.view.ContextThemeWrapper
 import android.view.View
-import android.view.View.FOCUS_FORWARD
 import android.view.ViewGroup
 import android.view.Window
-import android.view.inputmethod.EditorInfo
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.BaseAdapter
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.CompoundButton
-import android.widget.EditText
-import android.widget.FrameLayout
-import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.Spinner
+import android.widget.ArrayAdapter
+import android.widget.BaseAdapter
 import android.widget.TextView
-import android.widget.TextView.OnEditorActionListener
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.annotation.WorkerThread
-import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.SwitchCompat
-import androidx.core.content.ContextCompat
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Button
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.jrummyapps.android.colorpicker.dialogColorPicker
-import jp.juggler.subwaytooter.appsetting.AppDataExporter
 import jp.juggler.subwaytooter.appsetting.AppSettingItem
 import jp.juggler.subwaytooter.appsetting.SettingType
 import jp.juggler.subwaytooter.appsetting.appSettingRoot
+import jp.juggler.subwaytooter.compose.ColorPickerDialog
+import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.DlgAppPicker
 import jp.juggler.subwaytooter.notification.restartAllWorker
 import jp.juggler.subwaytooter.pref.FILE_PROVIDER_AUTHORITY
@@ -65,8 +96,6 @@ import jp.juggler.subwaytooter.table.daoLogData
 import jp.juggler.subwaytooter.util.CustomShare
 import jp.juggler.subwaytooter.util.CustomShareTarget
 import jp.juggler.subwaytooter.util.cn
-import jp.juggler.subwaytooter.view.MyTextView
-import jp.juggler.subwaytooter.view.PaddingItemDecoration
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.launchProgress
@@ -83,16 +112,10 @@ import jp.juggler.util.log.showToast
 import jp.juggler.util.log.withCaption
 import jp.juggler.util.queryIntentActivitiesCompat
 import jp.juggler.util.ui.ActivityResultHandler
-import jp.juggler.util.ui.attrColor
-import jp.juggler.util.ui.attrDrawable
-import jp.juggler.util.ui.dp
-import jp.juggler.util.ui.hideKeyboard
-import jp.juggler.util.ui.isEnabledAlpha
 import jp.juggler.util.ui.isNotOk
 import jp.juggler.util.ui.launch
-import jp.juggler.util.ui.setContentViewAndInsets
-import jp.juggler.util.ui.vg
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
@@ -107,11 +130,9 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import kotlin.math.abs
 
-class ActAppSetting : AppCompatActivity(), View.OnClickListener {
+class ActAppSetting : ComponentActivity() {
 
     companion object {
-        private const val COLOR_DIALOG_ID = 1
-
         private const val STATE_CHOOSE_INTENT_TARGET = "customShareTarget"
 
         val reLinefeed = Regex("[\\x0d\\x0a]+")
@@ -122,112 +143,30 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
             launch(Intent(context!!, ActAppSetting::class.java))
     }
 
-    // states
-    private var customShareTarget: CustomShareTarget? = null
+    // ---- Compose state ----
+    private val revision = mutableIntStateOf(0)
+    private val currentSection = mutableStateOf<AppSettingItem?>(null)
+    private val activeQuery = mutableStateOf<String?>(null)
+    private val searchInput = mutableStateOf("")
 
+    // ---- State ----
+    private var customShareTarget: CustomShareTarget? = null
     lateinit var handler: Handler
 
-    class ActAppSettingViews(
-        val llContent: LinearLayout,
-        val btnBack: ImageButton,
-        val etSearch: EditText,
-        val btnSearchReset: ImageButton,
-        val lvList: RecyclerView,
-    ) {
-        val root get() = llContent
+    val defaultLineSpacingExtra = HashMap<String, Float>()
+    val defaultLineSpacingMultiplier = HashMap<String, Float>()
+
+    // Divider sentinel for item list
+    private val divider = Any()
+
+    // Color picker dialog state
+    private val colorPickerItem = mutableStateOf<AppSettingItem?>(null)
+
+    fun refreshUi() {
+        revision.intValue++
     }
 
-    private fun createActivityViews(): ActAppSettingViews {
-        val context = this@ActAppSetting
-        val btnBack: ImageButton
-        val etSearch: EditText
-        val btnSearchReset: ImageButton
-        val lvList: RecyclerView
-
-        val llContent = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT,
-            )
-
-            // Search bar
-            addView(LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                )
-                isBaselineAligned = false
-                gravity = Gravity.CENTER_VERTICAL
-                setBackgroundColor(context.attrColor(R.attr.colorSearchFormBackground))
-                val padV = context.dp(6)
-                val padH = context.dp(12)
-                setPadding(padH, padV, padH, padV)
-
-                // btnBack
-                btnBack = ImageButton(context).apply {
-                    layoutParams = LinearLayout.LayoutParams(context.dp(48), context.dp(48))
-                    background = ContextCompat.getDrawable(context, R.drawable.btn_bg_transparent_round6dp)
-                    setImageDrawable(context.attrDrawable(android.R.attr.homeAsUpIndicator))
-                    imageTintList = ColorStateList.valueOf(context.attrColor(R.attr.colorTextContent))
-                    stateListAnimator = null
-                    contentDescription = context.getString(R.string.back)
-                }
-                addView(btnBack)
-
-                // etSearch
-                etSearch = EditText(context).apply {
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                    hint = context.getString(R.string.search)
-                    inputType = InputType.TYPE_CLASS_TEXT
-                    importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
-                }
-                addView(etSearch)
-
-                // btnSearchReset
-                btnSearchReset = ImageButton(context).apply {
-                    layoutParams = LinearLayout.LayoutParams(context.dp(40), context.dp(40)).apply {
-                        marginStart = context.dp(6)
-                    }
-                    background = ContextCompat.getDrawable(context, R.drawable.btn_bg_transparent_round6dp)
-                    setImageDrawable(ContextCompat.getDrawable(context, R.drawable.ic_close))
-                    imageTintList = ColorStateList.valueOf(context.attrColor(R.attr.colorTextContent))
-                    contentDescription = context.getString(R.string.reset)
-                }
-                addView(btnSearchReset)
-            })
-
-            // lvList
-            // Use ContextThemeWrapper to set scrollbar attributes via XML style.
-            // Without this, setting isVerticalScrollBarEnabled programmatically
-            // causes an NPE in View.onDrawScrollBars() because the
-            // ScrollBarDrawable objects are only initialized from XML attributes.
-            lvList = RecyclerView(
-                ContextThemeWrapper(context, R.style.recycler_view_with_scroll_bar)
-            ).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    0,
-                    1f,
-                )
-                setBackgroundColor(context.attrColor(R.attr.colorMainBackground))
-            }
-            addView(lvList)
-        }
-
-        return ActAppSettingViews(
-            llContent = llContent,
-            btnBack = btnBack,
-            etSearch = etSearch,
-            btnSearchReset = btnSearchReset,
-            lvList = lvList,
-        )
-    }
-
-    val views by lazy { createActivityViews() }
-
-    private val itemsAdapter by lazy { ItemsAdapter() }
+    // ---- Activity Result Handlers ----
 
     private val arNoop = ActivityResultHandler(log) { }
 
@@ -246,952 +185,7 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
     val arTimelineFontBold = ActivityResultHandler(log) { r ->
         if (r.isNotOk) return@ActivityResultHandler
         r.data?.let {
-            handleFontResult(
-                AppSettingItem.TIMELINE_FONT_BOLD,
-                it,
-                "TimelineFontBold"
-            )
-        }
-    }
-
-    private var pendingQuery: String? = null
-
-    private val delayedQuery: Runnable = Runnable {
-        if (pendingQuery != null) load(null, pendingQuery)
-    }
-
-    private val divider = Any()
-
-    private var lastSection: AppSettingItem? = null
-    private var lastQuery: String? = null
-    private var colorTarget: AppSettingItem? = null
-
-    private val queryWatcher = object : TextWatcher {
-        override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) = Unit
-        override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) = Unit
-        override fun afterTextChanged(s: Editable) {
-            pendingQuery = s.toString()
-            this@ActAppSetting.handler.removeCallbacks(delayedQuery)
-            this@ActAppSetting.handler.postDelayed(delayedQuery, 166L)
-        }
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
-        super.onCreate(savedInstanceState)
-        backPressed { handleBack() }
-
-        arNoop.register(this)
-        arImportAppData.register(this)
-        arTimelineFont.register(this)
-        arTimelineFontBold.register(this)
-        arSaveAppData.register(this)
-
-        App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
-
-        this.handler = App1.getAppState(this).handler
-
-        //		val intent = this.intent
-        //		val layoutId = intent.getIntExtra(EXTRA_LAYOUT_ID, 0)
-        //		val titleId = intent.getIntExtra(EXTRA_TITLE_ID, 0)
-        //		this.title = getString(titleId)
-
-        if (savedInstanceState != null) {
-            try {
-                savedInstanceState.getString(STATE_CHOOSE_INTENT_TARGET)?.let { target ->
-                    customShareTarget = CustomShareTarget.entries.find { it.name == target }
-                }
-            } catch (ex: Throwable) {
-                log.e(ex, "can't restore customShareTarget.")
-            }
-        }
-
-        initUi()
-
-        removeDefaultPref()
-
-        load(null, null)
-    }
-
-    private fun initUi() {
-        fixHorizontalPadding(views.llContent, 0f)
-
-        views.btnBack.setOnClickListener { handleBack() }
-        views.btnSearchReset.setOnClickListener(this)
-
-        views.etSearch.addTextChangedListener(queryWatcher)
-
-        views.lvList.apply {
-            layoutManager = LinearLayoutManager(context)
-            adapter = itemsAdapter
-            addItemDecoration(
-                PaddingItemDecoration(
-                    horizontal = dp(12),
-                    vertical = dp(0),
-                    firstTop = dp(12),
-                    lastBottom = dp(12),
-                )
-            )
-        }
-    }
-
-    private fun handleBack() {
-        when {
-            lastQuery != null -> load(lastSection, null)
-            lastSection != null -> load(null, null)
-            else -> finish()
-        }
-    }
-
-    private fun removeDefaultPref() {
-        val e = lazyPref.edit()
-        var changed = false
-        appSettingRoot.scan {
-            when {
-                (it.pref as? IntPref)?.noRemove == true -> Unit
-                it.pref?.removeDefault(lazyPref, e) == true -> changed = true
-            }
-        }
-        if (changed) e.apply()
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        customShareTarget?.name?.let {
-            outState.putString(STATE_CHOOSE_INTENT_TARGET, it)
-        }
-    }
-
-    override fun dispatchKeyEvent(event: KeyEvent) = try {
-        super.dispatchKeyEvent(event)
-    } catch (ex: Throwable) {
-        log.e(ex, "dispatchKeyEvent error")
-        false
-    }
-
-    override fun onStop() {
-        super.onStop()
-
-        // Pull通知チェック間隔を変更したかもしれないのでジョブを再設定する
-        restartAllWorker(context = this)
-    }
-
-    override fun onClick(v: View) {
-        when (v) {
-            views.btnSearchReset -> {
-                handler.removeCallbacks(delayedQuery)
-                views.etSearch.setText("")
-                views.etSearch.hideKeyboard()
-                load(lastSection, null)
-            }
-        }
-    }
-
-    private fun clearQuery() {
-        lastQuery = null
-        views.etSearch.setText("")
-        handler.removeCallbacks(delayedQuery)
-    }
-
-    /**
-     * appSettingRoot の内容をセクションやクエリでフィルタしてadapterに設定する
-     */
-    private fun load(section: AppSettingItem?, queryArg: String?) {
-        val context = this@ActAppSetting
-        itemsAdapter.items = buildList {
-            // 検索時に項目の上にパンくずリストを追加する
-            // リストが前回と同じなら追加しない
-            var lastPath: String? = null
-            fun addParentPath(item: AppSettingItem) {
-                add(divider)
-                val pathList = ArrayList<String>()
-                var parent = item.parent
-                while (parent != null) {
-                    if (parent.caption != 0) pathList.add(0, getString(parent.caption))
-                    parent = parent.parent
-                }
-                val path = pathList.joinToString("/")
-                if (path != lastPath) {
-                    lastPath = path
-                    add(path)
-                    add(divider)
-                }
-            }
-
-            fun queryRecursive(item: AppSettingItem, query: String) {
-                if (item.caption == 0) return
-
-                when (item.type) {
-                    // セクション自身にはマッチしないが、子孫はスキャンする
-                    SettingType.Section ->
-                        item.items.forEach { queryRecursive(it, query) }
-
-                    SettingType.Group -> {
-                        // グループは見出しと直接の子要素の名前が検索対象になる
-                        if (item.match(context, query) ||
-                            item.items.any { it.match(context, query) }
-                        ) {
-                            // 追加するときはグループとその子要素すべてを追加する
-                            addParentPath(item)
-                            add(item)
-                            addAll(item.items)
-                        }
-                    }
-
-                    else -> {
-                        // 項目の名称がマッチするなら追加
-                        if (item.match(context, query)) {
-                            addParentPath(item)
-                            add(item)
-                        }
-                        // 子要素も検索対象
-                        item.items.forEach { queryRecursive(it, query) }
-                    }
-                }
-            }
-
-            // あるセクションの下の設定を追加する
-            // (セクション自体は追加しない
-            fun addSectionItems(section: AppSettingItem?) {
-                section ?: return
-                for (item in section.items) {
-                    add(divider)
-                    add(item)
-                    if (item.items.isNotEmpty()) {
-                        when (item.type) {
-                            // グループなら子要素すべてを区切り線なしで並べる
-                            SettingType.Group -> addAll(item.items)
-                            // それ以外は区切り線ありで再帰的に並べる
-                            else -> addSectionItems(item)
-                        }
-                    }
-                }
-            }
-
-            when {
-                // 検索キーワードあり
-                queryArg?.isNotEmpty() == true -> {
-                    lastQuery = queryArg
-                    queryRecursive(appSettingRoot, queryArg)
-                }
-                // セクション指定あり
-                section != null -> {
-                    clearQuery()
-                    lastSection = section
-                    addSectionItems(section)
-                }
-                // 設定トップ
-                else -> {
-                    clearQuery()
-                    lastSection = null
-                    for (child in appSettingRoot.items) {
-                        add(divider)
-                        add(child)
-                    }
-                }
-            }
-            if (isNotEmpty()) add(divider)
-        }
-        views.lvList.scrollToPosition(0)
-    }
-
-    private fun dip(dp: Float): Int =
-        (resources.displayMetrics.density * dp + 0.5f).toInt()
-
-    private fun dip(dp: Int): Int = dip(dp.toFloat())
-
-    private val settingHolderList =
-        ConcurrentHashMap<Int, VhSettingItem>()
-
-    inner class ItemsAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-        var items: List<Any> = emptyList()
-            set(newItems) {
-                val oldItems = field
-                field = newItems
-                DiffUtil.calculateDiff(object : DiffUtil.Callback() {
-                    override fun getOldListSize() = oldItems.size
-                    override fun getNewListSize() = newItems.size
-                    override fun areItemsTheSame(
-                        oldItemPosition: Int,
-                        newItemPosition: Int,
-                    ) = oldItems.elementAtOrNull(oldItemPosition) == newItems.elementAtOrNull(
-                        newItemPosition
-                    )
-
-                    override fun areContentsTheSame(
-                        oldItemPosition: Int,
-                        newItemPosition: Int,
-                    ) = oldItems.elementAtOrNull(oldItemPosition) == newItems.elementAtOrNull(
-                        newItemPosition
-                    )
-                }, true).dispatchUpdatesTo(this)
-            }
-
-        override fun getItemCount() = items.size
-
-        override fun getItemViewType(position: Int) =
-            when (val item = items.elementAtOrNull(position)) {
-                divider -> SettingType.Divider.id
-                is String -> SettingType.Path.id
-                is AppSettingItem -> item.type.id
-                else -> error("can't generate view for type $item")
-            }
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-            when (SettingType.map[viewType]) {
-                SettingType.Divider -> VhDivider()
-                SettingType.Path -> VhPath(parent)
-                else -> VhSettingItem(this@ActAppSetting, parent)
-            }
-
-        override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
-            super.onViewRecycled(holder)
-            // 古い紐付けを削除
-            settingHolderList.entries.filter {
-                when (it.value) {
-                    holder -> true
-                    else -> false
-                }
-            }.forEach { settingHolderList.remove(it.key) }
-        }
-
-        override fun onBindViewHolder(viewHolder: RecyclerView.ViewHolder, position: Int) {
-            when (val item = items.elementAtOrNull(position)) {
-                divider -> viewHolder.cast<VhDivider>()
-                is String -> viewHolder.cast<VhPath>()?.bind(item)
-                is AppSettingItem -> if (viewHolder is VhSettingItem) {
-                    viewHolder.bind(item)
-                    // 古い紐付けを削除
-                    settingHolderList.entries.filter {
-                        when (it.value) {
-                            viewHolder -> true
-                            else -> false
-                        }
-                    }.forEach { settingHolderList.remove(it.key) }
-                    // 新しい紐付けを覚える
-                    settingHolderList[item.id] = viewHolder
-                }
-            }
-        }
-
-        fun findVhSetting(item: AppSettingItem) =
-            settingHolderList[item.id]
-    }
-
-    private inner class VhDivider(
-        viewRoot: FrameLayout = FrameLayout(this@ActAppSetting).apply {
-            layoutParams = RecyclerView.LayoutParams(
-                RecyclerView.LayoutParams.MATCH_PARENT,
-                RecyclerView.LayoutParams.WRAP_CONTENT
-            )
-            addView(View(this@ActAppSetting).apply {
-                layoutParams = FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    dip(1)
-                ).apply {
-                    val marginX = 0
-                    val marginY = dip(6)
-                    setMargins(marginX, marginY, marginX, marginY)
-                }
-                setBackgroundColor(context.attrColor(R.attr.colorSettingDivider))
-            })
-        },
-    ) : RecyclerView.ViewHolder(viewRoot)
-
-    private inner class VhPath(
-        val parent: ViewGroup,
-        val viewRoot: MyTextView = MyTextView(this@ActAppSetting).apply {
-            layoutParams = RecyclerView.LayoutParams(
-                RecyclerView.LayoutParams.MATCH_PARENT,
-                RecyclerView.LayoutParams.WRAP_CONTENT
-            )
-            val padX = 0
-            val padY = dip(3)
-            setTypeface(typeface, Typeface.BOLD)
-            setPaddingRelative(padX, padY, padX, padY)
-        },
-    ) : RecyclerView.ViewHolder(viewRoot) {
-        fun bind(path: String) {
-            viewRoot.text = path
-        }
-    }
-
-    class SettingItemViews(
-        val root: LinearLayout,
-        val tvCaption: TextView,
-        val btnAction: Button,
-        val checkBox: CheckBox,
-        val swSwitch: SwitchCompat,
-        val spSpinner: Spinner,
-        val etEditText: EditText,
-        val tvError: TextView,
-        val textView1: TextView,
-        val llButtonBar: LinearLayout,
-        val btnEdit: Button,
-        val btnReset: Button,
-        val vColor: View,
-        val llExtra: LinearLayout,
-        val tvDesc: TextView,
-    )
-
-    // not private
-    class VhSettingItem(
-        private val actAppSetting: ActAppSetting,
-        parent: ViewGroup,
-        val views: SettingItemViews = createSettingItemViews(parent),
-    ) : RecyclerView.ViewHolder(views.root),
-        TextWatcher,
-        AdapterView.OnItemSelectedListener,
-        CompoundButton.OnCheckedChangeListener {
-
-        companion object {
-            private fun createSettingItemViews(parent: ViewGroup): SettingItemViews {
-                val context = parent.context
-                val marginStart32 = context.dp(32)
-
-                fun settingRowFormParams() = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                ).apply {
-                    this.marginStart = marginStart32
-                }
-
-                val tvCaption: TextView
-                val btnAction: Button
-                val checkBox: CheckBox
-                val swSwitch: SwitchCompat
-                val spSpinner: Spinner
-                val etEditText: EditText
-                val tvError: TextView
-                val textView1: TextView
-                val llButtonBar: LinearLayout
-                val btnEdit: Button
-                val btnReset: Button
-                val vColor: View
-                val llExtra: LinearLayout
-                val tvDesc: TextView
-
-                val root = LinearLayout(context).apply {
-                    orientation = LinearLayout.VERTICAL
-                    layoutParams = RecyclerView.LayoutParams(
-                        RecyclerView.LayoutParams.MATCH_PARENT,
-                        RecyclerView.LayoutParams.WRAP_CONTENT,
-                    )
-
-                    // tvCaption (setting_row_label: match/wrap textSize=14sp)
-                    tvCaption = TextView(context).apply {
-                        layoutParams = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                        )
-                        textSize = 14f
-                        labelFor = View.NO_ID // will be set later if needed
-                    }
-                    addView(tvCaption)
-
-                    // btnAction
-                    btnAction = Button(context).apply {
-                        layoutParams = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                        )
-                        background = ContextCompat.getDrawable(context, R.drawable.btn_bg_transparent_round6dp)
-                        gravity = Gravity.START or Gravity.CENTER_VERTICAL
-                        minimumHeight = context.dp(48)
-                        val pad = context.dp(6)
-                        setPadding(pad, pad, pad, pad)
-                        isAllCaps = false
-                    }
-                    addView(btnAction)
-
-                    // checkBox (setting_row_form)
-                    checkBox = CheckBox(context).apply {
-                        layoutParams = settingRowFormParams()
-                    }
-                    addView(checkBox)
-
-                    // swSwitch (setting_row_form + gravity=center minHeight=40dp)
-                    swSwitch = SwitchCompat(context).apply {
-                        layoutParams = settingRowFormParams()
-                        gravity = Gravity.CENTER
-                        minimumHeight = context.dp(40)
-                    }
-                    addView(swSwitch)
-
-                    // spSpinner (setting_row_form + minHeight=40dp)
-                    spSpinner = Spinner(context).apply {
-                        layoutParams = settingRowFormParams()
-                        minimumHeight = context.dp(40)
-                    }
-                    addView(spSpinner)
-
-                    // etEditText (setting_row_form + gravity=center inputType=text importantForAutofill=no)
-                    etEditText = EditText(context).apply {
-                        layoutParams = settingRowFormParams()
-                        gravity = Gravity.CENTER
-                        inputType = InputType.TYPE_CLASS_TEXT
-                        importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
-                    }
-                    addView(etEditText)
-
-                    // tvError (setting_row_form + textColor=?colorRegexFilterError)
-                    tvError = TextView(context).apply {
-                        layoutParams = settingRowFormParams()
-                        setTextColor(context.attrColor(R.attr.colorRegexFilterError))
-                    }
-                    addView(tvError)
-
-                    // textView1 (setting_row_form + gravity=start|center_vertical)
-                    textView1 = TextView(context).apply {
-                        layoutParams = settingRowFormParams()
-                        gravity = Gravity.START or Gravity.CENTER_VERTICAL
-                    }
-                    addView(textView1)
-
-                    // llButtonBar (setting_row_form + horizontal gravity=center_vertical)
-                    llButtonBar = LinearLayout(context).apply {
-                        layoutParams = settingRowFormParams()
-                        orientation = LinearLayout.HORIZONTAL
-                        gravity = Gravity.CENTER_VERTICAL
-
-                        btnEdit = Button(context).apply {
-                            layoutParams = LinearLayout.LayoutParams(
-                                LinearLayout.LayoutParams.WRAP_CONTENT,
-                                LinearLayout.LayoutParams.WRAP_CONTENT,
-                            )
-                            text = context.getString(R.string.edit)
-                            isAllCaps = false
-                        }
-                        addView(btnEdit)
-
-                        btnReset = Button(context).apply {
-                            layoutParams = LinearLayout.LayoutParams(
-                                LinearLayout.LayoutParams.WRAP_CONTENT,
-                                LinearLayout.LayoutParams.WRAP_CONTENT,
-                            )
-                            text = context.getString(R.string.reset)
-                            isAllCaps = false
-                        }
-                        addView(btnReset)
-
-                        vColor = View(context).apply {
-                            layoutParams = LinearLayout.LayoutParams(
-                                context.dp(32),
-                                context.dp(32),
-                            ).apply {
-                                this.marginStart = context.dp(8)
-                            }
-                        }
-                        addView(vColor)
-                    }
-                    addView(llButtonBar)
-
-                    // llExtra (setting_row_form + vertical)
-                    llExtra = LinearLayout(context).apply {
-                        layoutParams = settingRowFormParams()
-                        orientation = LinearLayout.VERTICAL
-                    }
-                    addView(llExtra)
-
-                    // tvDesc (setting_row_form)
-                    tvDesc = TextView(context).apply {
-                        layoutParams = settingRowFormParams()
-                    }
-                    addView(tvDesc)
-                }
-
-                // Set labelFor on tvCaption to point to etEditText
-                tvCaption.labelFor = etEditText.id
-
-                return SettingItemViews(
-                    root = root,
-                    tvCaption = tvCaption,
-                    btnAction = btnAction,
-                    checkBox = checkBox,
-                    swSwitch = swSwitch,
-                    spSpinner = spSpinner,
-                    etEditText = etEditText,
-                    tvError = tvError,
-                    textView1 = textView1,
-                    llButtonBar = llButtonBar,
-                    btnEdit = btnEdit,
-                    btnReset = btnReset,
-                    vColor = vColor,
-                    llExtra = llExtra,
-                    tvDesc = tvDesc,
-                )
-            }
-        }
-
-        init {
-            views.checkBox.setOnCheckedChangeListener(this)
-            views.swSwitch.setOnCheckedChangeListener(this)
-            views.spSpinner.onItemSelectedListener = this
-            views.etEditText.addTextChangedListener(this)
-
-            // https://stackoverflow.com/questions/13614101/fatal-crash-focus-search-returned-a-view-that-wasnt-able-to-take-focus
-            views.etEditText.setOnEditorActionListener(OnEditorActionListener { textView, actionId, _ ->
-                if (actionId == EditorInfo.IME_ACTION_NEXT) {
-                    @Suppress("WrongConstant")
-                    textView.focusSearch(FOCUS_FORWARD)?.requestFocus(FOCUS_FORWARD)
-                    // 結果に関わらずこのアクションを処理したとみなす
-                    return@OnEditorActionListener true
-                }
-                false
-            })
-        }
-
-        private val tvDesc = views.tvDesc
-        private val tvError = views.tvError
-
-        var item: AppSettingItem? = null
-
-        private var bindingBusy = false
-
-        fun bind(item: AppSettingItem) {
-            bindingBusy = true
-            try {
-                this.item = item
-
-                views.tvCaption.vg(false)
-                views.btnAction.vg(false)
-                views.checkBox.vg(false)
-                views.swSwitch.vg(false)
-                views.llExtra.vg(false)
-                views.textView1.vg(false)
-                views.llButtonBar.vg(false)
-                views.vColor.vg(false)
-                views.spSpinner.vg(false)
-                views.etEditText.vg(false)
-                views.tvDesc.vg(false)
-                views.tvError.vg(false)
-
-                val name = if (item.caption == 0) "" else actAppSetting.getString(item.caption)
-
-                tvDesc.vg(item.desc != 0)?.run {
-                    text = context.getString(item.desc)
-                    if (item.descClickSet) {
-                        background = ContextCompat.getDrawable(
-                            context,
-                            R.drawable.btn_bg_transparent_round6dp
-                        )
-                        setOnClickListener { item.descClick.invoke(actAppSetting) }
-                    } else {
-                        background = null
-                        setOnClickListener(null)
-                        isClickable = false
-                    }
-                }
-
-                when (item.type) {
-
-                    SettingType.Section -> views.btnAction.vg(true)?.run {
-                        text = name
-                        isEnabledAlpha = item.enabled
-                        setOnClickListener {
-                            actAppSetting.load(item.cast()!!, null)
-                        }
-                    }
-
-                    SettingType.Action -> views.btnAction.vg(true)?.run {
-                        text = name
-                        isEnabledAlpha = item.enabled
-                        setOnClickListener { item.action(actAppSetting) }
-                    }
-
-                    SettingType.CheckBox -> views.checkBox.run {
-                        val bp: BooleanPref = item.pref.cast()
-                            ?: error("$name has no boolean pref")
-                        vg(false) // skip animation
-                        text = name
-                        isEnabledAlpha = item.enabled
-                        isChecked = bp.value
-                        vg(true)
-                    }
-
-                    SettingType.Switch -> views.swSwitch.run {
-                        val bp: BooleanPref = item.pref.cast()
-                            ?: error("$name has no boolean pref")
-                        showCaption(name)
-                        vg(false) // skip animation
-                        actAppSetting.setSwitchColor(views.swSwitch)
-                        isEnabledAlpha = item.enabled
-                        isChecked = bp.value
-                        vg(true)
-                    }
-
-                    SettingType.Group -> showCaption(name)
-
-                    SettingType.Sample -> views.llExtra.run {
-                        vg(true)
-                        removeAllViews()
-                        item.sampleViewCreator?.invoke(this)
-                        item.sampleUpdate(actAppSetting, this)
-                    }
-
-                    SettingType.ColorAlpha, SettingType.ColorOpaque -> {
-                        val ip = item.pref.cast<IntPref>() ?: error("$name has no int pref")
-                        showCaption(name)
-                        views.llButtonBar.vg(true)
-                        views.vColor.vg(true)
-                        views.vColor.setBackgroundColor(ip.value)
-                        views.btnEdit.isEnabledAlpha = item.enabled
-                        views.btnReset.isEnabledAlpha = item.enabled
-                        views.btnEdit.setOnClickListener {
-                            actAppSetting.lifecycleScope.launch {
-                                try {
-                                    actAppSetting.colorTarget = item
-                                    val newColor = actAppSetting.dialogColorPicker(
-                                        colorInitial = ip.value.notZero(),
-                                        alphaEnabled = item.type == SettingType.ColorAlpha,
-                                    )
-                                    val c = when (item.type) {
-                                        SettingType.ColorAlpha -> newColor.notZero() ?: 1
-                                        else -> newColor or Color.BLACK
-                                    }
-                                    ip.value = c
-                                    item.changed(actAppSetting)
-                                    actAppSetting.findItemViewHolder(item)?.showColor()
-                                } catch (ex: Throwable) {
-                                    if (ex is CancellationException) return@launch
-                                    log.e(ex, "")
-                                }
-                            }
-                        }
-                        views.btnReset.setOnClickListener {
-                            ip.removeValue()
-                            showColor()
-                            item.changed.invoke(actAppSetting)
-                        }
-                    }
-
-                    SettingType.Spinner -> {
-                        showCaption(name)
-
-                        views.spSpinner.vg(true)
-                        views.spSpinner.isEnabledAlpha = item.enabled
-
-                        val pi = item.pref
-                        if (pi is IntPref) {
-                            // 整数型の設定のSpinnerは全て選択肢を単純に覚える
-                            val argsInt = item.spinnerArgs
-                            actAppSetting.initSpinner(
-                                views.spSpinner,
-                                argsInt?.map { actAppSetting.getString(it) }
-                                    ?: item.spinnerArgsProc(actAppSetting)
-                            )
-                            views.spSpinner.setSelection(pi.value)
-                        } else {
-                            item.spinnerInitializer.invoke(actAppSetting, views.spSpinner)
-                        }
-                    }
-
-                    SettingType.EditText -> {
-                        showCaption(name)
-                        views.etEditText.vg(true)?.let { etEditText ->
-                            val text = when (val pi = item.pref) {
-                                is FloatPref ->
-                                    item.fromFloat.invoke(actAppSetting, pi.value)
-
-                                is StringPref ->
-                                    pi.value
-
-                                else -> error("EditText has incorrect pref $pi")
-                            }
-
-                            etEditText.hint = item.hint ?: ""
-                            etEditText.inputType = item.inputType
-                            etEditText.setText(text)
-                            etEditText.setSelection(0, text.length)
-
-                            item.showEditText.invoke(
-                                actAppSetting,
-                                views.etEditText
-                            )
-                        }
-                        updateErrorView()
-                    }
-
-                    SettingType.TextWithSelector -> {
-                        showCaption(name)
-                        views.llButtonBar.vg(true)
-                        views.vColor.vg(false)
-                        views.textView1.vg(true)
-
-                        item.showTextView.invoke(actAppSetting, views.textView1)
-
-                        views.btnEdit.setOnClickListener {
-                            item.onClickEdit.invoke(actAppSetting)
-                        }
-                        views.btnReset.setOnClickListener {
-                            item.onClickReset.invoke(actAppSetting)
-                        }
-                    }
-
-                    else -> error("unknown type ${item.type}")
-                }
-            } finally {
-                bindingBusy = false
-            }
-        }
-
-        private fun showCaption(caption: String) {
-            if (caption.isNotEmpty()) {
-                views.tvCaption.vg(true)?.text = caption
-                updateCaption()
-            }
-        }
-
-        fun updateCaption() {
-            val item = item ?: return
-            val key = item.pref?.key ?: return
-
-            val sample = views.tvCaption
-            var defaultExtra = actAppSetting.defaultLineSpacingExtra[key]
-            if (defaultExtra == null) {
-                defaultExtra = sample.lineSpacingExtra
-                actAppSetting.defaultLineSpacingExtra[key] = defaultExtra
-            }
-            var defaultMultiplier = actAppSetting.defaultLineSpacingMultiplier[key]
-            if (defaultMultiplier == null) {
-                defaultMultiplier = sample.lineSpacingMultiplier
-                actAppSetting.defaultLineSpacingMultiplier[key] = defaultMultiplier
-            }
-
-            val size = item.captionFontSize.invoke(actAppSetting)
-            if (size != null) sample.textSize = size
-
-            val spacing = item.captionSpacing.invoke(actAppSetting)
-            if (spacing == null || !spacing.isFinite()) {
-                sample.setLineSpacing(defaultExtra, defaultMultiplier)
-            } else {
-                sample.setLineSpacing(0f, spacing)
-            }
-        }
-
-        private fun updateErrorView() {
-            val item = item ?: return
-            val sv = views.etEditText.text.toString()
-            val error = item.getError.invoke(actAppSetting, sv)
-            tvError.vg(error != null)?.text = error
-        }
-
-        fun showColor() {
-            val item = item ?: return
-            val ip = item.pref.cast<IntPref>() ?: return
-            val c = ip.value
-            views.vColor.setBackgroundColor(c)
-        }
-
-        override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-        }
-
-        override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-        }
-
-        override fun afterTextChanged(p0: Editable?) {
-            if (bindingBusy) return
-            val item = item ?: return
-
-            val sv = item.filter.invoke(p0?.toString() ?: "")
-
-            when (val pi = item.pref) {
-                is StringPref -> pi.value = sv
-
-                is FloatPref -> {
-                    val fv = item.toFloat.invoke(actAppSetting, sv)
-                    if (fv.isFinite()) {
-                        pi.value = fv
-                    } else {
-                        pi.removeValue()
-                    }
-                }
-
-                else -> {
-                    error("not FloatPref or StringPref")
-                }
-            }
-
-            item.changed.invoke(actAppSetting)
-            updateErrorView()
-        }
-
-        override fun onNothingSelected(v: AdapterView<*>?) = Unit
-
-        override fun onItemSelected(
-            parent: AdapterView<*>?,
-            view: View?,
-            position: Int,
-            id: Long,
-        ) {
-            if (bindingBusy) return
-            val item = item ?: return
-            when (val pi = item.pref) {
-                is IntPref -> pi.value = views.spSpinner.selectedItemPosition
-                else -> item.spinnerOnSelected.invoke(actAppSetting, views.spSpinner, position)
-            }
-            item.changed.invoke(actAppSetting)
-        }
-
-        // implements CompoundButton.OnCheckedChangeListener
-        override fun onCheckedChanged(v: CompoundButton, isChecked: Boolean) {
-            if (bindingBusy) return
-            val item = item ?: return
-            when (val pi = item.pref) {
-                is BooleanPref -> pi.value = isChecked
-                else -> error("CompoundButton has no booleanPref $pi")
-            }
-            item.changed.invoke(actAppSetting)
-        }
-    }
-
-    private fun initSpinner(spinner: Spinner, captions: List<String>) {
-        spinner.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            captions.toTypedArray()
-        ).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
-    }
-
-    ///////////////////////////////////////////////////////////////
-
-    @Suppress("BlockingMethodInNonBlockingContext")
-    fun sendAppData() {
-        val activity = this
-        launchProgress(
-            "export app data",
-            doInBackground = { encodeAppData() },
-            afterProc = {
-                try {
-                    val uri =
-                        FileProvider.getUriForFile(activity, FILE_PROVIDER_AUTHORITY, it)
-                    Intent(Intent.ACTION_SEND).apply {
-                        type = contentResolver.getType(uri)
-                        putExtra(Intent.EXTRA_SUBJECT, "SubwayTooter app data")
-                        putExtra(Intent.EXTRA_STREAM, uri)
-                        addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                    }.launch(arNoop)
-                } catch (ex: Throwable) {
-                    log.e(ex, "exportAppData failed.")
-                    dialogOrToast(ex.withCaption(getString(R.string.missing_app_can_receive_action_send)))
-                }
-            }
-        )
-    }
-
-    fun saveAppData() {
-        try {
-            Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                addCategory(Intent.CATEGORY_OPENABLE)
-                type = "application/zip"
-                putExtra(Intent.EXTRA_TITLE, "SubwayTooter app data.zip")
-            }.launch(arSaveAppData)
-        } catch (ex: Throwable) {
-            log.e(ex, "can't find app that can handle ACTION_CREATE_DOCUMENT.")
-            dialogOrToast(ex.withCaption("can't find app that can handle ACTION_CREATE_DOCUMENT."))
+            handleFontResult(AppSettingItem.TIMELINE_FONT_BOLD, it, "TimelineFontBold")
         }
     }
 
@@ -1217,84 +211,696 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
         }
     }
 
-    /**
-     * アプリデータを一時ファイルに保存する
-     * -
-     */
-    @WorkerThread
-    private fun encodeAppData(): File {
-        val activity = this
+    // ---- Lifecycle ----
 
-        val cacheDir = externalCacheDir ?: cacheDir ?: error("missing cache directory")
-        cacheDir.mkdirs()
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        backPressed { handleBack() }
 
-        val name = "SubwayTooter.${android.os.Process.myPid()}.${android.os.Process.myTid()}.zip"
-        val file = File(cacheDir, name)
+        arNoop.register(this)
+        arImportAppData.register(this)
+        arTimelineFont.register(this)
+        arTimelineFontBold.register(this)
+        arSaveAppData.register(this)
 
-        ZipOutputStream(FileOutputStream(file)).use { zipStream ->
-            zipStream.putNextEntry(ZipEntry("AppData.json"))
+        App1.setActivityTheme(this)
+        handler = App1.getAppState(this).handler
+
+        if (savedInstanceState != null) {
             try {
-                val jw = JsonWriter(OutputStreamWriter(zipStream, "UTF-8"))
-                AppDataExporter.encodeAppData(activity, jw)
-                jw.flush()
-            } finally {
-                zipStream.closeEntry()
-            }
-            // カラム背景画像
-            val appState = App1.getAppState(activity)
-            for (column in appState.columnList) {
-                AppDataExporter.saveBackgroundImage(activity, zipStream, column)
+                savedInstanceState.getString(STATE_CHOOSE_INTENT_TARGET)?.let { target ->
+                    customShareTarget = CustomShareTarget.entries.find { it.name == target }
+                }
+            } catch (ex: Throwable) {
+                log.e(ex, "can't restore customShareTarget.")
             }
         }
 
-        return file
-    }
+        removeDefaultPref()
 
-    // open data picker
-    fun importAppData1() {
-        try {
-            val intent = intentOpenDocument("*/*")
-            arImportAppData.launch(intent)
-        } catch (ex: Throwable) {
-            showToast(ex, "importAppData(1) failed.")
+        setContent {
+            StScreen(
+                title = stringResource(R.string.app_setting),
+                onBack = { handleBack() },
+            ) { innerPadding ->
+                AppSettingContent(Modifier.padding(innerPadding))
+            }
         }
     }
 
-    // after data picked
-    private fun importAppData2(bConfirm: Boolean, uri: Uri) {
-
-        val type = contentResolver.getType(uri)
-        log.d("importAppData type=$type")
-
-        if (!bConfirm) {
-            AlertDialog.Builder(this)
-                .setMessage(getString(R.string.app_data_import_confirm))
-                .setNegativeButton(R.string.cancel, null)
-                .setPositiveButton(R.string.ok) { _, _ -> importAppData2(true, uri) }
-                .show()
-            return
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        customShareTarget?.name?.let {
+            outState.putString(STATE_CHOOSE_INTENT_TARGET, it)
         }
-
-        val data = Intent()
-        data.data = uri
-        setResult(ActMain.RESULT_APP_DATA_IMPORT, data)
-        finish()
     }
 
-    fun findItemViewHolder(item: AppSettingItem?) =
-        item?.let { itemsAdapter.findVhSetting(it) }
+    override fun dispatchKeyEvent(event: KeyEvent) = try {
+        super.dispatchKeyEvent(event)
+    } catch (ex: Throwable) {
+        log.e(ex, "dispatchKeyEvent error")
+        false
+    }
 
+    override fun onStop() {
+        super.onStop()
+        restartAllWorker(context = this)
+    }
+
+    // ---- Navigation ----
+
+    private fun handleBack() {
+        when {
+            activeQuery.value != null -> {
+                activeQuery.value = null
+                searchInput.value = ""
+            }
+            currentSection.value != null -> currentSection.value = null
+            else -> finish()
+        }
+    }
+
+    /**
+     * Navigate to a section. Called from AppSettingItem lambda.
+     */
+    fun load(section: AppSettingItem?, @Suppress("UNUSED_PARAMETER") query: String?) {
+        if (section != null) {
+            currentSection.value = section
+            activeQuery.value = null
+            searchInput.value = ""
+        } else {
+            currentSection.value = null
+            activeQuery.value = null
+            searchInput.value = ""
+        }
+    }
+
+    private fun buildItemsList(
+        section: AppSettingItem?,
+        query: String?,
+    ): List<Any> = buildList {
+        var lastPath: String? = null
+
+        fun addParentPath(item: AppSettingItem) {
+            add(divider)
+            val pathList = ArrayList<String>()
+            var parent = item.parent
+            while (parent != null) {
+                if (parent.caption != 0) pathList.add(0, getString(parent.caption))
+                parent = parent.parent
+            }
+            val path = pathList.joinToString("/")
+            if (path != lastPath) {
+                lastPath = path
+                add(path)
+                add(divider)
+            }
+        }
+
+        fun queryRecursive(item: AppSettingItem, q: String) {
+            if (item.caption == 0) return
+            when (item.type) {
+                SettingType.Section ->
+                    item.items.forEach { queryRecursive(it, q) }
+
+                SettingType.Group -> {
+                    if (item.match(this@ActAppSetting, q) ||
+                        item.items.any { it.match(this@ActAppSetting, q) }
+                    ) {
+                        addParentPath(item)
+                        add(item)
+                        addAll(item.items)
+                    }
+                }
+
+                else -> {
+                    if (item.match(this@ActAppSetting, q)) {
+                        addParentPath(item)
+                        add(item)
+                    }
+                    item.items.forEach { queryRecursive(it, q) }
+                }
+            }
+        }
+
+        fun addSectionItems(sec: AppSettingItem?) {
+            sec ?: return
+            for (item in sec.items) {
+                add(divider)
+                add(item)
+                if (item.items.isNotEmpty()) {
+                    when (item.type) {
+                        SettingType.Group -> addAll(item.items)
+                        else -> addSectionItems(item)
+                    }
+                }
+            }
+        }
+
+        when {
+            query?.isNotEmpty() == true -> queryRecursive(appSettingRoot, query)
+            section != null -> addSectionItems(section)
+            else -> {
+                for (child in appSettingRoot.items) {
+                    add(divider)
+                    add(child)
+                }
+            }
+        }
+        if (isNotEmpty()) add(divider)
+    }
+
+    // ---- Main Composable ----
+
+    @Composable
+    private fun AppSettingContent(modifier: Modifier) {
+        val rev = revision.intValue
+        val section = currentSection.value
+        val query = activeQuery.value
+
+        // Debounced search
+        val inputText = searchInput.value
+        LaunchedEffect(inputText) {
+            if (inputText.isEmpty()) {
+                activeQuery.value = null
+            } else {
+                delay(166)
+                activeQuery.value = inputText
+            }
+        }
+
+        val items = remember(section, query, rev) {
+            buildItemsList(section, query)
+        }
+
+        // Color picker dialog
+        colorPickerItem.value?.let { item ->
+            val ip = item.pref.cast<IntPref>() ?: return@let
+            ColorPickerDialog(
+                colorInitial = ip.value.notZero() ?: Color.BLACK,
+                alphaEnabled = item.type == SettingType.ColorAlpha,
+                onDismiss = { colorPickerItem.value = null },
+                onColorSelected = { newColor ->
+                    val c = when (item.type) {
+                        SettingType.ColorAlpha -> newColor.notZero() ?: 1
+                        else -> newColor or Color.BLACK
+                    }
+                    ip.value = c
+                    item.changed(this@ActAppSetting)
+                    colorPickerItem.value = null
+                    refreshUi()
+                },
+            )
+        }
+
+        Column(modifier.fillMaxSize()) {
+            // Search bar
+            SearchBar()
+
+            // Settings list
+            LazyColumn(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+            ) {
+                itemsIndexed(
+                    items,
+                    contentType = { _, item ->
+                        when (item) {
+                            divider -> "divider"
+                            is String -> "path"
+                            is AppSettingItem -> item.type.id
+                            else -> "unknown"
+                        }
+                    },
+                ) { _, item ->
+                    when (item) {
+                        divider -> HorizontalDivider(
+                            modifier = Modifier.padding(vertical = 6.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                        is String -> Text(
+                            text = item,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(vertical = 3.dp),
+                        )
+                        is AppSettingItem -> SettingItemComposable(item)
+                    }
+                }
+            }
+        }
+    }
+
+    @Composable
+    private fun SearchBar() {
+        val keyboardController = LocalSoftwareKeyboardController.current
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextField(
+                value = searchInput.value,
+                onValueChange = { searchInput.value = it },
+                modifier = Modifier.weight(1f),
+                placeholder = { Text(stringResource(R.string.search)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() }),
+            )
+            if (searchInput.value.isNotEmpty()) {
+                IconButton(onClick = {
+                    searchInput.value = ""
+                    activeQuery.value = null
+                    keyboardController?.hide()
+                }) {
+                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.reset))
+                }
+            }
+        }
+    }
+
+    // ---- Setting item composables ----
+
+    @Composable
+    private fun SettingItemComposable(item: AppSettingItem) {
+        val name = if (item.caption == 0) "" else stringResource(item.caption)
+
+        Column(modifier = Modifier.fillMaxWidth()) {
+            when (item.type) {
+                SettingType.Section -> SectionItem(item, name)
+                SettingType.Action -> ActionItem(item, name)
+                SettingType.Switch -> SwitchItem(item, name)
+                SettingType.CheckBox -> CheckboxItem(item, name)
+                SettingType.EditText -> EditTextItem(item, name)
+                SettingType.Spinner -> SpinnerItem(item, name)
+                SettingType.ColorOpaque, SettingType.ColorAlpha -> ColorItem(item, name)
+                SettingType.Group -> GroupItem(name)
+                SettingType.TextWithSelector -> TextWithSelectorItem(item, name)
+                SettingType.Sample -> SampleItem(item)
+                else -> {}
+            }
+
+            // Description
+            if (item.desc != 0) {
+                val descText = stringResource(item.desc)
+                Text(
+                    text = descText,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier
+                        .padding(start = 32.dp, top = 2.dp)
+                        .then(
+                            if (item.descClickSet) {
+                                Modifier.clickable { item.descClick.invoke(this@ActAppSetting) }
+                            } else Modifier
+                        ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun CaptionText(
+        name: String,
+        item: AppSettingItem? = null,
+    ) {
+        if (name.isEmpty()) return
+        val fontSize = item?.captionFontSize?.invoke(this@ActAppSetting)
+        val spacing = item?.captionSpacing?.invoke(this@ActAppSetting)
+        val lineHeight = if (spacing != null && spacing.isFinite()) {
+            (14f * spacing).sp
+        } else TextUnit.Unspecified
+
+        Text(
+            text = name,
+            fontSize = fontSize?.sp ?: 14.sp,
+            lineHeight = lineHeight,
+        )
+    }
+
+    @Composable
+    private fun SectionItem(item: AppSettingItem, name: String) {
+        Button(
+            onClick = {
+                currentSection.value = item
+                activeQuery.value = null
+                searchInput.value = ""
+            },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = item.enabled,
+        ) {
+            Text(name)
+        }
+    }
+
+    @Composable
+    private fun ActionItem(item: AppSettingItem, name: String) {
+        Button(
+            onClick = { item.action(this@ActAppSetting) },
+            modifier = Modifier.fillMaxWidth(),
+            enabled = item.enabled,
+        ) {
+            Text(name)
+        }
+    }
+
+    @Composable
+    private fun SwitchItem(item: AppSettingItem, name: String) {
+        val bp = item.pref.cast<BooleanPref>() ?: return
+        CaptionText(name, item)
+        Row(
+            modifier = Modifier.padding(start = 32.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Switch(
+                checked = bp.value,
+                onCheckedChange = {
+                    bp.value = it
+                    item.changed(this@ActAppSetting)
+                    refreshUi()
+                },
+                enabled = item.enabled,
+            )
+        }
+    }
+
+    @Composable
+    private fun CheckboxItem(item: AppSettingItem, name: String) {
+        val bp = item.pref.cast<BooleanPref>() ?: return
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(enabled = item.enabled) {
+                    bp.value = !bp.value
+                    item.changed(this@ActAppSetting)
+                    refreshUi()
+                }
+                .padding(start = 32.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Checkbox(
+                checked = bp.value,
+                onCheckedChange = null,
+                enabled = item.enabled,
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(name)
+        }
+    }
+
+    @Composable
+    private fun EditTextItem(item: AppSettingItem, name: String) {
+        CaptionText(name, item)
+
+        val pi = item.pref
+        val currentText = when (pi) {
+            is FloatPref -> item.fromFloat.invoke(this@ActAppSetting, pi.value)
+            is StringPref -> pi.value
+            else -> ""
+        }
+
+        var text by remember(revision.intValue, item.id) { mutableStateOf(currentText) }
+        val error = item.getError.invoke(this@ActAppSetting, text)
+
+        TextField(
+            value = text,
+            onValueChange = { newText ->
+                val filtered = item.filter.invoke(newText)
+                text = filtered
+                when (pi) {
+                    is StringPref -> pi.value = filtered
+                    is FloatPref -> {
+                        val fv = item.toFloat.invoke(this@ActAppSetting, filtered)
+                        if (fv.isFinite()) pi.value = fv
+                        else pi.removeValue()
+                    }
+                }
+                item.changed(this@ActAppSetting)
+                refreshUi()
+            },
+            modifier = Modifier.padding(start = 32.dp).fillMaxWidth(),
+            singleLine = true,
+            isError = error != null,
+            supportingText = if (error != null) {
+                { Text(error, color = MaterialTheme.colorScheme.error) }
+            } else null,
+            placeholder = item.hint?.let { { Text(it) } },
+            keyboardOptions = KeyboardOptions(
+                keyboardType = when {
+                    item.inputType and InputType.TYPE_CLASS_NUMBER != 0 -> KeyboardType.Number
+                    item.inputType and InputType.TYPE_NUMBER_FLAG_DECIMAL != 0 -> KeyboardType.Decimal
+                    else -> KeyboardType.Text
+                },
+                imeAction = ImeAction.Next,
+            ),
+        )
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun SpinnerItem(item: AppSettingItem, name: String) {
+        CaptionText(name, item)
+
+        val pi = item.pref
+        if (pi is IntPref) {
+            // Simple spinner with IntPref
+            val options = item.spinnerArgs?.map { stringResource(it) }
+                ?: item.spinnerArgsProc.invoke(this@ActAppSetting)
+
+            if (options.isEmpty()) return
+
+            var expanded by remember { mutableStateOf(false) }
+            val selectedIndex = pi.value.coerceIn(0, options.size - 1)
+
+            ExposedDropdownMenuBox(
+                expanded = expanded,
+                onExpandedChange = { expanded = it },
+                modifier = Modifier.padding(start = 32.dp).fillMaxWidth(),
+            ) {
+                TextField(
+                    value = options.getOrElse(selectedIndex) { "" },
+                    onValueChange = {},
+                    readOnly = true,
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                    modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
+                )
+                ExposedDropdownMenu(
+                    expanded = expanded,
+                    onDismissRequest = { expanded = false },
+                ) {
+                    options.forEachIndexed { index, text ->
+                        DropdownMenuItem(
+                            text = { Text(text) },
+                            onClick = {
+                                expanded = false
+                                pi.value = index
+                                item.changed(this@ActAppSetting)
+                                refreshUi()
+                            },
+                        )
+                    }
+                }
+            }
+        } else {
+            // Complex spinner with custom initializer — use AndroidView
+            AndroidView(
+                factory = { ctx ->
+                    Spinner(ctx).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                        )
+                        item.spinnerInitializer.invoke(this@ActAppSetting, this)
+                        onItemSelectedListener =
+                            object : android.widget.AdapterView.OnItemSelectedListener {
+                                override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+                                override fun onItemSelected(
+                                    parent: android.widget.AdapterView<*>?,
+                                    view: View?,
+                                    position: Int,
+                                    id: Long,
+                                ) {
+                                    item.spinnerOnSelected.invoke(
+                                        this@ActAppSetting,
+                                        this@apply,
+                                        position,
+                                    )
+                                    item.changed(this@ActAppSetting)
+                                    refreshUi()
+                                }
+                            }
+                    }
+                },
+                modifier = Modifier.padding(start = 32.dp).fillMaxWidth(),
+            )
+        }
+    }
+
+    @Composable
+    private fun ColorItem(item: AppSettingItem, name: String) {
+        val ip = item.pref.cast<IntPref>() ?: return
+        CaptionText(name, item)
+
+        Row(
+            modifier = Modifier.padding(start = 32.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Button(
+                onClick = { colorPickerItem.value = item },
+                enabled = item.enabled,
+            ) {
+                Text(stringResource(R.string.edit))
+            }
+            Spacer(Modifier.width(8.dp))
+            OutlinedButton(
+                onClick = {
+                    ip.removeValue()
+                    item.changed(this@ActAppSetting)
+                    refreshUi()
+                },
+                enabled = item.enabled,
+            ) {
+                Text(stringResource(R.string.reset))
+            }
+            Spacer(Modifier.width(8.dp))
+            // Color swatch
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(androidx.compose.ui.graphics.Color(ip.value)),
+            )
+        }
+    }
+
+    @Composable
+    private fun GroupItem(name: String) {
+        if (name.isNotEmpty()) {
+            Text(
+                text = name,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+    }
+
+    @Composable
+    private fun TextWithSelectorItem(item: AppSettingItem, name: String) {
+        CaptionText(name, item)
+
+        Row(
+            modifier = Modifier.padding(start = 32.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            // Use AndroidView for the text display since showTextView may set
+            // compound drawables and typeface
+            AndroidView(
+                factory = { ctx ->
+                    TextView(ctx).apply {
+                        layoutParams = ViewGroup.LayoutParams(
+                            0,
+                            ViewGroup.LayoutParams.WRAP_CONTENT,
+                        )
+                    }
+                },
+                update = { tv ->
+                    item.showTextView.invoke(this@ActAppSetting, tv)
+                },
+                modifier = Modifier.weight(1f),
+            )
+            Button(onClick = { item.onClickEdit.invoke(this@ActAppSetting) }) {
+                Text(stringResource(R.string.edit))
+            }
+            Spacer(Modifier.width(4.dp))
+            OutlinedButton(onClick = {
+                item.onClickReset.invoke(this@ActAppSetting)
+                refreshUi()
+            }) {
+                Text(stringResource(R.string.reset))
+            }
+        }
+    }
+
+    @Composable
+    private fun SampleItem(item: AppSettingItem) {
+        AndroidView(
+            factory = { ctx ->
+                LinearLayout(ctx).apply {
+                    orientation = LinearLayout.VERTICAL
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    )
+                    item.sampleViewCreator?.invoke(this)
+                }
+            },
+            update = { view ->
+                item.sampleUpdate.invoke(this@ActAppSetting, view)
+            },
+            modifier = Modifier.padding(start = 32.dp).fillMaxWidth(),
+        )
+    }
+
+    // ---- Pref cleanup ----
+
+    private fun removeDefaultPref() {
+        val e = lazyPref.edit()
+        var changed = false
+        appSettingRoot.scan {
+            when {
+                (it.pref as? IntPref)?.noRemove == true -> Unit
+                it.pref?.removeDefault(lazyPref, e) == true -> changed = true
+            }
+        }
+        if (changed) e.apply()
+    }
+
+    // ---- Methods called from AppSettingItem lambdas ----
+
+    /**
+     * Stub type returned by findItemViewHolder. Always null in Compose.
+     * Exists so that AppSettingItem lambdas calling
+     * findItemViewHolder(item)?.updateCaption() still compile.
+     */
+    class ViewHolderStub {
+        fun updateCaption() {}
+        fun showColor() {}
+    }
+
+    /**
+     * No ViewHolders in Compose. Returns null; callers null-check.
+     * Recomposition handles UI updates via refreshUi().
+     */
+    fun findItemViewHolder(item: AppSettingItem?): ViewHolderStub? = null
+
+    /**
+     * Triggers recomposition to update sample views.
+     */
     fun showSample(item: AppSettingItem?) {
-        item ?: error("showSample: missing item…")
-        findItemViewHolder(item)?.let {
-            item.sampleUpdate.invoke(this, it.views.llExtra)
+        refreshUi()
+    }
+
+    /**
+     * No-op in Material3 Compose — switches use theme colors.
+     */
+    fun setSwitchColor() {}
+
+    // Overload to accept any View — also no-op.
+    @Suppress("UNUSED_PARAMETER")
+    fun setSwitchColor(root: View?) {}
+
+    fun initSpinner(spinner: Spinner, captions: List<String>) {
+        spinner.adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            captions.toTypedArray()
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
     }
 
-    // リスト内部のSwitchCompat全ての色を更新する
-    fun setSwitchColor() = setSwitchColor(views.lvList)
-
-    //////////////////////////////////////////////////////
+    // ---- Font size formatting ----
 
     fun formatFontSize(fv: Float): String =
         when {
@@ -1317,12 +923,10 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
         } catch (ex: Throwable) {
             log.e(ex, "parseFontSize failed.")
         }
-
         return Float.NaN
     }
 
-    val defaultLineSpacingExtra = HashMap<String, Float>()
-    val defaultLineSpacingMultiplier = HashMap<String, Float>()
+    // ---- Font handling ----
 
     private fun handleFontResult(item: AppSettingItem?, data: Intent, fileName: String) {
         item ?: error("handleFontResult : setting item is null")
@@ -1330,15 +934,13 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
             val file = saveTimelineFont(it, fileName)
             if (file != null) {
                 (item.pref as? StringPref)?.value = file.absolutePath
-                showTimelineFont(item)
+                refreshUi()
             }
         }
     }
 
     fun showTimelineFont(item: AppSettingItem?) {
-        item ?: return
-        val holder = findItemViewHolder(item) ?: return
-        item.showTextView.invoke(this, holder.views.textView1)
+        refreshUi()
     }
 
     fun showTimelineFont(item: AppSettingItem, tv: TextView) {
@@ -1353,7 +955,6 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
         } catch (ex: Throwable) {
             log.e(ex, "showTimelineFont failed.")
         }
-        // fallback
         tv.text = getString(R.string.not_selected_2)
         tv.typeface = Typeface.DEFAULT
     }
@@ -1368,7 +969,6 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
             contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
             val dir = filesDir
-
             dir.mkdir()
 
             val tmpFile = File(dir, "$fileName.tmp")
@@ -1405,156 +1005,104 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
         }
     }
 
-    //////////////////////////////////////////////////////
+    // ---- App data export/import ----
 
-    inner class AccountAdapter(val list: List<SavedAccount>) : BaseAdapter() {
+    @Suppress("BlockingMethodInNonBlockingContext")
+    fun sendAppData() {
+        val activity = this
+        launchProgress(
+            "export app data",
+            doInBackground = { encodeAppData() },
+            afterProc = {
+                try {
+                    val uri = FileProvider.getUriForFile(activity, FILE_PROVIDER_AUTHORITY, it)
+                    Intent(Intent.ACTION_SEND).apply {
+                        type = contentResolver.getType(uri)
+                        putExtra(Intent.EXTRA_SUBJECT, "SubwayTooter app data")
+                        putExtra(Intent.EXTRA_STREAM, uri)
+                        addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION or Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }.launch(arNoop)
+                } catch (ex: Throwable) {
+                    log.e(ex, "exportAppData failed.")
+                    dialogOrToast(ex.withCaption(getString(R.string.missing_app_can_receive_action_send)))
+                }
+            }
+        )
+    }
 
-        override fun getCount() = 1 + list.size
-        override fun getItemId(position: Int) = 0L
-        override fun getItem(position: Int) = if (position == 0) null else list[position - 1]
+    fun saveAppData() {
+        try {
+            Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                addCategory(Intent.CATEGORY_OPENABLE)
+                type = "application/zip"
+                putExtra(Intent.EXTRA_TITLE, "SubwayTooter app data.zip")
+            }.launch(arSaveAppData)
+        } catch (ex: Throwable) {
+            log.e(ex, "can't find app that can handle ACTION_CREATE_DOCUMENT.")
+            dialogOrToast(ex.withCaption("can't find app that can handle ACTION_CREATE_DOCUMENT."))
+        }
+    }
 
-        override fun getView(position: Int, viewOld: View?, parent: ViewGroup): View {
-            val view = viewOld ?: TextView(parent.context).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
+    @WorkerThread
+    private fun encodeAppData(): File {
+        val activity = this
+        val cacheDir = externalCacheDir ?: cacheDir ?: error("missing cache directory")
+        cacheDir.mkdirs()
+
+        val name = "SubwayTooter.${android.os.Process.myPid()}.${android.os.Process.myTid()}.zip"
+        val file = File(cacheDir, name)
+
+        ZipOutputStream(FileOutputStream(file)).use { zipStream ->
+            zipStream.putNextEntry(ZipEntry("AppData.json"))
+            try {
+                val jw = JsonWriter(OutputStreamWriter(zipStream, "UTF-8"))
+                jp.juggler.subwaytooter.appsetting.AppDataExporter.encodeAppData(activity, jw)
+                jw.flush()
+            } finally {
+                zipStream.closeEntry()
+            }
+            val appState = App1.getAppState(activity)
+            for (column in appState.columnList) {
+                jp.juggler.subwaytooter.appsetting.AppDataExporter.saveBackgroundImage(
+                    activity,
+                    zipStream,
+                    column,
                 )
-                minimumHeight = parent.context.dp(48)
-                val pad = parent.context.dp(4)
-                setPadding(pad, pad, pad, pad)
-                id = android.R.id.text1
             }
-            view.findViewById<TextView>(android.R.id.text1).text = when (position) {
-                0 -> getString(R.string.default_post_account_default_action)
-                else -> daoAcctColor.getNickname(list[position - 1])
-            }
-            return view
         }
 
-        override fun getDropDownView(position: Int, viewOld: View?, parent: ViewGroup): View {
-            val view =
-                viewOld ?: layoutInflater.inflate(android.R.layout.simple_spinner_dropdown_item, parent, false)
-            view.findViewById<TextView>(android.R.id.text1).text = when (position) {
-                0 -> getString(R.string.default_post_account_default_action)
-                else -> daoAcctColor.getNickname(list[position - 1])
-            }
-            return view
-        }
-
-        /**
-         * 設定に保存したdbId から アダプターのインデクス値に変換
-         */
-
-        // 見つからなければ0,見つかったら1以上
-        internal fun getIndexFromId(dbId: Long): Int =
-            1 + list.indexOfFirst { it.db_id == dbId }
-
-        /**
-         * アダプターのインデクス値から設定に保存するdbIdに変換
-         * - -1L : タブレットモードなら毎回尋ねる。スマホモードなら現在開いているカラム。
-         */
-        internal fun getIdFromIndex(position: Int): Long =
-            if (position > 0) list[position - 1].db_id else -1L
+        return file
     }
 
-    private class Item(
-        val id: String,
-        val caption: String,
-        val offset: Int,
-    )
-
-    inner class TimeZoneAdapter internal constructor() : BaseAdapter() {
-
-        private val list = ArrayList<Item>()
-
-        init {
-
-            for (id in TimeZone.getAvailableIDs()) {
-                val tz = TimeZone.getTimeZone(id)
-
-                // GMT数字を指定するタイプのタイムゾーンは無視する。ただしGMT-12:00の１項目だけは残す
-                // 3文字のIDは曖昧な場合があるので非推奨
-                // '/' を含まないIDは列挙しない
-                if (!when {
-                        !tz.id.contains('/') -> false
-                        tz.id == "Etc/GMT+12" -> true
-                        tz.id.startsWith("Etc/") -> false
-                        else -> true
-                    }
-                ) continue
-
-                var offset = tz.rawOffset.toLong()
-                val caption = when (offset) {
-                    0L -> "(UTC\u00B100:00) ${tz.id} ${tz.displayName}"
-
-                    else -> {
-
-                        val format = when {
-                            offset > 0 -> "(UTC+%02d:%02d) %s %s"
-                            else -> "(UTC-%02d:%02d) %s %s"
-                        }
-
-                        offset = abs(offset)
-
-                        val hours = TimeUnit.MILLISECONDS.toHours(offset)
-                        val minutes =
-                            TimeUnit.MILLISECONDS.toMinutes(offset) - TimeUnit.HOURS.toMinutes(hours)
-
-                        String.format(format, hours, minutes, tz.id, tz.displayName)
-                    }
-                }
-                if (list.none { it.caption == caption }) {
-                    list.add(Item(id, caption, tz.rawOffset))
-                }
-            }
-
-            list.sortWith { a, b ->
-                (a.offset - b.offset).notZero() ?: a.caption.compareTo(b.caption)
-            }
-
-            list.add(0, Item("", getString(R.string.device_timezone), 0))
-        }
-
-        override fun getCount(): Int {
-            return list.size
-        }
-
-        override fun getItem(position: Int): Any {
-            return list[position]
-        }
-
-        override fun getItemId(position: Int): Long {
-            return 0
-        }
-
-        override fun getView(position: Int, viewOld: View?, parent: ViewGroup): View {
-            val view = viewOld ?: layoutInflater.inflate(
-                android.R.layout.simple_spinner_item,
-                parent,
-                false
-            )
-            val item = list[position]
-            view.findViewById<TextView>(android.R.id.text1).text = item.caption
-            return view
-        }
-
-        override fun getDropDownView(position: Int, viewOld: View?, parent: ViewGroup): View {
-            val view =
-                viewOld ?: layoutInflater.inflate(android.R.layout.simple_spinner_dropdown_item, parent, false)
-            val item = list[position]
-            view.findViewById<TextView>(android.R.id.text1).text = item.caption
-            return view
-        }
-
-        internal fun getIndexFromId(tzId: String): Int {
-            val index = list.indexOfFirst { it.id == tzId }
-            return if (index == -1) 0 else index
-        }
-
-        internal fun getIdFromIndex(position: Int): String {
-            return list[position].id
+    fun importAppData1() {
+        try {
+            val intent = intentOpenDocument("*/*")
+            arImportAppData.launch(intent)
+        } catch (ex: Throwable) {
+            showToast(ex, "importAppData(1) failed.")
         }
     }
+
+    private fun importAppData2(bConfirm: Boolean, uri: Uri) {
+        val type = contentResolver.getType(uri)
+        log.d("importAppData type=$type")
+
+        if (!bConfirm) {
+            android.app.AlertDialog.Builder(this)
+                .setMessage(getString(R.string.app_data_import_confirm))
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.ok) { _, _ -> importAppData2(true, uri) }
+                .show()
+            return
+        }
+
+        val data = Intent()
+        data.data = uri
+        setResult(ActMain.RESULT_APP_DATA_IMPORT, data)
+        finish()
+    }
+
+    // ---- Custom share ----
 
     fun openCustomShareChooser(appSettingItem: AppSettingItem, target: CustomShareTarget) {
         try {
@@ -1578,8 +1126,7 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
     fun setCustomShare(appSettingItem: AppSettingItem, target: CustomShareTarget, value: String) {
         val sp: StringPref = appSettingItem.pref.cast() ?: error("$target: not StringPref")
         sp.value = value
-
-        showCustomShareIcon(findItemViewHolder(appSettingItem)?.views?.textView1, target)
+        refreshUi()
     }
 
     fun showCustomShareIcon(tv: TextView?, target: CustomShareTarget) {
@@ -1615,11 +1162,10 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
         val sp: StringPref = appSettingItem.pref.cast()
             ?: error("${getString(appSettingItem.caption)}: not StringPref")
         sp.value = value
-
-        showWebBrowser(findItemViewHolder(appSettingItem)?.views?.textView1, value)
+        refreshUi()
     }
 
-    private fun showWebBrowser(tv: TextView?, prefValue: String) {
+    fun showWebBrowser(tv: TextView?, prefValue: String) {
         tv ?: return
         val cn = prefValue.cn()
         val (label, icon) = CustomShare.getInfo(this, cn)
@@ -1627,6 +1173,8 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
         tv.setCompoundDrawablesRelativeWithIntrinsicBounds(icon, null, null, null)
         tv.compoundDrawablePadding = (resources.displayMetrics.density * 4f + 0.5f).toInt()
     }
+
+    // ---- Log export ----
 
     fun exportLog() {
         val context = this
@@ -1657,13 +1205,10 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
                     |$soc
                     """.trimMargin("|")
 
-                // ログに警告がでるが偽陽性だった。
-                // extras!!.putCharSequenceArrayList に変えると警告は出なくなるが、Gmailに本文が表示されない。
                 putExtra(Intent.EXTRA_TEXT, text)
                 putParcelableArrayListExtra(Intent.EXTRA_STREAM, arrayListOf(uri))
                 addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            // 送る前にgrantしておく
             val chooserIntent = Intent.createChooser(intent, null)
             grantFileProviderUri(intent, uri)
             grantFileProviderUri(chooserIntent, uri)
@@ -1689,14 +1234,142 @@ class ActAppSetting : AppCompatActivity(), View.OnClickListener {
                 intent,
                 PackageManager.MATCH_DEFAULT_ONLY
             ).forEach {
-                grantUriPermission(
-                    it.activityInfo.packageName,
-                    uri,
-                    permission
-                )
+                grantUriPermission(it.activityInfo.packageName, uri, permission)
             }
         } catch (ex: Throwable) {
             log.e(ex, "grantFileProviderUri failed.")
         }
+    }
+
+    // ---- Inner adapters (used by AndroidView Spinners) ----
+
+    inner class AccountAdapter(val list: List<SavedAccount>) : BaseAdapter() {
+
+        override fun getCount() = 1 + list.size
+        override fun getItemId(position: Int) = 0L
+        override fun getItem(position: Int) = if (position == 0) null else list[position - 1]
+
+        override fun getView(position: Int, viewOld: View?, parent: ViewGroup): View {
+            val view = viewOld ?: TextView(parent.context).apply {
+                layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+                minimumHeight = parent.context.resources.displayMetrics.density.let {
+                    (48 * it + 0.5f).toInt()
+                }
+                val pad = parent.context.resources.displayMetrics.density.let {
+                    (4 * it + 0.5f).toInt()
+                }
+                setPadding(pad, pad, pad, pad)
+                id = android.R.id.text1
+            }
+            view.findViewById<TextView>(android.R.id.text1).text = when (position) {
+                0 -> getString(R.string.default_post_account_default_action)
+                else -> daoAcctColor.getNickname(list[position - 1])
+            }
+            return view
+        }
+
+        override fun getDropDownView(position: Int, viewOld: View?, parent: ViewGroup): View {
+            val view =
+                viewOld ?: layoutInflater.inflate(
+                    android.R.layout.simple_spinner_dropdown_item,
+                    parent,
+                    false,
+                )
+            view.findViewById<TextView>(android.R.id.text1).text = when (position) {
+                0 -> getString(R.string.default_post_account_default_action)
+                else -> daoAcctColor.getNickname(list[position - 1])
+            }
+            return view
+        }
+
+        internal fun getIndexFromId(dbId: Long): Int =
+            1 + list.indexOfFirst { it.db_id == dbId }
+
+        internal fun getIdFromIndex(position: Int): Long =
+            if (position > 0) list[position - 1].db_id else -1L
+    }
+
+    private class TimeZoneItem(
+        val id: String,
+        val caption: String,
+        val offset: Int,
+    )
+
+    inner class TimeZoneAdapter internal constructor() : BaseAdapter() {
+
+        private val list = ArrayList<TimeZoneItem>()
+
+        init {
+            for (id in TimeZone.getAvailableIDs()) {
+                val tz = TimeZone.getTimeZone(id)
+
+                if (!when {
+                        !tz.id.contains('/') -> false
+                        tz.id == "Etc/GMT+12" -> true
+                        tz.id.startsWith("Etc/") -> false
+                        else -> true
+                    }
+                ) continue
+
+                var offset = tz.rawOffset.toLong()
+                val caption = when (offset) {
+                    0L -> "(UTC\u00B100:00) ${tz.id} ${tz.displayName}"
+                    else -> {
+                        val format = when {
+                            offset > 0 -> "(UTC+%02d:%02d) %s %s"
+                            else -> "(UTC-%02d:%02d) %s %s"
+                        }
+                        offset = abs(offset)
+                        val hours = TimeUnit.MILLISECONDS.toHours(offset)
+                        val minutes =
+                            TimeUnit.MILLISECONDS.toMinutes(offset) - TimeUnit.HOURS.toMinutes(hours)
+                        String.format(format, hours, minutes, tz.id, tz.displayName)
+                    }
+                }
+                if (list.none { it.caption == caption }) {
+                    list.add(TimeZoneItem(id, caption, tz.rawOffset))
+                }
+            }
+
+            list.sortWith { a, b ->
+                (a.offset - b.offset).notZero() ?: a.caption.compareTo(b.caption)
+            }
+
+            list.add(0, TimeZoneItem("", getString(R.string.device_timezone), 0))
+        }
+
+        override fun getCount() = list.size
+        override fun getItem(position: Int): Any = list[position]
+        override fun getItemId(position: Int) = 0L
+
+        override fun getView(position: Int, viewOld: View?, parent: ViewGroup): View {
+            val view = viewOld ?: layoutInflater.inflate(
+                android.R.layout.simple_spinner_item,
+                parent,
+                false,
+            )
+            view.findViewById<TextView>(android.R.id.text1).text = list[position].caption
+            return view
+        }
+
+        override fun getDropDownView(position: Int, viewOld: View?, parent: ViewGroup): View {
+            val view = viewOld ?: layoutInflater.inflate(
+                android.R.layout.simple_spinner_dropdown_item,
+                parent,
+                false,
+            )
+            view.findViewById<TextView>(android.R.id.text1).text = list[position].caption
+            return view
+        }
+
+        internal fun getIndexFromId(tzId: String): Int {
+            val index = list.indexOfFirst { it.id == tzId }
+            return if (index == -1) 0 else index
+        }
+
+        internal fun getIdFromIndex(position: Int): String = list[position].id
     }
 }

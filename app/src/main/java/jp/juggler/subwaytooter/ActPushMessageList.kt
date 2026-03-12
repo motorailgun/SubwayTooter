@@ -1,23 +1,32 @@
 package jp.juggler.subwaytooter
 
-import android.annotation.SuppressLint
 import android.graphics.drawable.Drawable
 import android.os.Bundle
-import android.view.Gravity
-import android.view.ViewGroup
 import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.DividerItemDecoration
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import jp.juggler.subwaytooter.api.entity.NotificationType.Companion.toNotificationType
+import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.actionsDialog
 import jp.juggler.subwaytooter.dialog.runInProgress
 import jp.juggler.subwaytooter.push.PushMessageIconColor
@@ -29,7 +38,7 @@ import jp.juggler.subwaytooter.table.daoPushMessage
 import jp.juggler.subwaytooter.table.daoSavedAccount
 import jp.juggler.subwaytooter.util.permissionSpecNotification
 import jp.juggler.subwaytooter.util.requester
-import jp.juggler.subwaytooter.view.wrapTitleTextView
+import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.encodeBase64Url
@@ -39,66 +48,25 @@ import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.dialogOrToast
 import jp.juggler.util.os.saveToDownload
 import jp.juggler.util.time.formatLocalTime
-import jp.juggler.util.ui.*
-import kotlinx.coroutines.delay
+import jp.juggler.util.ui.resDrawable
+import jp.juggler.util.ui.wrapAndTint
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.PrintWriter
 
-class ActPushMessageList : AppCompatActivity() {
+class ActPushMessageList : ComponentActivity() {
     companion object {
         private val log = LogCategory("ActPushMessageList")
     }
 
-    private lateinit var toolbar: Toolbar
-    private lateinit var rvMessages: RecyclerView
-    private lateinit var rootView: LinearLayout
-
-    private val listAdapter = MyAdapter()
-
-    private val layoutManager by lazy {
-        LinearLayoutManager(this)
-    }
+    private val messages = mutableStateListOf<PushMessage>()
 
     private val prNotification = permissionSpecNotification.requester {
         // 特に何もしない
     }
+
     private val acctMap by lazy {
         daoSavedAccount.loadRealAccounts().associateBy { it.acct }
-    }
-
-    private fun createViews() {
-        val tv = android.util.TypedValue()
-        theme.resolveAttribute(android.R.attr.actionBarSize, tv, true)
-
-        toolbar = Toolbar(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                resources.getDimensionPixelSize(tv.resourceId)
-            )
-            setBackgroundResource(R.drawable.action_bar_bg)
-            elevation = dpFloat(4)
-        }
-
-        rvMessages = RecyclerView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0, 1f
-            )
-            setBackgroundColor(attrColor(R.attr.colorMainBackground))
-            isScrollbarFadingEnabled = false
-            scrollBarStyle = RecyclerView.SCROLLBARS_OUTSIDE_OVERLAY
-        }
-
-        rootView = LinearLayout(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.MATCH_PARENT
-            )
-            orientation = LinearLayout.VERTICAL
-            addView(toolbar)
-            addView(rvMessages)
-        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -106,28 +74,38 @@ class ActPushMessageList : AppCompatActivity() {
         prNotification.checkOrLaunch()
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-        createViews()
-        setContentViewAndInsets(rootView)
-        setSupportActionBar(toolbar)
-        wrapTitleTextView()
-        setNavigationBack(toolbar)
-
-        rvMessages.also {
-            val dividerItemDecoration = DividerItemDecoration(
-                this,
-                LinearLayout.VERTICAL,
-            )
-            it.addItemDecoration(dividerItemDecoration)
-            it.adapter = listAdapter
-            it.layoutManager = layoutManager
+        backPressed { finish() }
+        setContent {
+            StScreen(
+                title = getString(R.string.push_message_history),
+                onBack = { finish() },
+            ) { innerPadding ->
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                ) {
+                    items(messages, key = { it.id }) { pm ->
+                        val type = pm.notificationType?.toNotificationType()
+                        val iconColor = type.pushMessageIconAndColor()
+                        PushMessageRow(
+                            pm = pm,
+                            errorDrawable = tintIcon(pm, iconColor),
+                            onClick = { itemActions(pm) },
+                        )
+                        HorizontalDivider()
+                    }
+                }
+            }
         }
-
         lifecycleScope.launch {
             PushMessage.flowDataChanged.collect {
                 try {
-                    listAdapter.items = withContext(AppDispatchers.IO) {
+                    val list = withContext(AppDispatchers.IO) {
                         daoPushMessage.listAll()
                     }
+                    messages.clear()
+                    messages.addAll(list)
                 } catch (ex: Throwable) {
                     log.e(ex, "load failed.")
                 }
@@ -135,7 +113,7 @@ class ActPushMessageList : AppCompatActivity() {
         }
     }
 
-    fun itemActions(pm: PushMessage) {
+    private fun itemActions(pm: PushMessage) {
         launchAndShowError {
             actionsDialog {
                 action(getString(R.string.push_message_re_decode)) {
@@ -200,143 +178,80 @@ class ActPushMessageList : AppCompatActivity() {
 
     private val tintIconMap = HashMap<String, Drawable>()
 
-    fun tintIcon(pm: PushMessage, ic: PushMessageIconColor) =
+    private fun tintIcon(pm: PushMessage, ic: PushMessageIconColor): Drawable =
         tintIconMap.getOrPut("${ic.name}-${pm.loginAcct}") {
             val context = this
             val a = acctMap[pm.loginAcct]
             val c = ic.colorRes.notZero()?.let { ContextCompat.getColor(context, it) }
                 ?: a?.notificationAccentColor?.notZero()
                 ?: ContextCompat.getColor(this, R.color.colorOsNotificationAccent)
-
-            context.resDrawable( ic.iconId).wrapAndTint(color = c)
+            context.resDrawable(ic.iconId).wrapAndTint(color = c)
         }
+}
 
-    @SuppressLint("SetTextI18n")
-    private inner class MyViewHolder(
-        parent: ViewGroup,
-    ) : RecyclerView.ViewHolder(
-        LinearLayout(parent.context).apply {
-            layoutParams = RecyclerView.LayoutParams(
-                RecyclerView.LayoutParams.MATCH_PARENT,
-                RecyclerView.LayoutParams.WRAP_CONTENT
-            )
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.TOP
-            isBaselineAligned = false
-            val pad4 = dp(4)
-            val pad12 = dp(12)
-            setPadding(pad12, pad4, pad12, pad4)
-        }
+@Composable
+private fun PushMessageRow(
+    pm: PushMessage,
+    errorDrawable: Drawable,
+    onClick: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 4.dp),
     ) {
-        val ivSmall: ImageView
-        val ivLarge: ImageView
-        val tvText: TextView
-
-        init {
-            val context = parent.context
-            val size48 = context.dp(48)
-
-            val iconColumn = LinearLayout(context).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                orientation = LinearLayout.VERTICAL
-            }
-            ivSmall = ImageView(context).apply {
-                layoutParams = LinearLayout.LayoutParams(size48, size48)
-                importantForAccessibility = ImageView.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }
-            ivLarge = ImageView(context).apply {
-                layoutParams = LinearLayout.LayoutParams(size48, size48)
-                importantForAccessibility = ImageView.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }
-            iconColumn.addView(ivSmall)
-            iconColumn.addView(ivLarge)
-
-            val pad12 = context.dp(12)
-            val pad4 = context.dp(4)
-            tvText = TextView(context).apply {
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                gravity = Gravity.CENTER_VERTICAL
-                minimumHeight = context.dp(40)
-                setPadding(pad12, pad4, pad12, pad4)
-            }
-
-            (itemView as LinearLayout).addView(iconColumn)
-            (itemView as LinearLayout).addView(tvText)
-
-            itemView.setOnClickListener { lastItem?.let { itemActions(it) } }
+        Column {
+            GlideImage(
+                model = pm.iconSmall,
+                errorDrawable = errorDrawable,
+                modifier = Modifier.size(48.dp),
+            )
+            GlideImage(
+                model = pm.iconLarge,
+                modifier = Modifier.size(48.dp),
+            )
         }
-
-        var lastItem: PushMessage? = null
-
-        fun bind(pm: PushMessage?) {
-            pm ?: return
-            lastItem = pm
-            val type = pm.notificationType?.toNotificationType()
-            val iconColor = type.pushMessageIconAndColor()
-
-            Glide.with(ivSmall)
-                .load(pm.iconSmall)
-                .error(tintIcon(pm, iconColor))
-                .into(ivSmall)
-
-            Glide.with(ivLarge)
-                .load(pm.iconLarge)
-                .into(ivLarge)
-
-            tvText.text = arrayOf(
-                "when: ${pm.timestamp.formatLocalTime()}",
-                pm.timeDismiss.takeIf { it > 0L }?.let { "既読: ${it.formatLocalTime()}" },
-                "to: ${pm.loginAcct}",
-                "type: ${pm.notificationType}",
-                "id: ${pm.notificationId}",
-                "dataSize: ${pm.rawBody?.size}",
-                pm.textExpand,
-                pm.formatError?.let { "error: $it" },
-            ).mapNotNull { it.notBlank() }.joinToString("\n")
-        }
-    }
-
-    private inner class MyAdapter : RecyclerView.Adapter<MyViewHolder>() {
-        var items: List<PushMessage> = emptyList()
-            set(value) {
-                val oldScrollPos = layoutManager.findFirstVisibleItemPosition()
-                    .takeIf { it != RecyclerView.NO_POSITION }
-                val oldItems = field
-                field = value
-                DiffUtil.calculateDiff(
-                    object : DiffUtil.Callback() {
-                        override fun getOldListSize() = oldItems.size
-                        override fun getNewListSize() = value.size
-
-                        override fun areItemsTheSame(
-                            oldItemPosition: Int,
-                            newItemPosition: Int,
-                        ) = oldItems[oldItemPosition] == value[newItemPosition]
-
-                        override fun areContentsTheSame(
-                            oldItemPosition: Int,
-                            newItemPosition: Int,
-                        ) = false
-                    },
-                    true
-                ).dispatchUpdatesTo(this)
-                if (oldScrollPos == 0) {
-                    launchAndShowError {
-                        delay(50L)
-                        rvMessages.smoothScrollToPosition(0)
-                    }
-                }
-            }
-
-        override fun getItemCount() = items.size
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = MyViewHolder(parent)
-
-        override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
-            holder.bind(items.elementAtOrNull(position))
-        }
+        Text(
+            text = pushMessageText(pm),
+            modifier = Modifier
+                .weight(1f)
+                .defaultMinSize(minHeight = 40.dp)
+                .padding(horizontal = 12.dp, vertical = 4.dp),
+        )
     }
 }
+
+@Composable
+private fun GlideImage(
+    model: Any?,
+    modifier: Modifier = Modifier,
+    errorDrawable: Drawable? = null,
+) {
+    AndroidView(
+        factory = { context ->
+            ImageView(context).apply {
+                importantForAccessibility = ImageView.IMPORTANT_FOR_ACCESSIBILITY_NO
+            }
+        },
+        modifier = modifier,
+        update = { imageView ->
+            val request = Glide.with(imageView).load(model)
+            if (errorDrawable != null) {
+                request.error(errorDrawable)
+            }
+            request.into(imageView)
+        },
+    )
+}
+
+private fun pushMessageText(pm: PushMessage): String = arrayOf(
+    "when: ${pm.timestamp.formatLocalTime()}",
+    pm.timeDismiss.takeIf { it > 0L }?.let { "既読: ${it.formatLocalTime()}" },
+    "to: ${pm.loginAcct}",
+    "type: ${pm.notificationType}",
+    "id: ${pm.notificationId}",
+    "dataSize: ${pm.rawBody?.size}",
+    pm.textExpand,
+    pm.formatError?.let { "error: $it" },
+).mapNotNull { it?.notBlank() }.joinToString("\n")

@@ -2,6 +2,8 @@ package jp.juggler.subwaytooter.itemviewholder
 
 import android.content.Context
 import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -53,16 +55,8 @@ import jp.juggler.util.ui.applyAlphaMultiplier
 import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.createColoredDrawable
 import jp.juggler.util.ui.setIconDrawableId
+import jp.juggler.util.ui.dp
 import jp.juggler.util.ui.vg
-import org.jetbrains.anko.UI
-import org.jetbrains.anko.custom.customView
-import org.jetbrains.anko.dip
-import org.jetbrains.anko.frameLayout
-import org.jetbrains.anko.imageButton
-import org.jetbrains.anko.imageResource
-import org.jetbrains.anko.imageView
-import org.jetbrains.anko.matchParent
-import org.jetbrains.anko.wrapContent
 
 enum class AdditionalButtonsPosition(
     val idx: Int, // spinner index start from 0
@@ -690,7 +684,7 @@ class StatusButtonsViewHolder(
     lateinit var btnMore: ImageButton
 
     private fun AnkoFlexboxLayout.normalButtons() {
-        btnConversation = imageButton {
+        btnConversation = ImageButton(context).apply {
             background = ContextCompat.getDrawable(
                 context,
                 R.drawable.btn_bg_transparent_round6dp
@@ -699,10 +693,10 @@ class StatusButtonsViewHolder(
 
             setPadding(paddingH, paddingV, paddingH, paddingV)
             scaleType = ImageView.ScaleType.FIT_CENTER
-            imageResource = R.drawable.ic_forum
-        }.lparams(buttonHeight, buttonHeight)
+            setImageResource(R.drawable.ic_forum)
+        }.also { addView(it, FlexboxLayout.LayoutParams(buttonHeight, buttonHeight)) }
 
-        btnReply = customView<CountImageButton> {
+        btnReply = CountImageButton(context).apply {
             background = ContextCompat.getDrawable(
                 context,
                 R.drawable.btn_bg_transparent_round6dp
@@ -710,11 +704,11 @@ class StatusButtonsViewHolder(
             setPadding(paddingH, paddingV, paddingH, paddingV)
             scaleType = ImageView.ScaleType.FIT_CENTER
             minimumWidth = buttonHeight
-        }.lparams(wrapContent, buttonHeight) {
+        }.also { addView(it, FlexboxLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, buttonHeight).apply {
             startMargin = marginBetween
-        }
+        }) }
 
-        btnBoost = customView<CountImageButton> {
+        btnBoost = CountImageButton(context).apply {
             background = ContextCompat.getDrawable(
                 context,
                 R.drawable.btn_bg_transparent_round6dp
@@ -722,11 +716,11 @@ class StatusButtonsViewHolder(
             setPadding(paddingH, paddingV, paddingH, paddingV)
             scaleType = ImageView.ScaleType.FIT_CENTER
             minimumWidth = buttonHeight
-        }.lparams(wrapContent, buttonHeight) {
+        }.also { addView(it, FlexboxLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, buttonHeight).apply {
             startMargin = marginBetween
-        }
+        }) }
 
-        btnFavourite = customView<CountImageButton> {
+        btnFavourite = CountImageButton(context).apply {
             background = ContextCompat.getDrawable(
                 context,
                 R.drawable.btn_bg_transparent_round6dp
@@ -734,11 +728,11 @@ class StatusButtonsViewHolder(
             setPadding(paddingH, paddingV, paddingH, paddingV)
             scaleType = ImageView.ScaleType.FIT_CENTER
             minimumWidth = buttonHeight
-        }.lparams(wrapContent, buttonHeight) {
+        }.also { addView(it, FlexboxLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, buttonHeight).apply {
             startMargin = marginBetween
-        }
+        }) }
 
-        btnBookmark = imageButton {
+        btnBookmark = ImageButton(context).apply {
             background = ContextCompat.getDrawable(
                 context,
                 R.drawable.btn_bg_transparent_round6dp
@@ -746,11 +740,11 @@ class StatusButtonsViewHolder(
             setPadding(paddingH, paddingV, paddingH, paddingV)
             scaleType = ImageView.ScaleType.FIT_CENTER
             minimumWidth = buttonHeight
-        }.lparams(wrapContent, buttonHeight) {
+        }.also { addView(it, FlexboxLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, buttonHeight).apply {
             startMargin = marginBetween
-        }
+        }) }
 
-        btnQuote = imageButton {
+        btnQuote = ImageButton(context).apply {
             background = ContextCompat.getDrawable(
                 context,
                 R.drawable.btn_bg_transparent_round6dp
@@ -758,11 +752,11 @@ class StatusButtonsViewHolder(
             setPadding(paddingH, paddingV, paddingH, paddingV)
             scaleType = ImageView.ScaleType.FIT_CENTER
             minimumWidth = buttonHeight
-        }.lparams(wrapContent, buttonHeight) {
+        }.also { addView(it, FlexboxLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, buttonHeight).apply {
             startMargin = marginBetween
-        }
+        }) }
 
-        btnReaction = imageButton {
+        btnReaction = ImageButton(context).apply {
             background = ContextCompat.getDrawable(
                 context,
                 R.drawable.btn_bg_transparent_round6dp
@@ -770,16 +764,12 @@ class StatusButtonsViewHolder(
             setPadding(paddingH, paddingV, paddingH, paddingV)
             scaleType = ImageView.ScaleType.FIT_CENTER
             minimumWidth = buttonHeight
-        }.lparams(wrapContent, buttonHeight) {
+        }.also { addView(it, FlexboxLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, buttonHeight).apply {
             startMargin = marginBetween
-        }
+        }) }
 
-        llFollow2 = frameLayout {
-            lparams(buttonHeight, buttonHeight) {
-                startMargin = marginBetween
-            }
-
-            btnFollow2 = imageButton {
+        llFollow2 = FrameLayout(context).apply {
+            btnFollow2 = ImageButton(context).apply {
                 background = ContextCompat.getDrawable(
                     context,
                     R.drawable.btn_bg_transparent_round6dp
@@ -788,18 +778,20 @@ class StatusButtonsViewHolder(
                 scaleType = ImageView.ScaleType.FIT_CENTER
 
                 contentDescription = context.getString(R.string.follow)
-            }.lparams(matchParent, matchParent)
+            }.also { addView(it, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)) }
 
-            ivFollowedBy2 = imageView {
+            ivFollowedBy2 = ImageView(context).apply {
 
                 setPadding(paddingH, paddingV, paddingH, paddingV)
                 scaleType = ImageView.ScaleType.FIT_CENTER
 
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }.lparams(matchParent, matchParent)
-        }
+            }.also { addView(it, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)) }
+        }.also { addView(it, FlexboxLayout.LayoutParams(buttonHeight, buttonHeight).apply {
+            startMargin = marginBetween
+        }) }
 
-        btnMore = imageButton {
+        btnMore = ImageButton(context).apply {
             background = ContextCompat.getDrawable(
                 context,
                 R.drawable.btn_bg_transparent_round6dp
@@ -808,15 +800,15 @@ class StatusButtonsViewHolder(
             scaleType = ImageView.ScaleType.FIT_CENTER
 
             contentDescription = context.getString(R.string.more)
-            imageResource = R.drawable.ic_more
-        }.lparams(buttonHeight, buttonHeight) {
+            setImageResource(R.drawable.ic_more)
+        }.also { addView(it, FlexboxLayout.LayoutParams(buttonHeight, buttonHeight).apply {
             startMargin = marginBetween
-        }
+        }) }
     }
 
     private fun AnkoFlexboxLayout.additionalButtons() {
         btnCustomShares = CustomShareTarget.entries.map { target ->
-            imageButton {
+            ImageButton(context).apply {
                 background = ContextCompat.getDrawable(
                     context,
                     R.drawable.btn_bg_transparent_round6dp
@@ -824,33 +816,30 @@ class StatusButtonsViewHolder(
                 setPadding(paddingH, paddingV, paddingH, paddingV)
                 scaleType = ImageView.ScaleType.FIT_CENTER
                 setTag(R.id.custom_share_target, target)
-            }.lparams(buttonHeight, buttonHeight) {
+            }.also { addView(it, FlexboxLayout.LayoutParams(buttonHeight, buttonHeight).apply {
                 startMargin = marginBetween
-            }
+            }) }
         }
     }
 
     init {
-        viewRoot = with(activity.UI {}) {
-            customView<AnkoFlexboxLayout> {
-                // トップレベルのViewGroupのlparamsはイニシャライザ内部に置くしかないみたい
-                layoutParams = LinearLayout.LayoutParams(lpWidth, wrapContent).apply {
-                    topMargin = dip(topMarginDp)
+        viewRoot = AnkoFlexboxLayout(activity).apply {
+            layoutParams = LinearLayout.LayoutParams(lpWidth, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
+                topMargin = context.dp(topMarginDp)
+            }
+            flexWrap = FlexWrap.WRAP
+            this.justifyContent = justifyContent
+            when (AdditionalButtonsPosition.fromIndex(
+                PrefI.ipAdditionalButtonsPosition.value
+            )) {
+                AdditionalButtonsPosition.Top, AdditionalButtonsPosition.Start -> {
+                    additionalButtons()
+                    normalButtons()
                 }
-                flexWrap = FlexWrap.WRAP
-                this.justifyContent = justifyContent
-                when (AdditionalButtonsPosition.fromIndex(
-                    PrefI.ipAdditionalButtonsPosition.value
-                )) {
-                    AdditionalButtonsPosition.Top, AdditionalButtonsPosition.Start -> {
-                        additionalButtons()
-                        normalButtons()
-                    }
 
-                    else -> {
-                        normalButtons()
-                        additionalButtons()
-                    }
+                else -> {
+                    normalButtons()
+                    additionalButtons()
                 }
             }
         }

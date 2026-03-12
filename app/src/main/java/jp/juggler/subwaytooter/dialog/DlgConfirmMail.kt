@@ -8,13 +8,13 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.util.ui.isEnabledAlpha
 
 class DlgConfirmMail(
-    val activity: AppCompatActivity,
+    val activity: ComponentActivity,
     val accessInfo: SavedAccount,
     val onClickOk: (email: String?) -> Unit,
 ) {

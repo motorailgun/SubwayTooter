@@ -13,7 +13,6 @@ import jp.juggler.subwaytooter.pref.PrefS
 import jp.juggler.subwaytooter.table.HighlightWord
 import jp.juggler.util.data.WordTrieTree
 import jp.juggler.util.data.clip
-import org.jetbrains.anko.collections.forEachReversedByIndex
 
 class DecodeOptions(
     val context: Context? = null,
@@ -94,7 +93,7 @@ class DecodeOptions(
                 preEnd = getSpanEnd(span)
             }
             // 後ろから順に挿入する
-            insertList.forEachReversedByIndex { insert(it, "\n") }
+            insertList.asReversed().forEach { insert(it, "\n") }
         }
         return this
     }

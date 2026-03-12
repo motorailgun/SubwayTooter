@@ -25,7 +25,7 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.annotation.OptIn
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
@@ -213,7 +213,7 @@ fun createActMediaViewerViews(context: android.content.Context): ActMediaViewerV
     )
 }
 
-class ActMediaViewer : AppCompatActivity(), View.OnClickListener {
+class ActMediaViewer : ComponentActivity(), View.OnClickListener {
 
     companion object {
 
@@ -453,7 +453,6 @@ class ActMediaViewer : AppCompatActivity(), View.OnClickListener {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        supportRequestWindowFeature(Window.FEATURE_NO_TITLE)
         super.onCreate(savedInstanceState)
         prDownload.register(this)
 

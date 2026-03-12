@@ -18,7 +18,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.jrummyapps.android.colorpicker.dialogColorPicker
+import jp.juggler.subwaytooter.dialog.dialogColorPicker
 import jp.juggler.subwaytooter.api.entity.Acct
 import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.table.AcctColor

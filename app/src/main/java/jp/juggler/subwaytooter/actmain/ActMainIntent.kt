@@ -3,8 +3,8 @@ package jp.juggler.subwaytooter.actmain
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
+import androidx.activity.ComponentActivity
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.net.toUri
 import jp.juggler.subwaytooter.ActMain
 import jp.juggler.subwaytooter.R
@@ -397,7 +397,7 @@ suspend fun ActMain.updatePushDistributer() {
     }
 }
 
-fun AppCompatActivity.selectPushDistributor() {
+fun ComponentActivity.selectPushDistributor() {
     val context = this
     launchAndShowError {
         val prefDevice = prefDevice

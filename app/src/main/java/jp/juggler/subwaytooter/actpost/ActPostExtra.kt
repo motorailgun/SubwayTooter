@@ -1,7 +1,7 @@
 package jp.juggler.subwaytooter.actpost
 
+import android.app.Activity
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import jp.juggler.subwaytooter.ActMain
 import jp.juggler.subwaytooter.ActPost
 import jp.juggler.subwaytooter.App1
@@ -359,7 +359,7 @@ fun ActPost.performPost() {
                     afterUpdateText()
                 } else {
                     // ActMainの復元が必要な場合に備えてintentのdataでも渡す
-                    setResult(AppCompatActivity.RESULT_OK, data)
+                    setResult(Activity.RESULT_OK, data)
                     isPostComplete = true
                     this@performPost.finish()
                 }
@@ -375,7 +375,7 @@ fun ActPost.performPost() {
                     afterUpdateText()
                     ActMain.refActMain?.get()?.onCompleteActPost(data)
                 } else {
-                    setResult(AppCompatActivity.RESULT_OK, data)
+                    setResult(Activity.RESULT_OK, data)
                     isPostComplete = true
                     this@performPost.finish()
                 }

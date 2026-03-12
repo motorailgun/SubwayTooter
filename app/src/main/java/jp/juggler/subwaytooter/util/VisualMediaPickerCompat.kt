@@ -6,7 +6,7 @@ import android.os.Build
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.pref.PrefDevice
 import jp.juggler.subwaytooter.pref.prefDevice
@@ -26,7 +26,7 @@ class VisualMediaPickerCompat(
         private val log = LogCategory("VisualMediaPickerCompat")
     }
 
-    private var activity: AppCompatActivity? = null
+    private var activity: ComponentActivity? = null
 
     private var prefDevice: PrefDevice? = null
 
@@ -87,7 +87,7 @@ class VisualMediaPickerCompat(
         )
     }
 
-    fun register(activity: AppCompatActivity, multipleLimit: Int = 4) {
+    fun register(activity: ComponentActivity, multipleLimit: Int = 4) {
 
         prefDevice = activity.prefDevice
 

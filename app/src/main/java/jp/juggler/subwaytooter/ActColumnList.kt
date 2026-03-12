@@ -1,45 +1,57 @@
 package jp.juggler.subwaytooter
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.content.res.ColorStateList
 import android.os.Bundle
-import android.view.Gravity
-import android.view.View
-import android.view.ViewGroup
-import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.widget.Toolbar
-import com.woxthebox.draglistview.DragItem
-import com.woxthebox.draglistview.DragItemAdapter
-import com.woxthebox.draglistview.DragListView
-import com.woxthebox.draglistview.swipe.ListSwipeHelper
-import com.woxthebox.draglistview.swipe.ListSwipeItem
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import jp.juggler.subwaytooter.api.entity.Acct
 import jp.juggler.subwaytooter.api.showApiError
 import jp.juggler.subwaytooter.column.ColumnEncoder
 import jp.juggler.subwaytooter.column.ColumnType
+import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
-import jp.juggler.subwaytooter.view.wrapTitleTextView
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.data.JsonObject
-import jp.juggler.util.data.notZero
 import jp.juggler.util.data.toJsonArray
 import jp.juggler.util.int
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.attrColor
-import jp.juggler.util.ui.attrDrawable
-import jp.juggler.util.ui.dp
-import jp.juggler.util.ui.setContentViewAndInsets
-import jp.juggler.util.ui.setNavigationBack
-import jp.juggler.util.ui.vg
 
-class ActColumnList : AppCompatActivity() {
+class ActColumnList : ComponentActivity() {
 
     companion object {
 
@@ -58,205 +70,8 @@ class ActColumnList : AppCompatActivity() {
             }
     }
 
-    private lateinit var toolbar: Toolbar
-    private lateinit var listView: DragListView
-
-    private fun createViews(): View {
-        val tv = android.util.TypedValue()
-        theme.resolveAttribute(android.R.attr.actionBarSize, tv, true)
-        val actionBarHeight = resources.getDimensionPixelSize(tv.resourceId)
-
-        toolbar = Toolbar(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                actionBarHeight
-            )
-            background = resources.getDrawable(R.drawable.action_bar_bg, theme)
-            elevation = dp(4).toFloat()
-        }
-
-        listView = DragListView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0, 1f
-            )
-        }
-
-        val descText = TextView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                topMargin = dp(4)
-                bottomMargin = dp(4)
-            }
-            gravity = Gravity.CENTER
-            setText(R.string.column_list_desc)
-            textSize = 12f
-        }
-
-        return LinearLayout(this).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-            orientation = LinearLayout.VERTICAL
-            setBackgroundColor(attrColor(R.attr.colorMainBackground))
-            addView(toolbar)
-            addView(listView)
-            addView(descText)
-        }
-    }
-
-    private val listAdapter by lazy { MyListAdapter() }
-
-    private val defaultAcctColorFg by lazy {
-        attrColor(R.attr.colorColumnHeaderAcct)
-    }
-    private val defaultColumnColorFg by lazy {
-        attrColor(R.attr.colorColumnHeaderName)
-    }
-    private var oldSelection: Int = 0
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        backPressed {
-            makeResult(-1)
-            finish()
-        }
-
-        super.onCreate(savedInstanceState)
-
-        App1.setActivityTheme(this)
-        setContentViewAndInsets(createViews())
-        initUI()
-
-        if (savedInstanceState != null) {
-            restoreData(savedInstanceState.int(EXTRA_SELECTION) ?: -1)
-        } else {
-            val intent = intent
-            restoreData(intent?.int(EXTRA_SELECTION) ?: -1)
-        }
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putInt(EXTRA_SELECTION, oldSelection)
-        val array = listAdapter.itemList.map { it.json }.toJsonArray()
-        AppState.saveColumnList(this, TMP_FILE_COLUMN_LIST, array)
-    }
-
-    private fun initUI() {
-        setSupportActionBar(toolbar)
-        wrapTitleTextView()
-        setNavigationBack(toolbar)
-        fixHorizontalMargin(listView)
-
-        // ハンドル部分をドラッグで並べ替えできるRecyclerView
-        listView.setLayoutManager(androidx.recyclerview.widget.LinearLayoutManager(this))
-        listView.setAdapter(listAdapter, true)
-        listView.setCanDragHorizontally(false)
-        listView.setCustomDragItem(MyDragItem(this))
-
-        listView.recyclerView.isVerticalScrollBarEnabled = true
-        listView.setDragListListener(object : DragListView.DragListListenerAdapter() {
-            override fun onItemDragStarted(position: Int) = Unit
-            override fun onItemDragEnded(fromPosition: Int, toPosition: Int) = Unit
-        })
-
-        // リストを左右スワイプした
-        listView.setSwipeListener(object : ListSwipeHelper.OnSwipeListenerAdapter() {
-            override fun onItemSwipeStarted(item: ListSwipeItem) = Unit
-            override fun onItemSwipeEnded(
-                item: ListSwipeItem,
-                swipedDirection: ListSwipeItem.SwipeDirection?,
-            ) {
-                // 左にスワイプした(右端に青が見えた) なら要素を削除する
-                if (swipedDirection == ListSwipeItem.SwipeDirection.LEFT) {
-                    val adapterItem = (item.tag as MyViewHolder).lastItem ?: return
-                    launchMain {
-                        try {
-                            if (adapterItem.json.optBoolean(ColumnEncoder.KEY_DONT_CLOSE, false)) {
-                                confirm(R.string.confirm_remove_column_mark_as_dont_close)
-                            }
-                            listAdapter.removeItem(listAdapter.getPositionForItem(adapterItem))
-                        } catch (ex: Throwable) {
-                            showApiError(ex)
-                        } finally {
-                            try {
-                                listView.resetSwipedViews(null)
-                            } catch (_: Throwable) {
-                            }
-                        }
-                    }
-                }
-            }
-        })
-    }
-
-    private fun restoreData(ivSelection: Int) {
-        oldSelection = ivSelection
-        // DragItemAdapter はMutableListを要求する
-        listAdapter.itemList = ArrayList<MyItem>().apply {
-            try {
-                AppState.loadColumnList(applicationContext, TMP_FILE_COLUMN_LIST)
-                    ?.objectList()
-                    ?.forEachIndexed { index, src ->
-                        try {
-                            val item = MyItem(
-                                src,
-                                index.toLong(),
-                            )
-                            add(item)
-                            if (oldSelection == item.oldIndex) {
-                                item.setOldSelection(true)
-                            }
-                        } catch (ex: Throwable) {
-                            log.e(ex, "restoreData: item decode failed.")
-                        }
-                    }
-            } catch (ex: Throwable) {
-                log.e(ex, "restoreData failed.")
-            }
-        }
-    }
-
-    private fun makeResult(newSelection: Int) {
-        val intent = Intent()
-
-        val itemList = listAdapter.itemList
-        // どの要素を選択するか
-        if (newSelection >= 0 && newSelection < listAdapter.itemCount) {
-            intent.putExtra(EXTRA_SELECTION, newSelection)
-        } else {
-            var i = 0
-            val ie = itemList.size
-            while (i < ie) {
-                if (itemList[i].bOldSelection) {
-                    intent.putExtra(EXTRA_SELECTION, i)
-                    break
-                }
-                ++i
-            }
-        }
-        // 並べ替え用データ
-        val orderList = ArrayList<Int>()
-        for (item in itemList) {
-            orderList.add(item.oldIndex)
-        }
-        intent.putExtra(EXTRA_ORDER, orderList)
-
-        setResult(Activity.RESULT_OK, intent)
-    }
-
-    private fun performItemSelected(item: MyItem?) {
-        item ?: return
-        val idx = listAdapter.getPositionForItem(item)
-        makeResult(idx)
-        finish()
-    }
-
     // リスト要素のデータ
-    internal inner class MyItem(
+    internal class MyItem(
         val json: JsonObject,
         val id: Long,
         val name: String = json.optString(ColumnEncoder.KEY_COLUMN_NAME),
@@ -268,319 +83,291 @@ class ActColumnList : AppCompatActivity() {
         val acctColorFg: Int = json.optInt(ColumnEncoder.KEY_COLUMN_ACCESS_COLOR, 0),
         val columnColorFg: Int = json.optInt(ColumnEncoder.KEY_HEADER_TEXT_COLOR, 0),
         val columnColorBg: Int = json.optInt(ColumnEncoder.KEY_HEADER_BACKGROUND_COLOR, 0),
-    ) {
-        var bOldSelection: Boolean = false
+        var bOldSelection: Boolean = false,
+    )
 
-        fun setOldSelection(b: Boolean) {
-            bOldSelection = b
+    private val columns = mutableStateListOf<MyItem>()
+    private var oldSelection = 0
+
+    // Theme colors
+    private var defaultAcctColorFg = 0
+    private var defaultColumnColorFg = 0
+    private var colorDeleteBg = 0
+    private var colorDeleteText = 0
+    private var colorDragHandleBg = 0
+    private var colorContentText = 0
+    private var colorDivider = 0
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        backPressed {
+            makeResult(-1)
+            finish()
+        }
+
+        super.onCreate(savedInstanceState)
+        App1.setActivityTheme(this)
+
+        defaultAcctColorFg = attrColor(R.attr.colorColumnHeaderAcct)
+        defaultColumnColorFg = attrColor(R.attr.colorColumnHeaderName)
+        colorDeleteBg = attrColor(R.attr.colorColumnListDeleteBackground)
+        colorDeleteText = attrColor(R.attr.colorColumnListDeleteText)
+        colorDragHandleBg = attrColor(R.attr.colorColumnListDragHandleBackground)
+        colorContentText = attrColor(R.attr.colorTextContent)
+        colorDivider = attrColor(R.attr.colorSettingDivider)
+
+        setContent { ColumnListScreen() }
+
+        val selection = savedInstanceState?.int(EXTRA_SELECTION)
+            ?: intent?.int(EXTRA_SELECTION)
+            ?: -1
+        restoreData(selection)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(EXTRA_SELECTION, oldSelection)
+        val array = columns.map { it.json }.toJsonArray()
+        AppState.saveColumnList(this, TMP_FILE_COLUMN_LIST, array)
+    }
+
+    @OptIn(ExperimentalMaterial3Api::class)
+    @Composable
+    private fun ColumnListScreen() {
+        StScreen(
+            title = getString(R.string.column_list),
+            onBack = {
+                makeResult(-1)
+                finish()
+            },
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+            ) {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                ) {
+                    itemsIndexed(columns, key = { _, item -> item.id }) { index, item ->
+                        val dismissState = rememberSwipeToDismissBoxState(
+                            confirmValueChange = { dismissValue ->
+                                if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
+                                    handleDelete(item, index)
+                                }
+                                false // don't auto-dismiss
+                            },
+                        )
+                        SwipeToDismissBox(
+                            state = dismissState,
+                            backgroundContent = {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color(colorDeleteBg))
+                                        .padding(horizontal = 12.dp),
+                                    contentAlignment = Alignment.CenterEnd,
+                                ) {
+                                    Text(
+                                        text = stringResource(R.string.delete),
+                                        color = Color(colorDeleteText),
+                                        fontSize = 20.sp,
+                                    )
+                                }
+                            },
+                            enableDismissFromStartToEnd = false,
+                            enableDismissFromEndToStart = true,
+                            modifier = Modifier.animateItem(),
+                        ) {
+                            ColumnListItem(
+                                item = item,
+                                index = index,
+                                onClick = { performItemSelected(item) },
+                            )
+                        }
+                    }
+                }
+                Text(
+                    text = stringResource(R.string.column_list_desc),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(4.dp),
+                    fontSize = 12.sp,
+                    textAlign = TextAlign.Center,
+                )
+            }
         }
     }
 
-    // Build lv_column_list item view programmatically
-    private fun createColumnListItemView(context: Context, parent: ViewGroup? = null): ListSwipeItem {
-        val ctx = context
+    @Composable
+    private fun ColumnListItem(
+        item: MyItem,
+        index: Int,
+        onClick: () -> Unit,
+    ) {
+        val acctColorFg = if (item.acctColorFg != 0) Color(item.acctColorFg) else Color(defaultAcctColorFg)
+        val columnColorFg = if (item.columnColorFg != 0) Color(item.columnColorFg) else Color(defaultColumnColorFg)
+        val columnColorBg = if (item.columnColorBg != 0) Color(item.columnColorBg) else MaterialTheme.colorScheme.surface
 
-        val itemLeft = TextView(ctx).apply {
-            id = R.id.item_left
-            layoutParams = android.widget.RelativeLayout.LayoutParams(
-                android.widget.RelativeLayout.LayoutParams.MATCH_PARENT,
-                android.widget.RelativeLayout.LayoutParams.MATCH_PARENT
-            ).apply {
-                addRule(android.widget.RelativeLayout.ALIGN_BOTTOM, R.id.item_layout)
-                addRule(android.widget.RelativeLayout.ALIGN_TOP, R.id.item_layout)
-            }
-            setBackgroundColor(0xFF0088FF.toInt())
-            gravity = Gravity.CENTER
-            includeFontPadding = false
-            setPaddingRelative(dp(12), 0, dp(12), 0)
-            setTextColor(0xFFFFFFFF.toInt())
-            textSize = 20f
-        }
-
-        val itemRight = TextView(ctx).apply {
-            id = R.id.item_right
-            layoutParams = android.widget.RelativeLayout.LayoutParams(
-                android.widget.RelativeLayout.LayoutParams.MATCH_PARENT,
-                android.widget.RelativeLayout.LayoutParams.MATCH_PARENT
-            ).apply {
-                addRule(android.widget.RelativeLayout.ALIGN_BOTTOM, R.id.item_layout)
-                addRule(android.widget.RelativeLayout.ALIGN_TOP, R.id.item_layout)
-            }
-            setBackgroundColor(attrColor(R.attr.colorColumnListDeleteBackground))
-            gravity = Gravity.CENTER_VERTICAL
-            includeFontPadding = false
-            setPaddingRelative(dp(12), 0, dp(12), 0)
-            setText(R.string.delete)
-            setTextColor(attrColor(R.attr.colorColumnListDeleteText))
-            textSize = 20f
-        }
-
-        // Main content
-        val tvAccess = TextView(ctx).apply {
-            id = R.id.tvAccess
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            gravity = Gravity.START or Gravity.CENTER_VERTICAL
-            includeFontPadding = false
-            setPadding(dp(2), dp(2), dp(2), dp(2))
-            setTextColor(attrColor(R.attr.colorColumnListItemText))
-            textSize = 14f
-        }
-
-        val ivColumnIcon = ImageView(ctx).apply {
-            id = R.id.ivColumnIcon
-            layoutParams = LinearLayout.LayoutParams(dp(32), dp(32)).apply {
-                marginEnd = dp(4)
-            }
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            imageTintList = android.content.res.ColorStateList.valueOf(attrColor(R.attr.colorTextContent))
-        }
-
-        val tvColumnName = TextView(ctx).apply {
-            id = R.id.tvColumnName
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            gravity = Gravity.START or Gravity.CENTER_VERTICAL
-            includeFontPadding = false
-            setPadding(dp(2), dp(2), dp(2), dp(2))
-            textSize = 18f
-        }
-
-        val ivSelected = ImageView(ctx).apply {
-            id = R.id.ivSelected
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                marginStart = dp(4)
-            }
-            contentDescription = getString(R.string.last_selection)
-            setImageResource(R.drawable.ic_eye)
-        }
-
-        val ivDragHandle = ImageView(ctx).apply {
-            id = R.id.ivDragHandle
-            layoutParams = LinearLayout.LayoutParams(dp(48), LinearLayout.LayoutParams.MATCH_PARENT).apply {
-                marginStart = dp(8)
-            }
-            setBackgroundColor(attrColor(R.attr.colorColumnListDragHandleBackground))
-            contentDescription = getString(R.string.drag_handle)
-            scaleType = ImageView.ScaleType.CENTER
-            setImageResource(R.drawable.ic_order)
-            imageTintList = android.content.res.ColorStateList.valueOf(attrColor(R.attr.colorTextContent))
-        }
-
-        val llColumn = LinearLayout(ctx).apply {
-            id = R.id.llColumn
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                bottomMargin = dp(1)
-            }
-            isBaselineAligned = false
-            gravity = Gravity.CENTER_VERTICAL
-            orientation = LinearLayout.HORIZONTAL
-            setPaddingRelative(dp(12), dp(3), dp(12), dp(3))
-
-            // minHeight spacer
-            addView(View(ctx).apply {
-                layoutParams = LinearLayout.LayoutParams(0, dp(48))
-            })
-
-            // Access + icon/name column
-            addView(LinearLayout(ctx).apply {
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                orientation = LinearLayout.VERTICAL
-                addView(tvAccess)
-                addView(LinearLayout(ctx).apply {
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(columnColorBg)
+                .clickable(onClick = onClick),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .defaultMinSize(minHeight = 48.dp)
+                    .padding(start = 12.dp, top = 3.dp, end = 0.dp, bottom = 3.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    // Account name
+                    Text(
+                        text = item.acctName,
+                        color = acctColorFg,
+                        fontSize = 14.sp,
+                        modifier = Modifier
+                            .then(
+                                if (item.acctColorBg != 0) Modifier.background(Color(item.acctColorBg))
+                                else Modifier
+                            )
+                            .padding(horizontal = 2.dp, vertical = 2.dp),
                     )
-                    isBaselineAligned = false
-                    gravity = Gravity.CENTER_VERTICAL
-                    orientation = LinearLayout.HORIZONTAL
-                    addView(ivColumnIcon)
-                    addView(tvColumnName)
-                })
-            })
-
-            addView(ivSelected)
-            addView(ivDragHandle)
-        }
-
-        val itemLayout = FrameLayout(ctx).apply {
-            id = R.id.item_layout
-            layoutParams = android.widget.RelativeLayout.LayoutParams(
-                android.widget.RelativeLayout.LayoutParams.MATCH_PARENT,
-                android.widget.RelativeLayout.LayoutParams.WRAP_CONTENT
-            )
-            background = ctx.resources.getDrawable(R.drawable.column_list_selector, ctx.theme)
-            addView(llColumn)
-            // Bottom divider
-            addView(View(ctx).apply {
-                layoutParams = FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    dp(1)
-                ).apply {
-                    gravity = Gravity.BOTTOM
-                }
-                setBackgroundColor(attrColor(R.attr.colorSettingDivider))
-            })
-        }
-
-        return ListSwipeItem(ctx).apply {
-            layoutParams = ViewGroup.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT
-            )
-            addView(itemLeft)
-            addView(itemRight)
-            addView(itemLayout)
-            // Set internal swipe view references via reflection
-            // since ListSwipeItem only reads these from XML attrs
-            try {
-                val cls = ListSwipeItem::class.java
-                val swipeItem = this
-                for ((fieldName, value) in arrayOf(
-                    "mSwipeViewId" to R.id.item_layout,
-                    "mLeftViewId" to R.id.item_left,
-                    "mRightViewId" to R.id.item_right,
-                )) {
-                    cls.getDeclaredField(fieldName).also { field ->
-                        field.isAccessible = true
-                        field.setInt(swipeItem, value as Int)
+                    // Column icon + name
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            painter = painterResource(item.type.iconId(item.acct)),
+                            contentDescription = null,
+                            tint = columnColorFg,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .padding(end = 4.dp),
+                        )
+                        Text(
+                            text = item.name,
+                            color = columnColorFg,
+                            fontSize = 18.sp,
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
-                for ((fieldName, view) in arrayOf(
-                    "mSwipeView" to itemLayout,
-                    "mLeftView" to itemLeft,
-                    "mRightView" to itemRight,
-                )) {
-                    cls.getDeclaredField(fieldName).also { field ->
-                        field.isAccessible = true
-                        field.set(swipeItem, view)
+
+                // Selection indicator
+                if (item.bOldSelection) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_eye),
+                        contentDescription = stringResource(R.string.last_selection),
+                        tint = columnColorFg,
+                        modifier = Modifier.padding(start = 4.dp),
+                    )
+                }
+
+                // Reorder buttons
+                Column(
+                    modifier = Modifier
+                        .width(48.dp)
+                        .background(Color(colorDragHandleBg))
+                        .padding(start = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    IconButton(
+                        onClick = { moveItem(index, index - 1) },
+                        enabled = index > 0,
+                        modifier = Modifier.size(24.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_arrow_drop_up),
+                            contentDescription = stringResource(R.string.previous),
+                            tint = Color(colorContentText),
+                        )
+                    }
+                    IconButton(
+                        onClick = { moveItem(index, index + 1) },
+                        enabled = index < columns.size - 1,
+                        modifier = Modifier.size(24.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_arrow_drop_down),
+                            contentDescription = stringResource(R.string.next),
+                            tint = Color(colorContentText),
+                        )
                     }
                 }
-            } catch (ex: Throwable) {
-                log.e(ex, "Failed to set ListSwipeItem internal fields")
             }
+            HorizontalDivider(color = Color(colorDivider))
         }
     }
 
-    // リスト要素のViewHolder
-    private inner class MyViewHolder(
-        parent: ViewGroup?,
-        val rootView: ListSwipeItem = createColumnListItemView(
-            parent?.context ?: this@ActColumnList, parent
-        ),
-    ) : DragItemAdapter.ViewHolder(
-        rootView,
-        R.id.ivDragHandle, // View ID。 ここを押すとドラッグ操作をすぐに開始する
-        true, // 長押しでドラッグ開始するなら真
-    ) {
-        var lastItem: MyItem? = null
-        val acctPadLr = (0.5f + 4f * rootView.resources.displayMetrics.density).toInt()
-        val ivSelected: ImageView = rootView.findViewById(R.id.ivSelected)
-        val tvAccess: TextView = rootView.findViewById(R.id.tvAccess)
-        val llColumn: LinearLayout = rootView.findViewById(R.id.llColumn)
-        val tvColumnName: TextView = rootView.findViewById(R.id.tvColumnName)
-        val ivColumnIcon: ImageView = rootView.findViewById(R.id.ivColumnIcon)
-
-        init {
-            rootView.tag = this
-            rootView.setSwipeInStyle(ListSwipeItem.SwipeInStyle.SLIDE)
-            rootView.supportedSwipeDirection = ListSwipeItem.SwipeDirection.LEFT
-        }
-
-        fun bind(item: MyItem?) {
-            item ?: return
-            lastItem = item
-            ivSelected.vg(item.bOldSelection)
-            tvAccess.text = item.acctName
-            tvAccess.setTextColor(item.acctColorFg.notZero() ?: defaultAcctColorFg)
-            tvAccess.setBackgroundColor(item.acctColorBg)
-            tvAccess.setPaddingRelative(acctPadLr, 0, acctPadLr, 0)
-
-            val columnColorFg = item.columnColorFg.notZero() ?: defaultColumnColorFg
-            llColumn.setBackgroundColor(item.columnColorBg)
-            tvColumnName.text = item.name
-            tvColumnName.setTextColor(columnColorFg)
-            ivColumnIcon.setImageResource(item.type.iconId(item.acct))
-            ivColumnIcon.imageTintList = ColorStateList.valueOf(columnColorFg)
-            ivSelected.imageTintList = ColorStateList.valueOf(columnColorFg)
-
-            // 背景色がテーマ次第なので、カラム設定の色を反映するとアイコンが見えなくなる可能性がある
-            // よってアイコンやテキストにカラム設定の色を反映しない
-        }
-
-        override fun onItemClicked(view: View?) {
-            performItemSelected(lastItem)
-        }
+    private fun moveItem(from: Int, to: Int) {
+        if (to < 0 || to >= columns.size) return
+        val item = columns.removeAt(from)
+        columns.add(to, item)
     }
 
-    // ドラッグ操作中のデータ
-    private inner class MyDragItem(context: Context) : DragItem(context, android.R.layout.simple_list_item_1) {
-        init {
-            // Replace the dummy inflated view with our programmatic view
+    private fun handleDelete(item: MyItem, index: Int) {
+        launchMain {
             try {
-                val field = DragItem::class.java.getDeclaredField("mDragView")
-                field.isAccessible = true
-                field.set(this, createColumnListItemView(context))
+                if (item.json.optBoolean(ColumnEncoder.KEY_DONT_CLOSE, false)) {
+                    confirm(R.string.confirm_remove_column_mark_as_dont_close)
+                }
+                columns.remove(item)
             } catch (ex: Throwable) {
-                log.e(ex, "Failed to set programmatic drag view")
+                showApiError(ex)
             }
-        }
-
-        override fun onBindDragView(clickedView: View, dragView: View) {
-            val clickVh = clickedView.tag as MyViewHolder
-            val item = clickVh.lastItem!!
-
-            dragView.findViewById<TextView>(R.id.tvAccess).run {
-                text = item.acctName
-                setTextColor(item.acctColorFg.notZero() ?: defaultAcctColorFg)
-                setBackgroundColor(item.acctColorBg)
-            }
-            val columnColorFg = item.columnColorFg.notZero() ?: defaultColumnColorFg
-            dragView.findViewById<TextView>(R.id.tvColumnName).run {
-                text = item.name
-                setTextColor(columnColorFg)
-            }
-            dragView.findViewById<ImageView>(R.id.ivColumnIcon).run {
-                imageTintList = ColorStateList.valueOf(columnColorFg)
-                setImageResource(item.type.iconId(item.acct))
-            }
-            dragView.findViewById<ImageView>(R.id.ivSelected).run {
-                imageTintList = ColorStateList.valueOf(columnColorFg)
-                visibility = clickVh.ivSelected.visibility
-            }
-            dragView.findViewById<LinearLayout>(R.id.llColumn)
-                .setBackgroundColor(item.columnColorBg)
-            dragView.findViewById<FrameLayout>(R.id.item_layout)
-                .setBackgroundColor(attrColor(R.attr.list_item_bg_pressed_dragged))
         }
     }
 
-    private inner class MyListAdapter : DragItemAdapter<MyItem, MyViewHolder>() {
+    private fun restoreData(ivSelection: Int) {
+        oldSelection = ivSelection
+        columns.clear()
+        try {
+            AppState.loadColumnList(applicationContext, TMP_FILE_COLUMN_LIST)
+                ?.objectList()
+                ?.forEachIndexed { index, src ->
+                    try {
+                        val item = MyItem(src, index.toLong())
+                        if (oldSelection == item.oldIndex) {
+                            item.bOldSelection = true
+                        }
+                        columns.add(item)
+                    } catch (ex: Throwable) {
+                        log.e(ex, "restoreData: item decode failed.")
+                    }
+                }
+        } catch (ex: Throwable) {
+            log.e(ex, "restoreData failed.")
+        }
+    }
 
-        init {
-            setHasStableIds(true)
-            itemList = ArrayList()
+    private fun makeResult(newSelection: Int) {
+        val intent = Intent()
+
+        if (newSelection in 0 until columns.size) {
+            intent.putExtra(EXTRA_SELECTION, newSelection)
+        } else {
+            columns.forEachIndexed { i, item ->
+                if (item.bOldSelection) {
+                    intent.putExtra(EXTRA_SELECTION, i)
+                    return@forEachIndexed
+                }
+            }
         }
 
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder =
-            MyViewHolder(parent)
-
-        override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
-            super.onBindViewHolder(holder, position)
-            holder.bind(itemList[position])
+        val orderList = ArrayList<Int>()
+        for (item in columns) {
+            orderList.add(item.oldIndex)
         }
+        intent.putExtra(EXTRA_ORDER, orderList)
 
-        override fun getUniqueItemId(position: Int): Long {
-            val item = mItemList[position] // mItemList は親クラスのメンバ変数
-            return item.id
-        }
+        setResult(Activity.RESULT_OK, intent)
+    }
+
+    private fun performItemSelected(item: MyItem) {
+        val idx = columns.indexOf(item)
+        makeResult(idx)
+        finish()
     }
 }

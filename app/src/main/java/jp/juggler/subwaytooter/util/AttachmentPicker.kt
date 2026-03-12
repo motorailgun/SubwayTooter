@@ -1,7 +1,7 @@
 package jp.juggler.subwaytooter.util
 
 import android.provider.MediaStore
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.dialog.actionsDialog
 import jp.juggler.subwaytooter.kJson
@@ -12,7 +12,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 
 class AttachmentPicker(
-    val activity: AppCompatActivity,
+    val activity: ComponentActivity,
     val callback: Callback,
 ) {
     companion object {

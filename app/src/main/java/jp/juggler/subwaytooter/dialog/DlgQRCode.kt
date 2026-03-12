@@ -9,7 +9,7 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.ComponentActivity
 import com.github.alexzhirkevich.customqrgenerator.QrData
 import com.github.alexzhirkevich.customqrgenerator.vector.QrCodeDrawable
 import com.github.alexzhirkevich.customqrgenerator.vector.createQrVectorOptions
@@ -32,7 +32,7 @@ private val log = LogCategory("DlgQRCode")
 
 val UInt.int get() = toInt()
 
-fun AppCompatActivity.dialogQrCode(
+fun ComponentActivity.dialogQrCode(
     message: CharSequence,
     url: String,
 ) = launchAndShowError("dialogQrCode failed.") {
@@ -125,7 +125,7 @@ fun AppCompatActivity.dialogQrCode(
     }
 }
 
-private fun AppCompatActivity.qrCodeOptions() = createQrVectorOptions {
+private fun ComponentActivity.qrCodeOptions() = createQrVectorOptions {
     background {
         drawable = ColorDrawable(Color.WHITE)
     }
