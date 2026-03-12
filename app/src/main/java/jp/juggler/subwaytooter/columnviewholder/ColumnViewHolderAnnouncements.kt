@@ -149,7 +149,6 @@ private fun ColumnViewHolder.showAnnouncementContent(item: TootAnnouncement) {
 
     ui.announcementPeriod = periods?.toString()
     ui.announcementContent = item.decoded_content
-    announcementContentInvalidator.text = item.decoded_content
 }
 
 private fun ColumnViewHolder.showReactionBox(

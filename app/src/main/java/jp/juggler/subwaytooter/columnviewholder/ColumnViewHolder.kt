@@ -9,8 +9,6 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import jp.juggler.subwaytooter.ActMain
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.column.*
@@ -33,7 +31,6 @@ import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.attrColor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import java.lang.reflect.Field
 import com.google.android.material.R as MR
 
 /**
@@ -41,8 +38,7 @@ import com.google.android.material.R as MR
  *
  * Public fields that external code references are preserved:
  *   - viewRoot, column, pageIdx, scrollPosition, isColumnSettingShown,
- *     isPageDestroyed, refreshLayout (dummy), listView (dummy), listLayoutManager (dummy),
- *     lastAnnouncementShown, bindingBusy
+ *     isPageDestroyed, lastAnnouncementShown, bindingBusy
  */
 @SuppressLint("ClickableViewAccessibility")
 class ColumnViewHolder(
@@ -53,20 +49,7 @@ class ColumnViewHolder(
     companion object {
         val log = LogCategory("ColumnViewHolder")
 
-        val fieldRecycler: Field by lazy {
-            val field = RecyclerView::class.java.getDeclaredField("mRecycler")
-            field.isAccessible = true
-            field
-        }
 
-        val fieldState: Field by lazy {
-            val field = RecyclerView::class.java.getDeclaredField("mState")
-            field.isAccessible = true
-            field
-        }
-
-        val heightSpec: Int =
-            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
     }
 
     // ──────── Core state ────────
@@ -81,21 +64,7 @@ class ColumnViewHolder(
     var columnCallbacks = ColumnCallbacks()
     var timelineCallbacks: TimelineCallbacks = buildTimelineCallbacks(activity)
 
-    // ──────── Backward-compatible dummy views ────────
-    // External code (Column.dispose, ColumnExtra1, ScrollPosition, ItemViewHolderShow) still
-    // references these. We keep a detached RecyclerView/LayoutManager/SwipyRefreshLayout.
-    val listLayoutManager: LinearLayoutManager = LinearLayoutManager(activity)
-    val listView: RecyclerView = RecyclerView(activity).apply {
-        layoutManager = listLayoutManager
-    }
 
-    // refreshLayout is accessed by ColumnExtra1.kt to set isRefreshing.
-    // We provide a real SwipyRefreshLayout instance (not added to view hierarchy).
-    val refreshLayout: com.omadahealth.github.swipyrefreshlayout.library.SwipyRefreshLayout =
-        com.omadahealth.github.swipyrefreshlayout.library.SwipyRefreshLayout(activity).also {
-            it.direction =
-                com.omadahealth.github.swipyrefreshlayout.library.SwipyRefreshLayoutDirection.BOTH
-        }
 
     // ──────── Bitmap / background image state ────────
     var lastImageUri: String? = null
@@ -107,11 +76,7 @@ class ColumnViewHolder(
     val extraInvalidatorList = ArrayList<NetworkEmojiInvalidator>()
     val emojiQueryInvalidatorList = ArrayList<NetworkEmojiInvalidator>()
 
-    // announcementContentInvalidator is no longer needed (text is rendered via Compose)
-    // but keeping a reference for extension functions that still use it during migration.
-    // We create a dummy TextView for the invalidator.
-    val announcementContentInvalidator: NetworkEmojiInvalidator =
-        NetworkEmojiInvalidator(activity.handler, android.widget.TextView(activity))
+
 
     // ──────── Misc state ────────
     var bindingBusy: Boolean = false

@@ -1,7 +1,5 @@
 package jp.juggler.subwaytooter.util
 
-import androidx.recyclerview.widget.RecyclerView
-import android.view.ViewGroup
 import jp.juggler.subwaytooter.columnviewholder.ColumnViewHolder
 
 class ScrollPosition {
@@ -9,7 +7,6 @@ class ScrollPosition {
     var adapterIndex: Int
 
     // 先頭要素のピクセルオフセット。
-    // scrollToPositionWithOffset 用の値である。( topMarginを考慮するため、view.top とは一致しない )
     val offset: Int
 
     val isHead: Boolean
@@ -28,24 +25,13 @@ class ScrollPosition {
     }
 
     constructor(holder: ColumnViewHolder) {
-        val layoutManager = holder.listLayoutManager
-        val findPosition = layoutManager.findFirstVisibleItemPosition()
-        if (findPosition == RecyclerView.NO_POSITION) {
+        val lls = holder.lazyListState
+        if (lls != null) {
+            adapterIndex = lls.firstVisibleItemIndex
+            offset = lls.firstVisibleItemScrollOffset
+        } else {
             adapterIndex = 0
             offset = 0
-        } else {
-            adapterIndex = findPosition
-            val firstItemView = layoutManager.findViewByPosition(findPosition)
-            offset = (firstItemView?.top
-                ?: 0) - (((firstItemView?.layoutParams as? ViewGroup.MarginLayoutParams)?.topMargin)
-                ?: 0)
-        }
-    }
-
-    fun restore(holder: ColumnViewHolder) {
-        val adapter = holder.listView.adapter ?: return
-        if (adapterIndex in 0 until adapter.itemCount) {
-            holder.listLayoutManager.scrollToPositionWithOffset(adapterIndex, offset)
         }
     }
 }

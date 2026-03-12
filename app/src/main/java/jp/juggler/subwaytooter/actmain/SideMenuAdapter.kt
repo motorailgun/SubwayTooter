@@ -2,24 +2,42 @@ package jp.juggler.subwaytooter.actmain
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.drawable.StateListDrawable
 import android.os.Build
 import android.os.Handler
-import android.text.Spannable
-import android.text.SpannableStringBuilder
-import android.text.TextPaint
-import android.text.method.LinkMovementMethod
-import android.text.style.ClickableSpan
-import android.text.style.UnderlineSpan
-import android.view.Gravity
-import android.view.View
 import android.view.ViewGroup
-import android.widget.BaseAdapter
 import android.widget.FrameLayout
-import android.widget.ListView
-import android.widget.TextView
-import androidx.appcompat.widget.AppCompatButton
-import androidx.core.content.ContextCompat
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import jp.juggler.subwaytooter.ActAbout
@@ -42,6 +60,7 @@ import jp.juggler.subwaytooter.action.serverProfileDirectoryFromSideMenu
 import jp.juggler.subwaytooter.action.timeline
 import jp.juggler.subwaytooter.api.entity.TootStatus
 import jp.juggler.subwaytooter.column.ColumnType
+import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.dialog.pickAccount
 import jp.juggler.subwaytooter.pref.PrefB
 import jp.juggler.subwaytooter.pref.PrefDevice.Companion.PUSH_DISTRIBUTOR_NONE
@@ -53,7 +72,6 @@ import jp.juggler.subwaytooter.table.accountListCanSeeMyReactions
 import jp.juggler.subwaytooter.ui.ossLicense.ActOSSLicense
 import jp.juggler.subwaytooter.util.VersionString
 import jp.juggler.subwaytooter.util.openBrowser
-import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.launchIO
 import jp.juggler.util.data.JsonObject
@@ -64,25 +82,18 @@ import jp.juggler.util.data.notEmpty
 import jp.juggler.util.getPackageInfoCompat
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
-import jp.juggler.util.ui.ForegroundAttrColorSpan
-import jp.juggler.util.ui.activity
-import jp.juggler.util.ui.attrColor
-import jp.juggler.util.ui.createColoredDrawable
-import jp.juggler.util.ui.dp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
-import java.lang.ref.WeakReference
 import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
-import com.google.android.material.R as MR
 
 class SideMenuAdapter(
     private val actMain: ActMain,
-    val handler: Handler,
+    @Suppress("unused") val handler: Handler,
     navigationView: ViewGroup,
     private val drawer: DrawerLayout,
-) : BaseAdapter() {
+) {
 
     companion object {
         private val log = LogCategory("SideMenuAdapter")
@@ -94,119 +105,11 @@ class SideMenuAdapter(
         private const val URL_OLDER_DEVICES =
             "https://github.com/tateisu/SubwayTooter/discussions/192"
 
-        private val itemTypeCount = ItemType.entries.size
-
-        private var lastVersionView: WeakReference<TextView>? = null
-
-        private var versionText = SpannableStringBuilder("")
-
-        private var releaseInfo: JsonObject? = null
-
-        private fun clickableSpan(
-            url: String,
-            showUnderline: Boolean = false,
-        ) = object : ClickableSpan() {
-            override fun onClick(widget: View) {
-                widget.activity?.openBrowser(url)
-            }
-
-            override fun updateDrawState(ds: TextPaint) {
-                super.updateDrawState(ds)
-                ds.isUnderlineText = showUnderline
-            }
-        }
-
-        private fun SpannableStringBuilder.appendSpanLine(
-            text: String,
-            vararg spans: Any,
-        ) = this.apply {
-            if (isNotEmpty()) {
-                append("\n")
-            }
-            val start = length
-            append(text)
-            for (span in spans) {
-                setSpan(span, start, length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            }
-        }
-
-        // バージョン情報と更新履歴と新リリース告知の文字列を組み立てる
-        // メインスレッドでもそれ以外でも動作すること
-        private fun Context.createVersionRow() = SpannableStringBuilder().apply {
-            val currentVersion = try {
-                packageManager.getPackageInfoCompat(packageName)!!.versionName
-            } catch (ignored: Throwable) {
-                "??"
-            }
-
-            append(
-                getString(
-                    R.string.app_name_with_version,
-                    getString(R.string.app_name),
-                    currentVersion
-                )
-            )
-            val newRelease = releaseInfo?.jsonObject(
-                if (PrefB.bpCheckBetaVersion.value) "beta" else "stable"
-            )
-
-            // 使用中のアプリバージョンより新しいリリースがある？
-            val newVersion =
-                (newRelease?.string("name")?.notEmpty() ?: newRelease?.string("tag_name"))
-                    ?.replace("""(v(ersion)?)\s*""".toRegex(RegexOption.IGNORE_CASE), "")
-                    ?.trim()
-                    ?.notEmpty()
-                    ?.takeIf {
-                        log.i("newVersion=$it, currentVersion=$currentVersion")
-                        VersionString(it) > VersionString(currentVersion)
-                    }
-
-            val releaseMinSdkVersion = newRelease?.int("minSdkVersion")
-                ?: Build.VERSION.SDK_INT
-            val releaseMinSdkVersionScheduled = newRelease?.int("minSdkVersionScheduled")
-                ?: Build.VERSION.SDK_INT
-
-            when {
-                // 新しいバージョンがある
-                // それはこの端末にインストール可能である
-                newVersion != null && Build.VERSION.SDK_INT >= releaseMinSdkVersion -> {
-                    appendSpanLine(
-                        getString(R.string.new_version_available, newVersion),
-                        // この時点ではActivityのテーマが初期化されていないので
-                        // 色属性の解決ができない
-                        ForegroundAttrColorSpan(androidx.appcompat.R.attr.colorError),
-                    )
-                    newRelease?.string("html_url")?.let {
-                        appendSpanLine(
-                            getString(R.string.release_note_with_assets),
-                            clickableSpan(it)
-                        )
-                    }
-                }
-
-                // 通常時は更新履歴へのリンク
-                else -> appendSpanLine(
-                    getString(R.string.release_note),
-                    UnderlineSpan(),
-                    clickableSpan(URL_GITHUB_RELEASES),
-                )
-            }
-
-            // 端末のOSバージョンがサポートから外れる予定なら、サイドメニューにリンクを追加する
-            if (Build.VERSION.SDK_INT < releaseMinSdkVersionScheduled) {
-                appendSpanLine(
-                    getString(R.string.old_devices_warning),
-                    clickableSpan(URL_OLDER_DEVICES, showUnderline = true),
-                )
-            }
-        }
+        var releaseInfo by mutableStateOf<JsonObject?>(null)
+            private set
 
         // メインスレッドから呼ばれる
         private fun Context.checkVersion() {
-            // サイドメニューから参照されるバージョン文字列を初期化する
-            // この時点ではreleaseInfoはnullかもしれない
-            versionText = createVersionRow()
-
             // releaseInfoが既にあり、更新時刻が十分に新しいなら情報を取得し直す必要はない
             releaseInfo?.string("updated_at")
                 ?.let { TootStatus.parseTime(it) }
@@ -220,23 +123,8 @@ class SideMenuAdapter(
                         ?.decodeUTF8()
                         ?.decodeJsonObject()
                         ?: error("missing appVersion json")
-                    releaseInfo = json
-                    versionText = createVersionRow()
-                    withContext(AppDispatchers.MainImmediate) {
-                        lastVersionView?.get()?.let { view ->
-                            val context = view.context
-                            versionText.run {
-                                val spans = getSpans(
-                                    0,
-                                    length,
-                                    ForegroundAttrColorSpan::class.java,
-                                )
-                                for (span in spans) {
-                                    span.context = context
-                                }
-                            }
-                            view.text = versionText
-                        }
+                    withContext(Dispatchers.Main) {
+                        releaseInfo = json
                     }
                 } catch (ex: Throwable) {
                     log.e(ex, "checkVersion failed")
@@ -498,175 +386,47 @@ class SideMenuAdapter(
         }
     )
 
-    private var list = originalList
+    private var list by mutableStateOf(originalList)
 
-    private val iconColor = actMain.attrColor(MR.attr.colorOnSurfaceVariant)
-    private val colorOnSurface = actMain.attrColor(MR.attr.colorOnSurface)
-    private val colorOutlineVariant = actMain.attrColor(MR.attr.colorOutlineVariant)
-    private val colorSurface = actMain.attrColor(MR.attr.colorSurface)
+    fun onActivityStart() {
+        filterListItems()
+    }
 
-    override fun getCount(): Int = list.size
-    override fun getItem(position: Int): Any = list[position]
-    override fun getItemId(position: Int): Long = 0L
+    private fun notificationActionRecommend(): Pair<Int, () -> Unit>? = when {
+        // 通知権限がない場合の警告とアクション
+        actMain.prNotification.spec.listNotGranded(actMain).isNotEmpty() ->
+            Pair(R.string.notification_permission_not_granted) {
+                actMain.prNotification.openAppSetting(actMain)
+            }
+        // プッシュ配送が選択されていない場合の警告とアクション
+        (actMain.prefDevice.pushDistributor.isNullOrEmpty() && fcmHandler.noFcm(actMain)) ||
+                actMain.prefDevice.pushDistributor == PUSH_DISTRIBUTOR_NONE ->
+            Pair(R.string.notification_push_distributor_disabled) {
+                actMain.selectPushDistributor()
+            }
 
-    override fun getViewTypeCount(): Int = itemTypeCount
-    override fun getItemViewType(position: Int): Int = list[position].itemType.id
+        else -> null
+    }
 
-    private inline fun <reified T : View> viewOrCreate(
-        view: View?,
-        creator: () -> T,
-    ): T = view as? T ?: creator()
-
-    override fun getView(position: Int, view: View?, parent: ViewGroup?): View =
-        list[position].run {
-            when (itemType) {
-                ItemType.IT_DIVIDER ->
-                    viewOrCreate<FrameLayout>(view) {
-                        FrameLayout(actMain).apply {
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.WRAP_CONTENT
-                            )
-                            addView(View(actMain).apply {
-                                layoutParams = FrameLayout.LayoutParams(
-                                    FrameLayout.LayoutParams.MATCH_PARENT,
-                                    actMain.dp(1)
-                                ).apply {
-                                    topMargin = actMain.dp(3)
-                                    bottomMargin = actMain.dp(3)
-                                }
-                                setBackgroundColor(iconColor)
-                            })
-                        }
-                    }
-
-                ItemType.IT_GROUP_HEADER ->
-                    viewOrCreate<TextView>(view) {
-                        TextView(actMain).apply {
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.WRAP_CONTENT
-                            )
-                            setTextColor(colorOutlineVariant)
-                            gravity = Gravity.CENTER_VERTICAL or Gravity.START
-                            setPaddingRelative(actMain.dp(12), actMain.dp(12), actMain.dp(12), actMain.dp(6))
-                        }
-                    }.apply {
-                        text = actMain.getString(title)
-                    }
-
-                ItemType.IT_NORMAL ->
-                    viewOrCreate<AppCompatButton>(view) {
-                        AppCompatButton(actMain).apply {
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.WRAP_CONTENT
-                            )
-                            background = ContextCompat.getDrawable(actMain, R.drawable.btn_bg_transparent_round6dp)
-                            setTextColor(colorOnSurface)
-                            gravity = Gravity.CENTER_VERTICAL or Gravity.START
-                            compoundDrawablePadding = actMain.dp(12)
-                            minimumHeight = actMain.dp(44)
-                            setPaddingRelative(actMain.dp(12), actMain.dp(6), actMain.dp(12), actMain.dp(6))
-                        }
-                    }.apply {
-                        isAllCaps = false
-                        text = actMain.getString(title)
-                        val drawable = createColoredDrawable(actMain, icon, iconColor, 1f)
-                        setCompoundDrawablesRelativeWithIntrinsicBounds(
-                            drawable,
-                            null,
-                            null,
-                            null
-                        )
-
-                        setOnClickListener {
-                            action(actMain)
-                            drawer.closeDrawer(GravityCompat.START)
-                        }
-                    }
-
-                ItemType.IT_VERSION ->
-                    viewOrCreate<AppCompatButton>(view) {
-                        AppCompatButton(actMain).apply {
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.WRAP_CONTENT
-                            )
-                            background = ContextCompat.getDrawable(actMain, R.drawable.btn_bg_transparent_round6dp)
-                            setTextColor(colorOnSurface)
-                            gravity = Gravity.CENTER_VERTICAL or Gravity.START
-                            compoundDrawablePadding = actMain.dp(12)
-                            minimumHeight = actMain.dp(44)
-                            setPaddingRelative(actMain.dp(12), actMain.dp(6), actMain.dp(12), actMain.dp(6))
-                        }
-                    }.apply {
-                        lastVersionView = WeakReference(this)
-                        movementMethod = LinkMovementMethod.getInstance()
-                        textSize = 18f
-                        isAllCaps = false
-                        setLineSpacing(
-                            1f,
-                            1.1f
-                        )
-                        background = null
-                        text = versionText
-                    }
-
-                ItemType.IT_TIMEZONE ->
-                    viewOrCreate<AppCompatButton>(view) {
-                        AppCompatButton(actMain).apply {
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.WRAP_CONTENT
-                            )
-                            background = ContextCompat.getDrawable(actMain, R.drawable.btn_bg_transparent_round6dp)
-                            setTextColor(colorOnSurface)
-                            gravity = Gravity.CENTER_VERTICAL or Gravity.START
-                            compoundDrawablePadding = actMain.dp(12)
-                            minimumHeight = actMain.dp(44)
-                            setPaddingRelative(actMain.dp(12), actMain.dp(6), actMain.dp(12), actMain.dp(6))
-                        }
-                    }.apply {
-                        textSize = 14f
-                        isAllCaps = false
-                        background = null
-                        text = getTimeZoneString(context)
-                    }
-
+    fun filterListItems() {
+        log.i("filterListItems")
+        list = originalList.filter {
+            when (it.itemType) {
                 ItemType.IT_NOTIFICATION_PERMISSION ->
-                    viewOrCreate<AppCompatButton>(view) {
-                        AppCompatButton(actMain).apply {
-                            layoutParams = ViewGroup.LayoutParams(
-                                ViewGroup.LayoutParams.MATCH_PARENT,
-                                ViewGroup.LayoutParams.WRAP_CONTENT
-                            )
-                            background = ContextCompat.getDrawable(actMain, R.drawable.btn_bg_transparent_round6dp)
-                            setTextColor(colorOnSurface)
-                            gravity = Gravity.CENTER_VERTICAL or Gravity.START
-                            compoundDrawablePadding = actMain.dp(12)
-                            minimumHeight = actMain.dp(44)
-                            setPaddingRelative(actMain.dp(12), actMain.dp(6), actMain.dp(12), actMain.dp(6))
-                        }
-                    }.apply {
-                        isAllCaps = false
-                        val action = notificationActionRecommend() ?: return@apply
-                        text = actMain.getString(action.first)
-                        val drawable = createColoredDrawable(actMain, icon, iconColor, 1f)
-                        setCompoundDrawablesRelativeWithIntrinsicBounds(
-                            drawable,
-                            null,
-                            null,
-                            null
-                        )
-                        setOnClickListener {
-                            drawer.closeDrawer(GravityCompat.START)
-                            notificationActionRecommend()?.second?.invoke()
-                            filterListItems()
-                        }
-                    }
+                    notificationActionRecommend() != null
+
+                ItemType.IT_NORMAL -> when (it.title) {
+                    R.string.antenna_list_misskey,
+                    R.string.misskey_hybrid_timeline_long,
+                        -> PrefB.bpEnableDeprecatedSomething.value
+
+                    else -> true
+                }
+
+                else -> true
             }
         }
+    }
 
     private fun getTimeZoneString(context: Context): String {
         try {
@@ -701,67 +461,220 @@ class SideMenuAdapter(
         }
     }
 
-    fun onActivityStart() {
-        this.notifyDataSetChanged()
-    }
-
-    private fun notificationActionRecommend(): Pair<Int, () -> Unit>? = when {
-        // 通知権限がない場合の警告とアクション
-        actMain.prNotification.spec.listNotGranded(actMain).isNotEmpty() ->
-            Pair(R.string.notification_permission_not_granted) {
-                actMain.prNotification.openAppSetting(actMain)
-            }
-        // プッシュ配送が選択されていない場合の警告とアクション
-        (actMain.prefDevice.pushDistributor.isNullOrEmpty() && fcmHandler.noFcm(actMain)) ||
-                actMain.prefDevice.pushDistributor == PUSH_DISTRIBUTOR_NONE ->
-            Pair(R.string.notification_push_distributor_disabled) {
-                actMain.selectPushDistributor()
-            }
-
-        else -> null
-    }
-
-    fun filterListItems(notify: Boolean = true) {
-        log.i("filterListItems notify=$notify")
-        list = originalList.filter {
-            when (it.itemType) {
-                ItemType.IT_NOTIFICATION_PERMISSION ->
-                    notificationActionRecommend() != null
-
-                ItemType.IT_NORMAL -> when (it.title) {
-                    R.string.antenna_list_misskey,
-                    R.string.misskey_hybrid_timeline_long,
-                        -> PrefB.bpEnableDeprecatedSomething.value
-
-                    else -> true
+    @Composable
+    private fun SideMenuContent() {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(list) { item ->
+                when (item.itemType) {
+                    ItemType.IT_DIVIDER -> DividerItem()
+                    ItemType.IT_GROUP_HEADER -> GroupHeaderItem(item)
+                    ItemType.IT_NORMAL -> NormalItem(item)
+                    ItemType.IT_VERSION -> VersionItem()
+                    ItemType.IT_TIMEZONE -> TimezoneItem()
+                    ItemType.IT_NOTIFICATION_PERMISSION -> NotificationPermissionItem(item)
                 }
-
-                else -> true
             }
         }
-        if (notify) notifyDataSetChanged()
+    }
+
+    @Composable
+    private fun DividerItem() {
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 3.dp),
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            thickness = 1.dp,
+        )
+    }
+
+    @Composable
+    private fun GroupHeaderItem(item: Item) {
+        Text(
+            text = stringResource(item.title),
+            color = MaterialTheme.colorScheme.outlineVariant,
+            modifier = Modifier.padding(
+                start = 12.dp,
+                top = 12.dp,
+                end = 12.dp,
+                bottom = 6.dp,
+            ),
+        )
+    }
+
+    @Composable
+    private fun NormalItem(item: Item) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(6.dp))
+                .clickable {
+                    item.action(actMain)
+                    drawer.closeDrawer(GravityCompat.START)
+                }
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .heightIn(min = 44.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painter = painterResource(item.icon),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = stringResource(item.title),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+    }
+
+    @Composable
+    private fun VersionItem() {
+        val currentVersion = remember {
+            try {
+                actMain.packageManager
+                    .getPackageInfoCompat(actMain.packageName)?.versionName ?: "??"
+            } catch (_: Throwable) {
+                "??"
+            }
+        }
+
+        val info = releaseInfo
+        val newRelease = info?.jsonObject(
+            if (PrefB.bpCheckBetaVersion.value) "beta" else "stable"
+        )
+
+        val newVersion =
+            (newRelease?.string("name")?.notEmpty() ?: newRelease?.string("tag_name"))
+                ?.replace("""(v(ersion)?)\s*""".toRegex(RegexOption.IGNORE_CASE), "")
+                ?.trim()
+                ?.notEmpty()
+                ?.takeIf {
+                    log.i("newVersion=$it, currentVersion=$currentVersion")
+                    VersionString(it) > VersionString(currentVersion)
+                }
+
+        val releaseMinSdkVersion = newRelease?.int("minSdkVersion")
+            ?: Build.VERSION.SDK_INT
+        val releaseMinSdkVersionScheduled = newRelease?.int("minSdkVersionScheduled")
+            ?: Build.VERSION.SDK_INT
+
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        ) {
+            Text(
+                text = stringResource(
+                    R.string.app_name_with_version,
+                    stringResource(R.string.app_name),
+                    currentVersion,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                fontSize = 18.sp,
+                lineHeight = (18 * 1.1).sp,
+            )
+
+            when {
+                // 新しいバージョンがある、この端末にインストール可能である
+                newVersion != null && Build.VERSION.SDK_INT >= releaseMinSdkVersion -> {
+                    Text(
+                        text = stringResource(R.string.new_version_available, newVersion),
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 18.sp,
+                        lineHeight = (18 * 1.1).sp,
+                    )
+                    newRelease?.string("html_url")?.let { url ->
+                        Text(
+                            text = stringResource(R.string.release_note_with_assets),
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 18.sp,
+                            lineHeight = (18 * 1.1).sp,
+                            modifier = Modifier.clickable { actMain.openBrowser(url) },
+                        )
+                    }
+                }
+
+                // 通常時は更新履歴へのリンク
+                else -> Text(
+                    text = stringResource(R.string.release_note),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 18.sp,
+                    lineHeight = (18 * 1.1).sp,
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable { actMain.openBrowser(URL_GITHUB_RELEASES) },
+                )
+            }
+
+            // 端末のOSバージョンがサポートから外れる予定なら、リンクを追加する
+            if (Build.VERSION.SDK_INT < releaseMinSdkVersionScheduled) {
+                Text(
+                    text = stringResource(R.string.old_devices_warning),
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 18.sp,
+                    lineHeight = (18 * 1.1).sp,
+                    textDecoration = TextDecoration.Underline,
+                    modifier = Modifier.clickable { actMain.openBrowser(URL_OLDER_DEVICES) },
+                )
+            }
+        }
+    }
+
+    @Composable
+    private fun TimezoneItem() {
+        Text(
+            text = getTimeZoneString(actMain),
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 14.sp,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        )
+    }
+
+    @Composable
+    private fun NotificationPermissionItem(item: Item) {
+        val action = notificationActionRecommend() ?: return
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(6.dp))
+                .clickable {
+                    drawer.closeDrawer(GravityCompat.START)
+                    notificationActionRecommend()?.second?.invoke()
+                    filterListItems()
+                }
+                .padding(horizontal = 12.dp, vertical = 6.dp)
+                .heightIn(min = 44.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painter = painterResource(item.icon),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp),
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = stringResource(action.first),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
     }
 
     init {
         actMain.applicationContext.checkVersion()
-        filterListItems(notify = false)
+        filterListItems()
 
-        ListView(actMain).apply {
-            adapter = this@SideMenuAdapter
+        ComposeView(actMain).apply {
+            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
+                FrameLayout.LayoutParams.MATCH_PARENT,
             )
-            setBackgroundColor(colorSurface)
-            selector = StateListDrawable()
-            divider = null
-            dividerHeight = 0
-            isScrollbarFadingEnabled = false
-            isVerticalFadingEdgeEnabled = true
-            setFadingEdgeLength(context.dp(20))
-
-            scrollBarStyle = ListView.SCROLLBARS_OUTSIDE_OVERLAY
-
+            setContent {
+                StThemedContent {
+                    SideMenuContent()
+                }
+            }
             navigationView.addView(this)
         }
     }

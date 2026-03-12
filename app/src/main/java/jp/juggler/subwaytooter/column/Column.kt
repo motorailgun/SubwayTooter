@@ -345,10 +345,7 @@ class Column(
         appState.streamManager.updateStreamingColumns()
 
         for (vh in listViewHolder) {
-            try {
-                vh.listView.adapter = null
-            } catch (ignored: Throwable) {
-            }
+            vh.column = null
         }
     }
 

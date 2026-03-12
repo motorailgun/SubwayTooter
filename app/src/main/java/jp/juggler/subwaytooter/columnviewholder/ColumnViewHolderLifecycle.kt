@@ -4,7 +4,6 @@ import android.view.View
 import android.widget.ImageView
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.core.net.toUri
-import com.omadahealth.github.swipyrefreshlayout.library.SwipyRefreshLayoutDirection
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.actmain.closePopup
 import jp.juggler.subwaytooter.column.*
@@ -250,15 +249,7 @@ fun ColumnViewHolder.onPageCreate(column: Column, pageIdx: Int, pageCount: Int) 
         ui.canRefreshTop = canRefreshTop
         ui.canRefreshBottom = canRefreshBottom
 
-        // Also sync the dummy SwipyRefreshLayout for external callers
-        refreshLayout.isEnabled = canRefreshTop || canRefreshBottom
-        refreshLayout.direction = if (canRefreshTop && canRefreshBottom) {
-            SwipyRefreshLayoutDirection.BOTH
-        } else if (canRefreshTop) {
-            SwipyRefreshLayoutDirection.TOP
-        } else {
-            SwipyRefreshLayoutDirection.BOTTOM
-        }
+
 
         // ──── Refresh error ────
         ui.refreshErrorVisible = false

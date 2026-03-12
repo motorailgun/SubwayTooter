@@ -341,29 +341,23 @@ fun Column.startRefresh(
     if (lastTask != null) {
         if (!bSilent) {
             context.showToast(true, R.string.column_is_busy)
-            val holder = viewHolder
-            if (holder != null) holder.refreshLayout.isRefreshing = false
+            viewHolder?.columnUiState?.isRefreshing = false
         }
         return
     } else if (bBottom && !canRefreshBottom()) {
         if (!bSilent) {
             context.showToast(true, R.string.end_of_list)
-            val holder = viewHolder
-            if (holder != null) holder.refreshLayout.isRefreshing = false
+            viewHolder?.columnUiState?.isRefreshing = false
         }
         return
     } else if (!bBottom && !canRefreshTop()) {
-        val holder = viewHolder
-        if (holder != null) holder.refreshLayout.isRefreshing = false
+        viewHolder?.columnUiState?.isRefreshing = false
         startLoading(ColumnLoadReason.PullToRefresh)
         return
     }
 
     if (bSilent) {
-        val holder = viewHolder
-        if (holder != null) {
-            holder.refreshLayout.isRefreshing = true
-        }
+        viewHolder?.columnUiState?.isRefreshing = true
     }
 
     if (!bBottom) {
@@ -443,7 +437,7 @@ fun Column.startGap(gap: TimelineItem?, isHead: Boolean) {
     }
 
     @Suppress("UNNECESSARY_SAFE_CALL")
-    viewHolder?.refreshLayout?.isRefreshing = true
+    viewHolder?.columnUiState?.isRefreshing = true
 
     bRefreshLoading = true
     mRefreshLoadingError = ""

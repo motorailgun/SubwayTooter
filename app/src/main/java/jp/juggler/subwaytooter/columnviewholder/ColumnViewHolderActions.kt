@@ -205,7 +205,7 @@ fun ColumnViewHolder.buildColumnCallbacks(): ColumnCallbacks = ColumnCallbacks(
         } else if (column.type == ColumnType.AGG_BOOSTS) {
             // aggStatusLimit is already set via onAggStart
         }
-        refreshLayout.isRefreshing = false
+        columnUiState.isRefreshing = false
         column.startLoading(ColumnLoadReason.ForceReload)
     },
 
@@ -364,7 +364,7 @@ fun ColumnViewHolder.buildColumnCallbacks(): ColumnCallbacks = ColumnCallbacks(
         column.addColumnViewHolder(this)
 
         if (!isBottom && column.canReloadWhenRefreshTop()) {
-            refreshLayout.isRefreshing = false
+            columnUiState.isRefreshing = false
             activity.handler.post {
                 this.column?.startLoading(ColumnLoadReason.PullToRefresh)
             }
