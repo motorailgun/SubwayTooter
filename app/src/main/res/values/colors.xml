@@ -1,165 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- =================================================== -->
-    <!-- Light theme -->
 
-    <color name="Light_colorBackground">#fff</color>
+    <!-- App-specific button accent colors (per theme) -->
+
+    <!-- Light theme -->
     <color name="Light_colorButtonAccentBookmark">#ff0088ff</color>
     <color name="Light_colorButtonAccentBoost">#ff0088ff</color>
     <color name="Light_colorButtonAccentFavourite">#ff0088ff</color>
     <color name="Light_colorButtonAccentFollow">#ff0088ff</color>
     <color name="Light_colorButtonAccentFollowRequest">#f00</color>
     <color name="Light_colorButtonAccentReaction">#ff0088ff</color>
-    <color name="Light_colorButtonBgCw">#cccccc</color>
-    <color name="Light_colorButtonSelected">#ff000080</color>
-    <color name="Light_colorColumnHeaderBg">#fff</color>
-    <color name="Light_colorColumnListDeleteBackground">#FF0000</color>
-    <color name="Light_colorColumnListDeleteText">#fff</color>
-    <color name="Light_colorColumnListDragHandleBackground">#80cccccc</color>
-    <color name="Light_colorColumnSettingBackground">#bbb</color>
-    <color name="Light_colorColumnStripBackground">#fff</color>
-    <color name="Light_colorConversationMainTootBg">#200088ff</color>
-    <color name="Light_colorLink">#0080ff</color>
-    <color name="Light_colorPostFormBackground">#eee</color>
-    <color name="Light_colorActionBarBg">#ccc</color>
-    <color name="Light_colorActionBarBgDark">#bbb</color>
-    <color name="Light_colorActionBarBgStacked">#ddd</color>
-    <color name="Light_colorProfileBackgroundMask">#C0FFFFFF</color>
-    <color name="Light_colorRefreshErrorBg">#D222</color>
-    <color name="Light_colorRegexFilterError">#f00</color>
-    <color name="Light_colorReplyBackground">#cccccc</color>
-    <color name="Light_colorRippleEffect">#FF808080</color>
-    <color name="Light_colorSearchFormBackground">#bee6ff</color>
-    <color name="Light_colorShowMediaBackground">#000</color>
-    <color name="Light_colorShowMediaText">#fff</color>
-    <color name="Light_colorStatusButtonsPopupBg">#cccccc</color>
-    <color name="Light_colorSwitchOff">#cccccc</color>
-    <color name="Light_colorTextColumnHeaderAcct">#80000000</color>
-    <color name="Light_colorTextColumnHeaderName">#616161</color>
-    <color name="Light_colorTextColumnHeaderPageNumber">#80000000</color>
-    <color name="Light_colorTextColumnListItem">#80000000</color>
-    <color name="Light_colorTextContent">#ff333333</color>
-    <color name="Light_colorTextDivider">#80000000</color>
-    <color name="Light_colorTextHelp">#5a5a5a</color>
-    <color name="Light_colorTextHint">#40000000</color>
 
-    <color name="Light_colorTextTimeSmall">#ff666666</color>
-    <color name="Light_colorThumbnailBackground">#20000000</color>
-    <color name="Light_colotListItemDrag">#AACCCCCC</color>
-    <color name="Light_colorAppCompatAccent">#0080ff</color>
-
-    <!-- OSのナビゲーションバー背景
-        端末によりライトテーマでもアイコン図柄が黒くないことがあるので、白にはしない -->
-    <color name="Light_colorWindowInsetsBg">#ccc</color>
-
-    <!-- =================================================== -->
     <!-- Dark theme -->
-
-    <color name="Dark_colorBackground">#000</color>
     <color name="Dark_colorButtonAccentBookmark">#00a2ff</color>
     <color name="Dark_colorButtonAccentBoost">#00a2ff</color>
     <color name="Dark_colorButtonAccentFavourite">#00a2ff</color>
     <color name="Dark_colorButtonAccentFollow">#00a2ff</color>
     <color name="Dark_colorButtonAccentFollowRequest">#f00</color>
     <color name="Dark_colorButtonAccentReaction">#00a2ff</color>
-    <color name="Dark_colorButtonBgCw">#5b5b5b</color>
-    <color name="Dark_colorButtonSelected">#ff000080</color>
-    <color name="Dark_colorColumnHeader">#333</color>
-    <color name="Dark_colorColumnListDeleteBackground">#FF0000</color>
-    <color name="Dark_colorColumnListDeleteText">#fff</color>
-    <color name="Dark_colorColumnListDragHandleBackground">#80444444</color>
-    <color name="Dark_colorColumnSettingBackground">#383838</color>
-    <color name="Dark_colorColumnStripBackground">#000</color>
-    <color name="Dark_colorConversationMainTootBg">#2000a2ff</color>
-    <color name="Dark_colorLink">#00a2ff</color>
-    <color name="Dark_colorListItemDrag">#AA444444</color>
-    <color name="Dark_colorPostFormBackground">#222</color>
-    <color name="Dark_colorActionBarBg">#333</color>
-    <color name="Dark_colorActionBarBgDark">#111</color>
-    <color name="Dark_colorActionBarBgStacked">#222</color>
-    <color name="Dark_colorProfileBackgroundMask">#C0000000</color>
-    <color name="Dark_colorRefreshErrorBg">#D222</color>
-    <color name="Dark_colorRegexFilterError">#f00</color>
-    <color name="Dark_colorReplyBackground">#333</color>
-    <color name="Dark_colorRippleEffect">#777</color>
-    <color name="Dark_colorSearchFormBackground">#333370</color>
-    <color name="Dark_colorSettingDivider">#66FFFFFF
-    </color><!-- ダイアログ背景が#424242なので、それより明るくないといけない -->
-    <color name="Dark_colorShowMediaBackground">#222</color>
-    <color name="Dark_colorShowMediaText">#ccFFFFFF</color>
-    <color name="Dark_colorStatusButtonsPopupBg">#424242</color>
-    <color name="Dark_colorSwitchOff">#333</color>
-    <color name="Dark_colorTextColumnHeaderAcct">#e4e4e4</color>
-    <color name="Dark_colorTextColumnHeaderName">#e4e4e4</color>
-    <color name="Dark_colorTextColumnHeaderPageNumber">#e4e4e4</color>
-    <color name="Dark_colorTextColumnListItem">#66FFFFFF</color>
-    <color name="Dark_colorTextContent">#dddddd</color>
-    <color name="Dark_colorTextHelp">#ccFFFFFF</color>
-    <color name="Dark_colorTextHint">#40ffffff</color>
 
-    <color name="Dark_colorTextTimeSmall">#BBBBBB</color>
-    <color name="Dark_colorThumbnailBackground">#20ffffff</color>
-    <color name="Dark_colorAppCompatAccent">#0080ff</color>
-
-    <!-- OSのステータスバー背景。
-    ダークテーマならアイコン図柄は明るいので、暗い色を指定して良い -->
-    <color name="Dark_colorWindowInsetsBg">#000</color>
-
-    <!-- =================================================== -->
     <!-- Mastodon theme -->
-
-    <color name="Mastodon_colorBackground">#282C37</color>
     <color name="Mastodon_colorButtonAccentBookmark">#9a151a</color>
     <color name="Mastodon_colorButtonAccentBoost">#158297</color>
     <color name="Mastodon_colorButtonAccentFavourite">#a8ab16</color>
     <color name="Mastodon_colorButtonAccentFollow">#FF06D3C4</color>
     <color name="Mastodon_colorButtonAccentFollowRequest">#f00</color>
     <color name="Mastodon_colorButtonAccentReaction">#FF99AEC7</color>
-    <color name="Mastodon_colorButtonBgCw">#5b5b5b</color>
-    <color name="Mastodon_colorButtonSelected">#ff000080</color>
-    <color name="Mastodon_colorColumnHeader">#444B5D</color>
-    <color name="Mastodon_colorColumnListDeleteBackground">#FF0000</color>
-    <color name="Mastodon_colorColumnListDeleteText">#fff</color>
-    <color name="Mastodon_colorColumnListDragHandleBackground">#80444444</color>
-    <color name="Mastodon_colorColumnSettingBackground">#383838</color>
-    <color name="Mastodon_colorColumnStripBackground">#444B5D</color>
-    <color name="Mastodon_colorConversationMainTootBg">#2000a2ff</color>
-
-    <color name="Mastodon_colorLink">#FE4E92D6</color>
-    <color name="Mastodon_colorListItemDrag">#AA2F6091</color>
-    <color name="Mastodon_colorPostFormBackground">#222</color>
-    <color name="Mastodon_colorActionBarBg">#444B5D</color>
-    <color name="Mastodon_colorActionBarBgDark">#1d2028</color>
-    <color name="Mastodon_colorActionBarBgStacked">#444B5D</color>
-    <color name="Mastodon_colorProfileBackgroundMask">#C0000000</color>
-    <color name="Mastodon_colorRefreshErrorBg">#D222</color>
-    <color name="Mastodon_colorRegexFilterError">#f00</color>
-    <color name="Mastodon_colorReplyBackground">#333</color>
-    <color name="Mastodon_colorRippleEffect">#C1607ECC</color>
-    <color name="Mastodon_colorSearchFormBackground">#333370</color>
-    <color name="Mastodon_colorSettingDivider">#66FFFFFF
-    </color><!-- ダイアログ背景が#424242なので、それより明るくないといけない -->
-    <color name="Mastodon_colorShowMediaBackground">#222</color>
-    <color name="Mastodon_colorShowMediaText">#ccFFFFFF</color>
-    <color name="Mastodon_colorStatusButtonsPopupBg">#424242</color>
-    <color name="Mastodon_colorSwitchOff">#777</color>
-    <color name="Mastodon_colorTextColumnHeaderAcct">#e4e4e4</color>
-    <color name="Mastodon_colorTextColumnHeaderName">#e4e4e4</color>
-    <color name="Mastodon_colorTextColumnHeaderPageNumber">#e4e4e4</color>
-    <color name="Mastodon_colorTextColumnListItem">#66FFFFFF</color>
-    <color name="Mastodon_colorTextContent">#dddddd</color>
-    <color name="Mastodon_colorTextHelp">#bbFFFFFF</color>
-    <color name="Mastodon_colorTextHint">#40FFFFFF</color>
-
-    <color name="Mastodon_colorTextTimeSmall">#BBBBBB</color>
-    <color name="Mastodon_colorThumbnailBackground">#20ffffff</color>
-    <color name="Mastodon_colorAppCompatAccent">#0080ff</color>
-
-    <!-- OSのステータスバー背景。
-        ダークテーマならアイコン図柄は明るいので、暗い色を指定して良い -->
-    <color name="Mastodon_colorWindowInsetsBg">#444B5D</color>
 
     <!-- =================================================== -->
+    <!-- Non-themed colors -->
 
     <!-- スプラッシュ画面の背景色はテーマ関係なし -->
     <color name="Other_splashBackground">#000000</color>

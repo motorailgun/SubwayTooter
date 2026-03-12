@@ -83,7 +83,7 @@ fun StatusActionButtons(
 
         // Boost button
         val boostColor = when {
-            status.reblogged -> Color(0xFF2B90D9.toInt()) // boosted color
+            status.reblogged -> StThemeEx.colors.buttonAccentBoost
             else -> contentColorCompose
         }
         ActionButtonWithCount(
@@ -97,7 +97,7 @@ fun StatusActionButtons(
 
         // Favourite button
         val favColor = when {
-            status.favourited -> Color(0xFFCA8F04.toInt()) // favourited color
+            status.favourited -> StThemeEx.colors.buttonAccentFavourite
             else -> contentColorCompose
         }
         ActionButtonWithCount(
@@ -112,7 +112,7 @@ fun StatusActionButtons(
         // Bookmark button (if enabled)
         if (PrefB.bpShowBookmarkButton.value) {
             val bmColor = when {
-                status.bookmarked -> Color(0xFFCA8F04.toInt())
+                status.bookmarked -> StThemeEx.colors.buttonAccentBookmark
                 else -> contentColorCompose
             }
             ActionButton(

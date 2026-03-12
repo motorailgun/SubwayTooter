@@ -4,12 +4,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import jp.juggler.subwaytooter.ActMain
 import jp.juggler.subwaytooter.column.Column as AppColumn
-import jp.juggler.subwaytooter.util.stColorScheme
 
 /**
  * Top-level composable for a single column.
@@ -37,7 +35,7 @@ fun ColumnScreen(
     lazyListState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
-    MaterialTheme(colorScheme = stColorScheme()) {
+    StThemedContent {
         Column(modifier = modifier.fillMaxSize()) {
             // 1. Column header
             ColumnHeaderBar(

@@ -113,6 +113,18 @@ fun TimelineColumn(
                     .fillMaxSize()
                     .nestedScroll(nestedScrollInterop),
             ) {
+                // Content-specific header (Profile, Instance, etc.)
+                if (column.type.headerType != null) {
+                    item(key = "columnHeader") {
+                        ColumnContentHeader(
+                            activity = activity,
+                            column = column,
+                            callbacks = callbacks,
+                            contentColor = contentColor,
+                        )
+                    }
+                }
+
                 itemsIndexed(
                     items = items,
                     key = { _, item -> item.listViewItemId },

@@ -77,6 +77,7 @@ import java.util.*
 import javax.net.ssl.HttpsURLConnection
 import kotlin.math.max
 import kotlin.math.min
+import com.google.android.material.R as MR
 
 data class ActMediaViewerViews(
     val root: LinearLayout,
@@ -97,7 +98,7 @@ data class ActMediaViewerViews(
 fun createActMediaViewerViews(context: android.content.Context): ActMediaViewerViews {
     val matchParent = ViewGroup.LayoutParams.MATCH_PARENT
     val wrapContent = ViewGroup.LayoutParams.WRAP_CONTENT
-    val tintColor = ColorStateList.valueOf(context.attrColor(R.attr.colorTextContent))
+    val tintColor = ColorStateList.valueOf(context.attrColor(MR.attr.colorOnSurface))
 
     val tvDescription = TextView(context).apply {
         layoutParams = ViewGroup.LayoutParams(matchParent, wrapContent)

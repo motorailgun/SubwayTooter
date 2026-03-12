@@ -27,6 +27,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -68,12 +69,10 @@ import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
 import jp.juggler.util.long
 import jp.juggler.util.string
-import jp.juggler.util.ui.attrColor
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
 class ActText : ComponentActivity() {
 
     companion object {
@@ -186,12 +185,12 @@ class ActText : ComponentActivity() {
 
     private var account: SavedAccount? = null
 
-    // Theme colors resolved once in onCreate
-    private var colorMatchBg = 0
-    private var colorHighlightBg = 0
-    private var colorSearchFormBg = 0
-    private var colorTextContent = 0
-    private var colorErrorText = 0
+    // Theme colors, set from MaterialTheme.colorScheme in composable
+    private var colorMatchBg = Color.Unspecified
+    private var colorHighlightBg = Color.Unspecified
+    private var colorSearchFormBg = Color.Unspecified
+    private var colorTextContent = Color.Unspecified
+    private var colorErrorText = Color.Unspecified
 
     /**
      * 選択範囲、またはテキスト全体
@@ -212,13 +211,6 @@ class ActText : ComponentActivity() {
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
         backPressed { finish() }
-
-        // Resolve theme colors
-        colorMatchBg = attrColor(R.attr.colorButtonBgCw)
-        colorHighlightBg = attrColor(R.attr.colorSearchFormBackground)
-        colorSearchFormBg = attrColor(R.attr.colorSearchFormBackground)
-        colorTextContent = attrColor(R.attr.colorTextContent)
-        colorErrorText = attrColor(R.attr.colorRegexFilterError)
 
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN)
 
@@ -260,6 +252,13 @@ class ActText : ComponentActivity() {
 
     @Composable
     private fun ActTextScreen() {
+        // Capture theme colors for use in non-Composable code
+        colorMatchBg = MaterialTheme.colorScheme.surfaceVariant
+        colorHighlightBg = MaterialTheme.colorScheme.surfaceContainerHigh
+        colorSearchFormBg = MaterialTheme.colorScheme.surfaceContainerHigh
+        colorTextContent = MaterialTheme.colorScheme.onSurface
+        colorErrorText = MaterialTheme.colorScheme.error
+
         var menuExpanded by remember { mutableStateOf(false) }
 
         StScreen(
@@ -337,7 +336,7 @@ class ActText : ComponentActivity() {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(colorSearchFormBg))
+                .background(colorSearchFormBg)
                 .padding(horizontal = 12.dp),
         ) {
             // Search input row
@@ -386,7 +385,7 @@ class ActText : ComponentActivity() {
             if (hasKeyword && !error.isNullOrBlank()) {
                 Text(
                     text = error,
-                    color = Color(colorErrorText),
+                    color = colorErrorText,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -444,8 +443,8 @@ class ActText : ComponentActivity() {
             modifier = modifier
                 .fillMaxWidth()
                 .padding(12.dp),
-            textStyle = TextStyle(color = Color(colorTextContent)),
-            cursorBrush = SolidColor(Color(colorTextContent)),
+            textStyle = TextStyle(color = colorTextContent),
+            cursorBrush = SolidColor(colorTextContent),
         )
     }
 
@@ -541,7 +540,7 @@ class ActText : ComponentActivity() {
         val styledText = buildAnnotatedString {
             append(fullText)
             searchResult.items.forEach { range ->
-                val bgColor = if (range == newPos) Color(colorHighlightBg) else Color(colorMatchBg)
+                val bgColor = if (range == newPos) colorHighlightBg else colorMatchBg
                 val end = (range.last + 1).coerceAtMost(fullText.length)
                 val start = range.first.coerceAtMost(end)
                 addStyle(SpanStyle(background = bgColor), start, end)

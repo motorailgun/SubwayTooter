@@ -1,23 +1,40 @@
 package jp.juggler.subwaytooter.dialog
 
-import android.annotation.SuppressLint
 import android.app.Activity
-import android.app.AlertDialog
+import android.app.Dialog
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ResolveInfo
 import android.graphics.drawable.Drawable
-import android.view.View
-import android.view.ViewGroup
 import android.view.WindowManager
-import android.widget.*
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toBitmap
 import jp.juggler.subwaytooter.R
-import jp.juggler.util.ui.dp
+import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.util.CustomShare
 import jp.juggler.subwaytooter.util.cn
-import jp.juggler.util.*
-import jp.juggler.util.data.*
-import jp.juggler.util.ui.*
+import jp.juggler.util.data.notEmpty
+import jp.juggler.util.ui.dismissSafe
+import jp.juggler.util.queryIntentActivitiesCompat
 
 class DlgAppPicker(
     val activity: Activity,
@@ -44,7 +61,7 @@ class DlgAppPicker(
         val listResolveInfo = pm.queryIntentActivitiesCompat(intent, PackageManager.MATCH_ALL)
 
         for (it in listResolveInfo) {
-            if (!filter(it)) continue
+            if (!this@DlgAppPicker.filter(it)) continue
             val cn = "${it.activityInfo.packageName}/${it.activityInfo.name}"
             val label = (it.loadLabel(pm).notEmpty() ?: cn).toString()
             add(ListItem(it.loadIcon(pm), label, cn))
@@ -67,10 +84,7 @@ class DlgAppPicker(
         }
     }
 
-    var dialog: AlertDialog? = null
-
     // returns false if fallback required
-    @SuppressLint("InflateParams")
     fun show() = when {
         list.isEmpty() -> false
 
@@ -80,106 +94,88 @@ class DlgAppPicker(
         }
 
         else -> {
-            val listView = ListView(activity).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                )
-                cacheColorHint = 0x00000000
-                divider = null
-                dividerHeight = 0
-                isScrollbarFadingEnabled = false
-                isVerticalFadingEdgeEnabled = true
-                setFadingEdgeLength(context.dp(20))
-                scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
-            }
-            val adapter = MyAdapter()
-            listView.adapter = adapter
-            listView.onItemClickListener = adapter
-
-            this.dialog = AlertDialog.Builder(activity)
-                .setView(listView)
-                .setNegativeButton(R.string.cancel, null)
-                .create()
-                .apply {
-                    window?.setLayout(
-                        WindowManager.LayoutParams.MATCH_PARENT,
-                        WindowManager.LayoutParams.WRAP_CONTENT
-                    )
-                    show()
+            val dialog = Dialog(activity)
+            val composeView = ComposeView(activity).apply {
+                setContent {
+                    StThemedContent {
+                        AppPickerContent(
+                            items = list,
+                            onSelect = { item ->
+                                dialog.dismissSafe()
+                                callback(item.componentName)
+                            },
+                            onCancel = { dialog.dismissSafe() },
+                        )
+                    }
                 }
-
+            }
+            dialog.setContentView(composeView)
+            dialog.window?.setLayout(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+            )
+            dialog.show()
             true
         }
     }
+}
 
-    private inner class MyAdapter : BaseAdapter(), AdapterView.OnItemClickListener {
-
-        override fun getCount(): Int = list.size
-        override fun getItem(idx: Int) = list[idx]
-        override fun getItemId(p0: Int) = 0L
-
-        override fun getView(idx: Int, convertView: View?, parent: ViewGroup?): View {
-            val view: View
-            val holder: MyViewHolder
-            if (convertView != null) {
-                view = convertView
-                holder = view.tag?.cast()!!
-            } else {
-                val pad = activity.dp(12)
-                val itemView = LinearLayout(activity).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    gravity = android.view.Gravity.CENTER_VERTICAL
-                    setPadding(pad, pad, pad, pad)
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                    )
-                }
-                val ivImage = ImageView(activity).apply {
-                    scaleType = ImageView.ScaleType.FIT_CENTER
-                }
-                val imgSize = activity.dp(32)
-                itemView.addView(ivImage, LinearLayout.LayoutParams(imgSize, imgSize).apply {
-                    marginEnd = pad
-                })
-                val tvText = TextView(activity)
-                itemView.addView(tvText, LinearLayout.LayoutParams(
-                    0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f
-                ))
-                view = itemView
-                holder = MyViewHolder(ivImage, tvText)
-                view.tag = holder
-            }
-            holder.bind(list[idx])
-            return view
-        }
-
-        override fun onItemClick(parent: AdapterView<*>?, view: View?, idx: Int, id: Long) {
-            dialog?.dismissSafe()
-            callback(list[idx].componentName)
-        }
-    }
-
-    private inner class MyViewHolder(
-        val ivImage: ImageView,
-        val tvText: TextView,
+@Composable
+private fun AppPickerContent(
+    items: List<DlgAppPicker.ListItem>,
+    onSelect: (DlgAppPicker.ListItem) -> Unit,
+    onCancel: () -> Unit,
+) {
+    Surface(
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 6.dp,
     ) {
-        var item: ListItem? = null
-
-        fun bind(item: ListItem) {
-            this.item = item
-            if (item.icon != null) {
-                ivImage.setImageDrawable(item.icon)
-            } else {
-                setIconDrawableId(
-                    activity,
-                    ivImage,
-                    R.drawable.ic_question,
-                    color = activity.attrColor(R.attr.colorTextContent),
-                )
+        androidx.compose.foundation.layout.Column {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f, fill = false)
+                    .fillMaxWidth(),
+            ) {
+                items(items) { item ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onSelect(item) }
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        val icon = item.icon
+                        if (icon != null) {
+                            val bitmap = remember(icon) {
+                                icon.toBitmap(width = 32, height = 32).asImageBitmap()
+                            }
+                            Image(
+                                bitmap = bitmap,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .padding(end = 12.dp),
+                            )
+                        }
+                        Text(
+                            text = item.text,
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
+                }
             }
-            tvText.text = item.text
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+                androidx.compose.foundation.layout.Spacer(modifier = Modifier.weight(1f))
+                TextButton(onClick = onCancel) {
+                    Text(stringResource(R.string.cancel))
+                }
+            }
         }
     }
 }

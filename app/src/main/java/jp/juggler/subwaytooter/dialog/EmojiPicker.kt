@@ -42,6 +42,7 @@ import jp.juggler.util.log.*
 import jp.juggler.util.ui.*
 import kotlin.math.abs
 import kotlin.math.sign
+import com.google.android.material.R as MR
 
 private class EmojiPicker(
     private val activity: ComponentActivity,
@@ -264,7 +265,7 @@ private class EmojiPicker(
                 lastExpandCategory == item.original -> R.drawable.ic_arrow_drop_down
                 else -> R.drawable.ic_arrow_drop_up
             }?.let {
-                activity.resDrawable(it).wrapAndTint(activity.attrColor(R.attr.colorTextContent))
+                activity.resDrawable(it).wrapAndTint(activity.attrColor(MR.attr.colorOnSurface))
             }
             tv.setCompoundDrawablesRelativeWithIntrinsicBounds(drawable, null, null, null)
         }
@@ -620,45 +621,36 @@ private class EmojiPicker(
             is PickerItemCustom -> {
                 activity.showEmojiDetailDialog(
                     detail = item.customEmoji.json.toString(indentFactor = 2, sort = true),
-                    initialzeNiv = {
-                        setEmoji(
-                            url = when {
-                                disableAnimation -> item.customEmoji.staticUrl
-                                else -> item.customEmoji.url
-                            },
-                            initialAspect = item.customEmoji.aspect,
-                            defaultHeight = layoutParams.height,
-                        )
-                    }
+                    preview = EmojiDetailPreview.CustomEmoji(
+                        url = when {
+                            disableAnimation -> item.customEmoji.staticUrl
+                            else -> item.customEmoji.url
+                        },
+                        initialAspect = item.customEmoji.aspect,
+                        disableAnimation = disableAnimation,
+                    ),
                 )
             }
 
             is PickerItemUnicode -> when {
                 useTwemoji -> {
+                    val emoji = applySkinTone(item.unicodeEmoji)
                     activity.showEmojiDetailDialog(
                         detail = item.unicodeEmoji.namesLower.joinToString("\n"),
-                        initializeImage = {
-                            val emoji = applySkinTone(item.unicodeEmoji)
-                            if (emoji.isSvg) {
-                                Glide.with(this@EmojiPicker.activity)
-                                    .`as`(PictureDrawable::class.java)
-                                    .load("file:///android_asset/${emoji.assetsName}")
-                                    .into(this)
-                            } else {
-                                Glide.with(this@EmojiPicker.activity)
-                                    .load(emoji.drawableId)
-                                    .into(this)
-                            }
-                        }
+                        preview = EmojiDetailPreview.UnicodeImage(
+                            assetsName = emoji.assetsName,
+                            drawableId = emoji.drawableId,
+                            isSvg = emoji.isSvg,
+                        ),
                     )
                 }
 
                 else -> {
                     activity.showEmojiDetailDialog(
                         detail = item.unicodeEmoji.namesLower.joinToString("\n"),
-                        initializeText = {
-                            this.text = applySkinTone(item.unicodeEmoji).unifiedCode
-                        }
+                        preview = EmojiDetailPreview.UnicodeText(
+                            text = applySkinTone(item.unicodeEmoji).unifiedCode,
+                        ),
                     )
                 }
             }

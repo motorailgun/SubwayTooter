@@ -127,7 +127,7 @@ fun ColumnBody(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(
-                        Color(0xCC000000.toInt()),
+                        MaterialTheme.colorScheme.errorContainer,
                         shape = MaterialTheme.shapes.small,
                     )
                     .clickable { columnCallbacks.onRefreshErrorClick() }
@@ -136,7 +136,7 @@ fun ColumnBody(
                 Icon(
                     painter = painterResource(R.drawable.ic_error),
                     contentDescription = null,
-                    tint = Color.Red,
+                    tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier
                         .size(24.dp)
                         .align(Alignment.CenterStart)
@@ -144,7 +144,7 @@ fun ColumnBody(
                 )
                 Text(
                     text = uiState.refreshErrorText,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onErrorContainer,
                     maxLines = if (uiState.refreshErrorSingleLine) 1 else Int.MAX_VALUE,
                     overflow = if (uiState.refreshErrorSingleLine) TextOverflow.Ellipsis else TextOverflow.Clip,
                     modifier = Modifier

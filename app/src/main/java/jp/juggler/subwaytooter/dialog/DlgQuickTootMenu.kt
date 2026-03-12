@@ -1,16 +1,34 @@
 package jp.juggler.subwaytooter.dialog
 
-import android.app.AlertDialog
 import android.app.Dialog
 import android.view.Gravity
 import android.view.WindowManager
-import android.widget.Button
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
-import jp.juggler.subwaytooter.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import jp.juggler.subwaytooter.ActMain
+import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootVisibility
+import jp.juggler.subwaytooter.compose.StThemedContent
+import jp.juggler.subwaytooter.getVisibilityCaption
 import jp.juggler.subwaytooter.pref.PrefS
 import jp.juggler.util.data.notEmpty
 import jp.juggler.util.ui.dismissSafe
@@ -36,11 +54,6 @@ class DlgQuickTootMenu(
         var visibility: TootVisibility
     }
 
-    private data class MemoViews(
-        val editText: EditText,
-        val btnUse: Button,
-    )
-
     private var refDialog: WeakReference<Dialog>? = null
 
     private fun loadStrings() =
@@ -51,166 +64,65 @@ class DlgQuickTootMenu(
     }
 
     private fun show() {
-        val strings = loadStrings()
+        val initialStrings = loadStrings()
         val dialog = Dialog(activity).also { refDialog = WeakReference(it) }
-        val density = activity.resources.displayMetrics.density
-        val dp3 = (3 * density + 0.5f).toInt()
-        val dp6 = (6 * density + 0.5f).toInt()
-        val dp12 = (12 * density + 0.5f).toInt()
-        val dp48 = (48 * density + 0.5f).toInt()
 
-        val innerLayout = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp12, dp3, dp12, dp3)
+        // Mutable state holders for 6 macro text fields
+        val macroStates = (0..5).map { i ->
+            mutableStateOf(initialStrings.elementAtOrNull(i) ?: "")
         }
-
-        // Visibility label
-        innerLayout.addView(
-            TextView(activity).apply { setText(R.string.visibility) },
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ),
-        )
-
-        // Visibility button
-        val btnVisibility = Button(activity).apply {
-            gravity = Gravity.START or Gravity.CENTER_VERTICAL
-            isAllCaps = false
-        }
-        innerLayout.addView(
-            btnVisibility,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ),
-        )
-
-        // Fixed phrase label
-        innerLayout.addView(
-            TextView(activity).apply {
-                setText(R.string.fixed_phrase)
-                setPadding(0, dp6, 0, 0)
-            },
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ),
-        )
-
-        // Create 6 memo rows
-        val memoList = (0..5).map { i ->
-            val et = EditText(activity).apply {
-                importantForAutofill = EditText.IMPORTANT_FOR_AUTOFILL_NO
-                inputType = android.text.InputType.TYPE_CLASS_TEXT
-                setText(strings.elementAtOrNull(i) ?: "")
-            }
-            val btn = Button(activity).apply {
-                setText(R.string.input)
-                minimumWidth = dp48
-            }
-            val row = LinearLayout(activity).apply {
-                orientation = LinearLayout.HORIZONTAL
-                addView(et, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                    marginEnd = dp6
-                })
-                addView(btn, LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                ))
-            }
-            innerLayout.addView(
-                row,
-                LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                ),
-            )
-            MemoViews(et, btn)
-        }
-
-        memoList.forEach { m ->
-            m.btnUse.setOnClickListener {
-                m.editText.text?.toString()?.notEmpty()?.let {
-                    dialog.dismissSafe()
-                    callback.onMacro(it)
-                }
-            }
-        }
+        val visibilityState = mutableStateOf(callback.visibility)
 
         dialog.setOnDismissListener {
             saveStrings(
-                memoList.map { it.editText.text?.toString()?.replace("\n", " ") ?: "" }
+                macroStates.map { it.value.replace("\n", " ") }
                     .joinToString("\n")
             )
         }
 
-        fun showVisibility() {
-            btnVisibility.text = getVisibilityCaption(activity, false, callback.visibility)
-        }
-
-        fun changeVisivility(newVisibility: TootVisibility?) {
-            newVisibility ?: return
-            callback.visibility = newVisibility
-            showVisibility()
-        }
-
-        showVisibility()
-
-        btnVisibility.setOnClickListener {
-            val captionList = visibilityList
-                .map { getVisibilityCaption(activity, false, it) }
-                .toTypedArray()
-
-            AlertDialog.Builder(activity)
-                .setTitle(R.string.choose_visibility)
-                .setItems(captionList) { _, which ->
-                    changeVisivility(visibilityList.elementAtOrNull(which))
+        val composeView = ComposeView(activity).apply {
+            setContent {
+                StThemedContent {
+                    QuickTootMenuContent(
+                        visibilityState = visibilityState.value,
+                        visibilityCaption = getVisibilityCaption(
+                            activity,
+                            false,
+                            visibilityState.value,
+                        ),
+                        macroValues = macroStates.map { it.value },
+                        onMacroChange = { index, value ->
+                            macroStates[index].value = value
+                        },
+                        onVisibilityPick = { newVisibility ->
+                            callback.visibility = newVisibility
+                            visibilityState.value = newVisibility
+                        },
+                        onUseMacro = { text ->
+                            text.notEmpty()?.let {
+                                dialog.dismissSafe()
+                                callback.onMacro(it)
+                            }
+                        },
+                        onClose = { dialog.dismissSafe() },
+                    )
                 }
-                .setNegativeButton(R.string.cancel, null)
-                .show()
-        }
-
-        val scrollView = ScrollView(activity).apply {
-            addView(innerLayout)
-        }
-
-        // Close button
-        val btnCancel = Button(activity, null, android.R.attr.buttonBarButtonStyle).apply {
-            setText(R.string.close)
-            setOnClickListener { dialog.dismissSafe() }
-        }
-        val buttonBar = LinearLayout(activity).apply {
-            orientation = LinearLayout.HORIZONTAL
-            addView(btnCancel, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        }
-
-        val root = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(scrollView, LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f,
-            ))
-            addView(buttonBar, LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ))
-        }
-
-        dialog.apply {
-            setContentView(root)
-            setCanceledOnTouchOutside(true)
-            window?.apply {
-                attributes = attributes.apply {
-                    gravity = Gravity.BOTTOM or Gravity.START
-                    flags = flags and WindowManager.LayoutParams.FLAG_DIM_BEHIND.inv()
-                }
-                setLayout(
-                    WindowManager.LayoutParams.MATCH_PARENT,
-                    WindowManager.LayoutParams.WRAP_CONTENT,
-                )
             }
-            show()
         }
+
+        dialog.setContentView(composeView)
+        dialog.setCanceledOnTouchOutside(true)
+        dialog.window?.apply {
+            attributes = attributes.apply {
+                gravity = Gravity.BOTTOM or Gravity.START
+                flags = flags and WindowManager.LayoutParams.FLAG_DIM_BEHIND.inv()
+            }
+            setLayout(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+            )
+        }
+        dialog.show()
     }
 
     fun toggle() {
@@ -218,6 +130,103 @@ class DlgQuickTootMenu(
         when {
             dialog?.isShowing == true -> dialog.dismissSafe()
             else -> show()
+        }
+    }
+}
+
+@Composable
+private fun QuickTootMenuContent(
+    visibilityState: TootVisibility,
+    visibilityCaption: CharSequence,
+    macroValues: List<String>,
+    onMacroChange: (index: Int, value: String) -> Unit,
+    onVisibilityPick: (TootVisibility) -> Unit,
+    onUseMacro: (String) -> Unit,
+    onClose: () -> Unit,
+) {
+    val showVisibilityMenu = remember { mutableStateOf(false) }
+
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        tonalElevation = 6.dp,
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            // Visibility section
+            Text(
+                text = stringResource(R.string.visibility),
+                style = MaterialTheme.typography.labelLarge,
+            )
+            OutlinedButton(
+                onClick = { showVisibilityMenu.value = true },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+            ) {
+                Text(visibilityCaption.toString())
+                DropdownMenu(
+                    expanded = showVisibilityMenu.value,
+                    onDismissRequest = { showVisibilityMenu.value = false },
+                ) {
+                    DlgQuickTootMenu.visibilityList.forEach { vis ->
+                        DropdownMenuItem(
+                            text = {
+                                val context = androidx.compose.ui.platform.LocalContext.current
+                                Text(
+                                    getVisibilityCaption(
+                                        context,
+                                        false,
+                                        vis,
+                                    ).toString()
+                                )
+                            },
+                            onClick = {
+                                showVisibilityMenu.value = false
+                                onVisibilityPick(vis)
+                            },
+                        )
+                    }
+                }
+            }
+
+            // Fixed phrase section
+            Text(
+                text = stringResource(R.string.fixed_phrase),
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(bottom = 4.dp),
+            )
+
+            macroValues.forEachIndexed { index, value ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OutlinedTextField(
+                        value = value,
+                        onValueChange = { onMacroChange(index, it) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Button(
+                        onClick = { onUseMacro(value) },
+                    ) {
+                        Text(stringResource(R.string.input))
+                    }
+                }
+            }
+
+            // Close button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                TextButton(onClick = onClose) {
+                    Text(stringResource(R.string.close))
+                }
+            }
         }
     }
 }

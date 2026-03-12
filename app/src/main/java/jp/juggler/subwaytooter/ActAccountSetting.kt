@@ -103,6 +103,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
 import kotlin.math.max
+import com.google.android.material.R as MR
 
 class ActAccountSettingViews(
     val root: View,
@@ -692,7 +693,7 @@ class ActAccountSetting : ComponentActivity(),
             text = ac.nickname
             setTextColor(
                 ac.colorFg.notZero()
-                    ?: attrColor(R.attr.colorTimeSmall)
+                    ?: attrColor(MR.attr.colorOnSurfaceVariant)
             )
         }
     }

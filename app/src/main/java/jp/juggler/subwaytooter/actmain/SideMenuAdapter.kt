@@ -75,6 +75,7 @@ import java.lang.ref.WeakReference
 import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 import kotlin.math.abs
+import com.google.android.material.R as MR
 
 class SideMenuAdapter(
     private val actMain: ActMain,
@@ -173,7 +174,7 @@ class SideMenuAdapter(
                         getString(R.string.new_version_available, newVersion),
                         // この時点ではActivityのテーマが初期化されていないので
                         // 色属性の解決ができない
-                        ForegroundAttrColorSpan(R.attr.colorRegexFilterError),
+                        ForegroundAttrColorSpan(androidx.appcompat.R.attr.colorError),
                     )
                     newRelease?.string("html_url")?.let {
                         appendSpanLine(
@@ -499,7 +500,7 @@ class SideMenuAdapter(
 
     private var list = originalList
 
-    private val iconColor = actMain.attrColor(R.attr.colorTimeSmall)
+    private val iconColor = actMain.attrColor(MR.attr.colorOnSurfaceVariant)
 
     override fun getCount(): Int = list.size
     override fun getItem(position: Int): Any = list[position]
@@ -531,7 +532,7 @@ class SideMenuAdapter(
                                     topMargin = actMain.dp(3)
                                     bottomMargin = actMain.dp(3)
                                 }
-                                setBackgroundColor(actMain.attrColor(R.attr.colorTimeSmall))
+                                setBackgroundColor(actMain.attrColor(MR.attr.colorOnSurfaceVariant))
                             })
                         }
                     }
@@ -543,7 +544,7 @@ class SideMenuAdapter(
                                 ViewGroup.LayoutParams.MATCH_PARENT,
                                 ViewGroup.LayoutParams.WRAP_CONTENT
                             )
-                            setTextColor(actMain.attrColor(R.attr.colorSettingDivider))
+                            setTextColor(actMain.attrColor(MR.attr.colorOutlineVariant))
                             gravity = Gravity.CENTER_VERTICAL or Gravity.START
                             setPaddingRelative(actMain.dp(12), actMain.dp(12), actMain.dp(12), actMain.dp(6))
                         }
@@ -559,7 +560,7 @@ class SideMenuAdapter(
                                 ViewGroup.LayoutParams.WRAP_CONTENT
                             )
                             background = ContextCompat.getDrawable(actMain, R.drawable.btn_bg_transparent_round6dp)
-                            setTextColor(actMain.attrColor(R.attr.colorTextContent))
+                            setTextColor(actMain.attrColor(MR.attr.colorOnSurface))
                             gravity = Gravity.CENTER_VERTICAL or Gravity.START
                             compoundDrawablePadding = actMain.dp(12)
                             minimumHeight = actMain.dp(44)
@@ -590,7 +591,7 @@ class SideMenuAdapter(
                                 ViewGroup.LayoutParams.WRAP_CONTENT
                             )
                             background = ContextCompat.getDrawable(actMain, R.drawable.btn_bg_transparent_round6dp)
-                            setTextColor(actMain.attrColor(R.attr.colorTextContent))
+                            setTextColor(actMain.attrColor(MR.attr.colorOnSurface))
                             gravity = Gravity.CENTER_VERTICAL or Gravity.START
                             compoundDrawablePadding = actMain.dp(12)
                             minimumHeight = actMain.dp(44)
@@ -617,7 +618,7 @@ class SideMenuAdapter(
                                 ViewGroup.LayoutParams.WRAP_CONTENT
                             )
                             background = ContextCompat.getDrawable(actMain, R.drawable.btn_bg_transparent_round6dp)
-                            setTextColor(actMain.attrColor(R.attr.colorTextContent))
+                            setTextColor(actMain.attrColor(MR.attr.colorOnSurface))
                             gravity = Gravity.CENTER_VERTICAL or Gravity.START
                             compoundDrawablePadding = actMain.dp(12)
                             minimumHeight = actMain.dp(44)
@@ -638,7 +639,7 @@ class SideMenuAdapter(
                                 ViewGroup.LayoutParams.WRAP_CONTENT
                             )
                             background = ContextCompat.getDrawable(actMain, R.drawable.btn_bg_transparent_round6dp)
-                            setTextColor(actMain.attrColor(R.attr.colorTextContent))
+                            setTextColor(actMain.attrColor(MR.attr.colorOnSurface))
                             gravity = Gravity.CENTER_VERTICAL or Gravity.START
                             compoundDrawablePadding = actMain.dp(12)
                             minimumHeight = actMain.dp(44)
@@ -748,7 +749,7 @@ class SideMenuAdapter(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
-            setBackgroundColor(actMain.attrColor(R.attr.colorMainBackground))
+            setBackgroundColor(actMain.attrColor(MR.attr.colorSurface))
             selector = StateListDrawable()
             divider = null
             dividerHeight = 0

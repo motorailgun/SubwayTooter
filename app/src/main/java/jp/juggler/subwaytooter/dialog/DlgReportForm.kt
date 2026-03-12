@@ -10,6 +10,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,12 +30,6 @@ import jp.juggler.subwaytooter.api.entity.TootStatus
 import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.util.log.showToast
-import jp.juggler.util.ui.attrColor
-
-@Composable
-private fun AppTheme(content: @Composable () -> Unit) {
-    StThemedContent(content = content)
-}
 
 fun Activity.showReportDialog(
     accessInfo: SavedAccount,
@@ -46,10 +41,10 @@ fun Activity.showReportDialog(
     val dialog = Dialog(this)
     val composeView = ComposeView(this).apply {
         setContent {
-            AppTheme {
+            StThemedContent {
                 var comment by remember { mutableStateOf("") }
                 var forward by remember { mutableStateOf(true) }
-                val buttonBgCw = remember { Color(attrColor(R.attr.colorButtonBgCw)) }
+                val buttonBgCw = MaterialTheme.colorScheme.surfaceVariant
 
                 Surface {
                     Column(

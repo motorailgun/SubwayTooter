@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+import com.google.android.material.R as MR
 
 enum class ColumnPagingType { Default, Cursor, Offset, None, }
 
@@ -90,12 +91,12 @@ class Column(
         var defaultColorContentText = 0
 
         fun reloadDefaultColor(activity: Context) {
-            defaultColorHeaderBg = activity.attrColor(R.attr.color_column_header)
-            defaultColorHeaderName = activity.attrColor(R.attr.colorColumnHeaderName)
-            defaultColorHeaderPageNumber = activity.attrColor(R.attr.colorColumnHeaderPageNumber)
+            defaultColorHeaderBg = activity.attrColor(MR.attr.colorSurfaceContainer)
+            defaultColorHeaderName = activity.attrColor(MR.attr.colorOnSurface)
+            defaultColorHeaderPageNumber = activity.attrColor(MR.attr.colorOnSurfaceVariant)
             defaultColorContentBg = 0 // transparent, uses theme background
-            defaultColorContentAcct = activity.attrColor(R.attr.colorTimeSmall)
-            defaultColorContentText = activity.attrColor(R.attr.colorTextContent)
+            defaultColorContentAcct = activity.attrColor(MR.attr.colorOnSurfaceVariant)
+            defaultColorContentText = activity.attrColor(MR.attr.colorOnSurface)
         }
 
         private val internalIdSeed = AtomicInteger(0)

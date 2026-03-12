@@ -15,7 +15,6 @@ import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.media.createResizedBitmap
-import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.createRoundDrawable
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
@@ -207,8 +206,7 @@ fun ColumnViewHolder.onPageCreate(column: Column, pageIdx: Int, pageCount: Int) 
         ui.showDeleteNotification = column.isNotificationColumn
 
         // ──── Search / list / agg bars ────
-        val searchBgColor = activity.attrColor(R.attr.colorSearchFormBackground)
-        ui.searchFormBgColor = searchBgColor
+        ui.searchFormBgColor = colorSurfaceContainerHigh
 
         ui.aggBoostBarVisible = column.type == ColumnType.AGG_BOOSTS
         ui.listBarVisible = column.type == ColumnType.LIST_LIST
@@ -272,8 +270,8 @@ fun ColumnViewHolder.onPageCreate(column: Column, pageIdx: Int, pageCount: Int) 
 
         // ──── Announcements ────
         lastAnnouncementShown = -1L
-        val announcementsBgColor = searchBgColor
-        ui.settingsBgColor = activity.attrColor(R.attr.colorColumnSettingBackground)
+        val announcementsBgColor = colorSurfaceContainerHigh
+        ui.settingsBgColor = colorSurfaceContainerLow
 
         // ──── Connect column ────
         column.addColumnViewHolder(this)

@@ -28,6 +28,7 @@ import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.showKeyboard
 import kotlinx.coroutines.yield
 import kotlin.math.min
+import com.google.android.material.R as MR
 
 // 入力補完機能
 class CompletionHelper(
@@ -290,7 +291,7 @@ class CompletionHelper(
                 sb.append(item.alias)
                 sb.append(": → ")
                 sb.setSpan(
-                    ForegroundColorSpan(activity.attrColor(R.attr.colorTimeSmall)),
+                    ForegroundColorSpan(activity.attrColor(MR.attr.colorOnSurfaceVariant)),
                     start,
                     sb.length,
                     Spanned.SPAN_EXCLUSIVE_EXCLUSIVE

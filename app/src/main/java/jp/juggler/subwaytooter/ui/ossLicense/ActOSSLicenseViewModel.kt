@@ -3,7 +3,7 @@ package jp.juggler.subwaytooter.ui.ossLicense
 import android.app.Application
 import android.content.Context
 import android.net.Uri
-import androidx.compose.material3.ColorScheme
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import jp.juggler.subwaytooter.R
@@ -37,7 +37,7 @@ class ActOSSLicenseViewModel(
 
     private fun fireUriEvent(uri:Uri) = _linkEvent.setEvent(uri)
 
-    fun load(colorScheme: ColorScheme) = viewModelScope.launch {
+    fun load(linkColor: Color) = viewModelScope.launch {
         try {
             _isProgressShown.value = true
             _libraries.value = withContext(AppDispatchers.IO) {
@@ -55,7 +55,7 @@ class ActOSSLicenseViewModel(
                         parseLibText(
                             it,
                             licenses,
-                            colorScheme = colorScheme,
+                            linkColor = linkColor,
                             linkOpener = ::fireUriEvent,
                         )
                     }

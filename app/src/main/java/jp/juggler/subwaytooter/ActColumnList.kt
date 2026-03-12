@@ -49,7 +49,6 @@ import jp.juggler.util.data.JsonObject
 import jp.juggler.util.data.toJsonArray
 import jp.juggler.util.int
 import jp.juggler.util.log.LogCategory
-import jp.juggler.util.ui.attrColor
 
 class ActColumnList : ComponentActivity() {
 
@@ -89,15 +88,6 @@ class ActColumnList : ComponentActivity() {
     private val columns = mutableStateListOf<MyItem>()
     private var oldSelection = 0
 
-    // Theme colors
-    private var defaultAcctColorFg = 0
-    private var defaultColumnColorFg = 0
-    private var colorDeleteBg = 0
-    private var colorDeleteText = 0
-    private var colorDragHandleBg = 0
-    private var colorContentText = 0
-    private var colorDivider = 0
-
     override fun onCreate(savedInstanceState: Bundle?) {
         backPressed {
             makeResult(-1)
@@ -106,14 +96,6 @@ class ActColumnList : ComponentActivity() {
 
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
-
-        defaultAcctColorFg = attrColor(R.attr.colorColumnHeaderAcct)
-        defaultColumnColorFg = attrColor(R.attr.colorColumnHeaderName)
-        colorDeleteBg = attrColor(R.attr.colorColumnListDeleteBackground)
-        colorDeleteText = attrColor(R.attr.colorColumnListDeleteText)
-        colorDragHandleBg = attrColor(R.attr.colorColumnListDragHandleBackground)
-        colorContentText = attrColor(R.attr.colorTextContent)
-        colorDivider = attrColor(R.attr.colorSettingDivider)
 
         setContent { ColumnListScreen() }
 
@@ -163,13 +145,13 @@ class ActColumnList : ComponentActivity() {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .background(Color(colorDeleteBg))
+                                        .background(MaterialTheme.colorScheme.errorContainer)
                                         .padding(horizontal = 12.dp),
                                     contentAlignment = Alignment.CenterEnd,
                                 ) {
                                     Text(
                                         text = stringResource(R.string.delete),
-                                        color = Color(colorDeleteText),
+                                        color = MaterialTheme.colorScheme.onErrorContainer,
                                         fontSize = 20.sp,
                                     )
                                 }
@@ -204,8 +186,8 @@ class ActColumnList : ComponentActivity() {
         index: Int,
         onClick: () -> Unit,
     ) {
-        val acctColorFg = if (item.acctColorFg != 0) Color(item.acctColorFg) else Color(defaultAcctColorFg)
-        val columnColorFg = if (item.columnColorFg != 0) Color(item.columnColorFg) else Color(defaultColumnColorFg)
+        val acctColorFg = if (item.acctColorFg != 0) Color(item.acctColorFg) else MaterialTheme.colorScheme.onSurfaceVariant
+        val columnColorFg = if (item.columnColorFg != 0) Color(item.columnColorFg) else MaterialTheme.colorScheme.onSurface
         val columnColorBg = if (item.columnColorBg != 0) Color(item.columnColorBg) else MaterialTheme.colorScheme.surface
 
         Column(
@@ -269,7 +251,7 @@ class ActColumnList : ComponentActivity() {
                 Column(
                     modifier = Modifier
                         .width(48.dp)
-                        .background(Color(colorDragHandleBg))
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                         .padding(start = 8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -281,7 +263,7 @@ class ActColumnList : ComponentActivity() {
                         Icon(
                             painter = painterResource(R.drawable.ic_arrow_drop_up),
                             contentDescription = stringResource(R.string.previous),
-                            tint = Color(colorContentText),
+                            tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                     IconButton(
@@ -292,12 +274,12 @@ class ActColumnList : ComponentActivity() {
                         Icon(
                             painter = painterResource(R.drawable.ic_arrow_drop_down),
                             contentDescription = stringResource(R.string.next),
-                            tint = Color(colorContentText),
+                            tint = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                 }
             }
-            HorizontalDivider(color = Color(colorDivider))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         }
     }
 

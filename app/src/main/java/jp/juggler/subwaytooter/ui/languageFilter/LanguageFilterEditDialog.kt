@@ -1,31 +1,181 @@
 package jp.juggler.subwaytooter.ui.languageFilter
 
-import android.widget.EditText
-import android.widget.ImageButton
-import android.widget.LinearLayout
-import android.widget.RadioButton
-import android.widget.RadioGroup
-import android.widget.TextView
+import android.app.Dialog
 import androidx.activity.ComponentActivity
-import androidx.appcompat.app.AlertDialog
-import androidx.compose.material3.ColorScheme
-import androidx.compose.ui.graphics.toArgb
-import androidx.core.widget.addTextChangedListener
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootStatus
+import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.dialog.actionsDialog
 import jp.juggler.util.coroutine.cancellationException
-import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.ui.dismissSafe
-import jp.juggler.util.ui.dp
-import jp.juggler.util.ui.isEnabledAlpha
-import jp.juggler.util.ui.setEnabledColor
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resumeWithException
 
 sealed interface LanguageFilterEditResult {
     class Update(val code: String, val allow: Boolean) : LanguageFilterEditResult
     class Delete(val code: String) : LanguageFilterEditResult
+}
+
+@Composable
+private fun LanguageFilterEditContent(
+    item: LanguageFilterItem?,
+    nameMap: Map<String, LanguageInfo>,
+    onOk: (code: String, allow: Boolean) -> Unit,
+    onDelete: ((code: String) -> Unit)?,
+    onCancel: () -> Unit,
+    onPresetsClick: (onSelect: (String) -> Unit) -> Unit,
+) {
+    var code by remember { mutableStateOf(item?.code ?: "") }
+    var isAllow by remember { mutableStateOf(item?.allow ?: true) }
+    val isEditing = item != null
+    val focusRequester = remember { FocusRequester() }
+
+    val displayName = nameMap[code.trim()]?.displayName
+        ?: stringResource(R.string.custom)
+
+    Surface(
+        shape = MaterialTheme.shapes.extraLarge,
+        tonalElevation = 6.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+        ) {
+            // Language label + input
+            Text(
+                text = stringResource(R.string.language),
+                style = MaterialTheme.typography.labelLarge,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = code,
+                    onValueChange = { code = it },
+                    enabled = !isEditing,
+                    modifier = Modifier
+                        .weight(1f)
+                        .focusRequester(focusRequester),
+                    singleLine = true,
+                    label = { Text(stringResource(R.string.language_code_hint)) },
+                )
+                if (!isEditing) {
+                    IconButton(
+                        onClick = {
+                            onPresetsClick { selected ->
+                                code = selected
+                            }
+                        },
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_edit),
+                            contentDescription = stringResource(R.string.presets),
+                        )
+                    }
+                }
+            }
+
+            // Language description
+            Text(
+                text = displayName,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Show/Hide label + radio buttons
+            Text(
+                text = stringResource(R.string.show_hide),
+                style = MaterialTheme.typography.labelLarge,
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = isAllow,
+                        onClick = { isAllow = true },
+                    )
+                    Text(stringResource(R.string.language_show))
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    RadioButton(
+                        selected = !isAllow,
+                        onClick = { isAllow = false },
+                    )
+                    Text(stringResource(R.string.language_hide))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Action buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+            ) {
+                if (onDelete != null) {
+                    OutlinedButton(onClick = { onDelete(code.trim()) }) {
+                        Text(stringResource(R.string.delete))
+                    }
+                    Spacer(modifier = Modifier.size(8.dp))
+                }
+                TextButton(onClick = onCancel) {
+                    Text(stringResource(R.string.cancel))
+                }
+                Spacer(modifier = Modifier.size(8.dp))
+                Button(onClick = { onOk(code.trim(), isAllow) }) {
+                    Text(stringResource(R.string.ok))
+                }
+            }
+        }
+    }
+
+    if (!isEditing) {
+        LaunchedEffect(Unit) {
+            focusRequester.requestFocus()
+        }
+    }
 }
 
 /**
@@ -36,144 +186,52 @@ suspend fun ComponentActivity.dialogLanguageFilterEdit(
     item: LanguageFilterItem?,
     // 言語コード→表示名のマップ
     nameMap: Map<String, LanguageInfo>,
-    // 色スキーマ
-    colorScheme: ColorScheme,
 ): LanguageFilterEditResult = suspendCancellableCoroutine { cont ->
-    val dp12 = dp(12)
-
-    val etLanguage = EditText(this).apply {
-        inputType = android.text.InputType.TYPE_CLASS_TEXT
-        hint = getString(R.string.language_code_hint)
-        importantForAutofill = android.view.View.IMPORTANT_FOR_AUTOFILL_NO
-    }
-    val tvLanguage = TextView(this).apply {
-        textSize = 12f
-    }
-    val rbShow = RadioButton(this).apply {
-        text = getString(R.string.language_show)
-    }
-    val rbHide = RadioButton(this).apply {
-        text = getString(R.string.language_hide)
-    }
-    val btnPresets = ImageButton(this).apply {
-        elevation = dp(3).toFloat()
-        setImageResource(R.drawable.ic_edit)
-        contentDescription = getString(R.string.presets)
-    }
-
-    fun updateDesc() {
-        val code = etLanguage.text.toString().trim()
-        tvLanguage.text = nameMap[code]?.displayName ?: getString(R.string.custom)
-    }
-
-    when (item?.allow ?: true) {
-        true -> rbShow.isChecked = true
-        else -> rbHide.isChecked = true
-    }
-    btnPresets.setOnClickListener {
-        launchAndShowError {
-            actionsDialog(getString(R.string.presets)) {
-                val languageList = nameMap.map {
-                    LanguageFilterItem(it.key, true)
-                }.sortedWith(languageFilterItemComparator)
-                for (a in languageList) {
-                    action("${a.code} ${langDesc(a.code, nameMap)}") {
-                        etLanguage.setText(a.code)
-                        updateDesc()
-                    }
-                }
+    val dialog = Dialog(this)
+    val composeView = ComposeView(this).apply {
+        setContent {
+            val scope = rememberCoroutineScope()
+            StThemedContent {
+                LanguageFilterEditContent(
+                    item = item,
+                    nameMap = nameMap,
+                    onOk = { code, allow ->
+                        if (cont.isActive) cont.resume(
+                            LanguageFilterEditResult.Update(code, allow)
+                        ) { _, _, _ -> }
+                        dialog.dismissSafe()
+                    },
+                    onDelete = if (item != null && item.code != TootStatus.LANGUAGE_CODE_DEFAULT) {
+                        { code ->
+                            if (cont.isActive) cont.resume(
+                                LanguageFilterEditResult.Delete(code)
+                            ) { _, _, _ -> }
+                            dialog.dismissSafe()
+                        }
+                    } else null,
+                    onCancel = { dialog.cancel() },
+                    onPresetsClick = { onSelect ->
+                        scope.launch {
+                            actionsDialog(getString(R.string.presets)) {
+                                val languageList = nameMap.map {
+                                    LanguageFilterItem(it.key, true)
+                                }.sortedWith(languageFilterItemComparator)
+                                for (a in languageList) {
+                                    action("${a.code} ${langDesc(a.code, nameMap)}") {
+                                        onSelect(a.code)
+                                    }
+                                }
+                            }
+                        }
+                    },
+                )
             }
         }
     }
-    etLanguage.addTextChangedListener { updateDesc() }
-    etLanguage.setText(item?.code ?: "")
-    updateDesc()
-    // 編集時は言語コードを変更できない
-    etLanguage.isEnabledAlpha = item == null
-    btnPresets.setEnabledColor(
-        btnPresets.context,
-        R.drawable.ic_edit,
-        colorScheme.onSurface.toArgb(),
-        item == null
-    )
-
-    val root = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        layoutParams = LinearLayout.LayoutParams(dp(300), LinearLayout.LayoutParams.WRAP_CONTENT)
-
-        // Language label
-        addView(TextView(this@dialogLanguageFilterEdit).apply {
-            text = getString(R.string.language)
-        }, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { setMargins(dp12, dp12, dp12, 0) })
-
-        // EditText + presets button row
-        addView(LinearLayout(this@dialogLanguageFilterEdit).apply {
-            orientation = LinearLayout.HORIZONTAL
-            addView(etLanguage, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            addView(btnPresets, LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ))
-        }, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { setMargins(dp12, 0, dp12, 0) })
-
-        // Language description
-        addView(tvLanguage, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { setMargins(dp12, 0, dp12, 0) })
-
-        // Show/Hide label
-        addView(TextView(this@dialogLanguageFilterEdit).apply {
-            text = getString(R.string.show_hide)
-        }, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { setMargins(dp12, dp12, dp12, 0) })
-
-        // RadioGroup
-        addView(RadioGroup(this@dialogLanguageFilterEdit).apply {
-            orientation = RadioGroup.HORIZONTAL
-            addView(rbShow)
-            addView(rbHide, RadioGroup.LayoutParams(
-                RadioGroup.LayoutParams.WRAP_CONTENT,
-                RadioGroup.LayoutParams.WRAP_CONTENT
-            ).apply { marginStart = dp12 })
-        }, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        ).apply { setMargins(dp12, 0, dp12, 0) })
+    dialog.setContentView(composeView)
+    dialog.setOnDismissListener {
+        if (cont.isActive) cont.resumeWithException(cancellationException())
     }
-
-    fun getCode() = etLanguage.text.toString().trim()
-    fun isAllow() = rbShow.isChecked
-
-    AlertDialog.Builder(this@dialogLanguageFilterEdit).apply {
-        setView(root)
-        setCancelable(true)
-        setNegativeButton(R.string.cancel, null)
-        setPositiveButton(R.string.ok) { _, _ ->
-            if (cont.isActive) cont.resume(
-                LanguageFilterEditResult.Update(getCode(), isAllow())
-            ) { _, _, _ -> }
-        }
-        if (item != null && item.code != TootStatus.LANGUAGE_CODE_DEFAULT) {
-            setNeutralButton(R.string.delete) { _, _ ->
-                if (cont.isActive) cont.resume(
-                    LanguageFilterEditResult.Delete(item.code)
-                ) { _, _, _ -> }
-            }
-        }
-    }.create().also { dialog ->
-        dialog.setOnDismissListener {
-            if (cont.isActive) cont.resumeWithException(cancellationException())
-        }
-        cont.invokeOnCancellation { dialog.dismissSafe() }
-        dialog.show()
-    }
+    cont.invokeOnCancellation { dialog.dismissSafe() }
+    dialog.show()
 }

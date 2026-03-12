@@ -50,21 +50,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import jp.juggler.subwaytooter.App1
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootStatus
+import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.subwaytooter.dialog.actionsDialog
 import jp.juggler.subwaytooter.pref.FILE_PROVIDER_AUTHORITY
 import jp.juggler.subwaytooter.util.collectOnLifeCycle
 import jp.juggler.subwaytooter.util.fireBackPressed
-import jp.juggler.subwaytooter.util.getStColorTheme
 import jp.juggler.subwaytooter.util.provideViewModel
-import jp.juggler.subwaytooter.util.stColorScheme
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.checkMimeTypeAndGrant
@@ -171,7 +169,6 @@ class LanguageFilterActivity : ComponentActivity() {
         val result = dialogLanguageFilterEdit(
             myItem,
             viewModel.languageNameMap,
-            getStColorTheme(),
         )
         viewModel.handleEditResult(result)
     }
@@ -241,8 +238,10 @@ class LanguageFilterActivity : ComponentActivity() {
         val scope = rememberCoroutineScope()
         val snackbarHostState = remember { SnackbarHostState() }
         val progressMessageState = progressMessageFlow.collectAsState()
-        MaterialTheme(colorScheme = stColorScheme()) {
-            CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        StThemedContent {
+            CompositionLocalProvider(
+                LocalLayoutDirection provides LayoutDirection.Ltr,
+            ) {
                 Scaffold(
                     snackbarHost = {
                         SnackbarHost(hostState = snackbarHostState)
@@ -352,7 +351,7 @@ class LanguageFilterActivity : ComponentActivity() {
             modifier = Modifier.fillMaxSize().clickable {
                 // 奥の要素をクリックできなくする
             }.background(
-                color = Color(0xC0000000),
+                color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.75f),
             ),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,

@@ -22,6 +22,7 @@ import jp.juggler.util.queryIntentActivitiesCompat
 import jp.juggler.util.resolveActivityCompat
 import jp.juggler.util.systemService
 import jp.juggler.util.ui.attrColor
+import com.google.android.material.R as MR
 
 enum class CustomShareTarget(val pref: StringPref, @StringRes val captionId: Int) {
     Translate(PrefS.spTranslateAppComponent, R.string.translation_app),
@@ -67,7 +68,7 @@ object CustomShare {
                     label =
                         "${context.getString(R.string.copy_to_clipboard)}(${context.getString(R.string.app_name)})"
                     icon = ContextCompat.getDrawable(context, R.drawable.ic_copy)?.mutate()?.apply {
-                        setTint(context.attrColor(R.attr.colorTextContent))
+                        setTint(context.attrColor(MR.attr.colorOnSurface))
                         setTintMode(PorterDuff.Mode.SRC_IN)
                     }
                 } else {

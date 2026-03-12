@@ -26,9 +26,11 @@ fun ActPost.selectAccount(a: SavedAccount?) {
 
     completionHelper.setInstance(a)
 
+    val defaultTextColor = attrColor(android.R.attr.textColorPrimary)
+
     if (a == null) {
         views.btnAccount.text = getString(R.string.not_selected_2)
-        views.btnAccount.setTextColor(attrColor(android.R.attr.textColorPrimary))
+        views.btnAccount.setTextColor(defaultTextColor)
         views.btnAccount.setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
     } else {
         // 先読みしてキャッシュを温める。この時点では取得結果を使わない
@@ -47,7 +49,7 @@ fun ActPost.selectAccount(a: SavedAccount?) {
         }
 
         views.btnAccount.setTextColor(
-            ac.colorFg.notZero() ?: attrColor(android.R.attr.textColorPrimary)
+            ac.colorFg.notZero() ?: defaultTextColor
         )
     }
     updateTextCount()

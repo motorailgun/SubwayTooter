@@ -1,32 +1,50 @@
 package jp.juggler.subwaytooter.dialog
 
-import android.annotation.SuppressLint
 import android.app.Dialog
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.FrameLayout
-import android.widget.LinearLayout
-import android.widget.TextView
-import androidx.recyclerview.widget.AsyncListDiffer
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import android.widget.ImageView
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import jp.juggler.subwaytooter.ActMain
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.action.*
 import jp.juggler.subwaytooter.api.*
 import jp.juggler.subwaytooter.api.entity.*
-import jp.juggler.subwaytooter.calcIconRound
+import jp.juggler.subwaytooter.compose.NetworkImage
+import jp.juggler.subwaytooter.compose.SpannableTextView
+import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.table.accountListNonPseudo
 import jp.juggler.subwaytooter.table.daoAcctColor
-import jp.juggler.subwaytooter.util.NetworkEmojiInvalidator
-import jp.juggler.subwaytooter.view.MyNetworkImageView
 import jp.juggler.util.coroutine.EmptyScope
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.launchMain
@@ -58,200 +76,24 @@ private data class OwnerListStatus(
         other is OwnerListStatus &&
                 owner.db_id == other.owner.db_id &&
                 list.id == other.list.id
-
-    // IDが同じかつ表示内容が同じなら真
-    fun contentEquals(other: OwnerListStatus): Boolean =
-        equals(other) &&
-                list.title == other.list.title &&
-                isRegistered == other.isRegistered
-}
-
-// リストと登録状態を表すViewHolder
-private class VhOwnerAndList(
-    private val layoutInflater: LayoutInflater,
-    private val parent: ViewGroup,
-    private val handleCheckChange: (OwnerListStatus) -> Unit,
-) : RecyclerView.ViewHolder(
-    FrameLayout(parent.context).apply {
-        layoutParams = RecyclerView.LayoutParams(
-            RecyclerView.LayoutParams.MATCH_PARENT,
-            RecyclerView.LayoutParams.WRAP_CONTENT,
-        )
-        val dp12 = (12 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
-        setPadding(dp12, 0, dp12, 0)
-    }
-) {
-    private val cbItem = CheckBox(parent.context).apply {
-        layoutParams = FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT,
-            FrameLayout.LayoutParams.WRAP_CONTENT,
-        )
-        gravity = android.view.Gravity.CENTER_VERTICAL
-        minimumHeight = (48 * context.resources.displayMetrics.density + 0.5f).toInt()
-        val dp4 = (4 * context.resources.displayMetrics.density + 0.5f).toInt()
-        setPadding(paddingLeft, dp4, paddingRight, dp4)
-    }
-
-    init {
-        (itemView as FrameLayout).addView(cbItem)
-    }
-
-    fun bind(data: OwnerListStatus) {
-        // リスナを外してから値をセットする
-        cbItem.setOnCheckedChangeListener(null)
-        cbItem.isChecked = data.isRegistered
-        cbItem.text = data.list.title
-        // 最後にリスナをセットし直す
-        cbItem.setOnCheckedChangeListener { v, isChecked ->
-            handleCheckChange(data.copy(isRegistered = isChecked))
-        }
-    }
-}
-
-// New List ボタンを表すViewHolder
-private class VhCreate(
-    private val layoutInflater: LayoutInflater,
-    private val parent: ViewGroup,
-    private val handleCreate: () -> Unit,
-) : RecyclerView.ViewHolder(
-    FrameLayout(parent.context).apply {
-        layoutParams = RecyclerView.LayoutParams(
-            RecyclerView.LayoutParams.MATCH_PARENT,
-            RecyclerView.LayoutParams.WRAP_CONTENT,
-        )
-        val dp12 = (12 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
-        setPadding(dp12, 0, dp12, 0)
-        val btn = Button(parent.context).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-            )
-            text = parent.context.getString(R.string.list_create)
-            isAllCaps = false
-            setOnClickListener { handleCreate() }
-        }
-        addView(btn)
-    }
-) {
-}
-
-// エラーテキストを表すViewHolder
-private class VhError(
-    private val layoutInflater: LayoutInflater,
-    private val parent: ViewGroup,
-) : RecyclerView.ViewHolder(
-    TextView(parent.context).apply {
-        layoutParams = RecyclerView.LayoutParams(
-            RecyclerView.LayoutParams.MATCH_PARENT,
-            RecyclerView.LayoutParams.WRAP_CONTENT,
-        )
-        gravity = android.view.Gravity.CENTER_VERTICAL
-        minimumHeight = (48 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
-        val dp12 = (12 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
-        val dp4 = (4 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
-        setPadding(dp12, dp4, dp12, dp4)
-    }
-) {
-    fun bind(data: Any?) {
-        (itemView as TextView).text = data.toString()
-    }
-}
-
-// リストの更新部分を調べるDiffUtil
-private class OnwedListsDiffUtil : DiffUtil.ItemCallback<Any>() {
-    override fun areItemsTheSame(oldItem: Any, newItem: Any) =
-        oldItem == newItem
-
-    @SuppressLint("DiffUtilEquals")
-    override fun areContentsTheSame(oldItem: Any, newItem: Any) = when {
-        oldItem is OwnerListStatus && newItem is OwnerListStatus ->
-            oldItem.contentEquals(newItem)
-
-        else -> oldItem == newItem
-    }
-}
-
-// RecyclerViewのAdapter
-private class OwnListAdapter(
-    private val layoutInflater: LayoutInflater,
-    private val handleCreate: () -> Unit,
-    private val handleCheckChange: (OwnerListStatus) -> Unit,
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
-    companion object {
-        private const val VIEW_TYPE_ITEM = 0
-        private const val VIEW_TYPE_CREATE = 1
-        private const val VIEW_TYPE_ERROR = 2
-    }
-
-    private val differ = AsyncListDiffer<Any>(this, OnwedListsDiffUtil())
-
-    val items get() = differ.currentList
-
-    fun replaceTo(newItems: List<Any>) = differ.submitList(newItems)
-
-    fun getItem(position: Int): Any? = items.elementAtOrNull(position)
-
-    override fun getItemCount() = items.size
-
-    override fun getItemViewType(position: Int) =
-        when (getItem(position)) {
-            is OwnerListStatus -> VIEW_TYPE_ITEM
-            is Double -> VIEW_TYPE_CREATE
-            else -> VIEW_TYPE_ERROR
-        }
-
-    override fun onCreateViewHolder(
-        parent: ViewGroup,
-        viewType: Int,
-    ): RecyclerView.ViewHolder = when (viewType) {
-        VIEW_TYPE_ITEM -> VhOwnerAndList(
-            layoutInflater = layoutInflater,
-            parent = parent,
-            handleCheckChange = handleCheckChange,
-        )
-
-        VIEW_TYPE_CREATE -> VhCreate(
-            layoutInflater = layoutInflater,
-            parent = parent,
-            handleCreate = handleCreate,
-        )
-
-        else -> VhError(
-            layoutInflater = layoutInflater,
-            parent = parent,
-        )
-    }
-
-    override fun onBindViewHolder(
-        holder: RecyclerView.ViewHolder,
-        position: Int,
-    ) {
-        when (holder) {
-            is VhOwnerAndList -> holder.bind(getItem(position) as OwnerListStatus)
-            is VhCreate -> Unit
-            is VhError -> holder.bind(getItem(position))
-        }
-    }
 }
 
 /**
  * リストメンバー管理ダイアログの状態
  */
 class DlgListMember(
-    // 画面
     private val activity: ActMain,
-    // リストに登録/解除したいユーザ
     private val who: TootAccount,
-    // そのユーザのfull acct
     private val whoAcct: Acct,
-    // リスト所有者(ダイアログ中で変更可能)
-    private var listOwner: SavedAccount?,
+    initialOwner: SavedAccount?,
 ) {
-    // 選択可能なリストオーナーの一覧
     private val accountList = accountListNonPseudo(null)
-
-    // listOwnerのサーバ上のwhoのアカウント情報
     private var whoLocal: TootAccount? = null
+    private var listOwner: SavedAccount? = initialOwner
+
+    // Compose observable state
+    private val itemsState = mutableStateOf(emptyList<Any>())
+    private val listOwnerState = mutableStateOf(initialOwner)
 
     private val requestChannel = Channel<OwnerListStatus>(capacity = Channel.UNLIMITED).apply {
         EmptyScope.launch {
@@ -262,138 +104,10 @@ class DlgListMember(
                     null -> Unit
                     else -> {
                         error.notEmpty()?.let { activity.showToast(true, it) }
-                        // revoke list item
                         updateListItem(request, !request.isRegistered)
                     }
                 }
             }
-        }
-    }
-
-    private val listsAdapter = OwnListAdapter(
-        layoutInflater = activity.layoutInflater,
-        handleCreate = ::openListCreator,
-        handleCheckChange = ::handleCheckChange,
-    )
-
-    private val dialog = Dialog(activity)
-
-    // Programmatic views
-    private val btnClose: Button
-    private val btnListOwner: Button
-    private val rvOwnedlists: RecyclerView
-    private val ivUser: MyNetworkImageView
-    private val tvUserAcct: TextView
-    private val tvUserName: TextView
-    private val root: LinearLayout
-
-    init {
-        val activity = this.activity
-        val dp3 = activity.dp(3)
-        val dp4 = activity.dp(4)
-        val dp6 = activity.dp(6)
-        val dp12 = activity.dp(12)
-        val dp48 = activity.dp(48)
-
-        ivUser = MyNetworkImageView(activity).apply {
-            contentDescription = activity.getString(R.string.thumbnail)
-            scaleType = android.widget.ImageView.ScaleType.FIT_END
-        }
-        tvUserName = TextView(activity)
-        tvUserAcct = TextView(activity).apply {
-            setTextColor(activity.attrColor(R.attr.colorTimeSmall))
-            textSize = 12f
-            setPadding(dp4, 0, dp4, 0)
-        }
-        btnListOwner = Button(activity).apply {
-            isAllCaps = false
-        }
-        rvOwnedlists = RecyclerView(activity).apply {
-            isScrollbarFadingEnabled = false
-            scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
-        }
-        btnClose = Button(activity).apply {
-            text = activity.getString(R.string.close)
-        }
-
-        root = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            // spacer
-            addView(View(activity), LinearLayout.LayoutParams(0, dp6))
-            // "Target user" label
-            addView(TextView(activity).apply {
-                text = activity.getString(R.string.target_user)
-                textSize = 14f
-            }, LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { setMargins(dp12, 0, dp12, 0) })
-            // User info row
-            addView(LinearLayout(activity).apply {
-                gravity = android.view.Gravity.CENTER_VERTICAL
-                addView(ivUser, LinearLayout.LayoutParams(dp48, (40 * activity.resources.displayMetrics.density + 0.5f).toInt()).apply {
-                    marginEnd = dp4
-                })
-                addView(LinearLayout(activity).apply {
-                    orientation = LinearLayout.VERTICAL
-                    addView(tvUserName, LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                    ))
-                    addView(tvUserAcct, LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                    ))
-                }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            }, LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { setMargins(dp12, dp3, dp12, 0) })
-            // divider
-            addView(View(activity).apply {
-                setBackgroundColor(activity.attrColor(R.attr.colorSettingDivider))
-            }, LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, activity.dp(1)
-            ).apply { setMargins(0, dp6, 0, dp6) })
-            // "List owner" label
-            addView(TextView(activity).apply {
-                text = activity.getString(R.string.list_owner)
-                textSize = 14f
-            }, LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { setMargins(dp12, 0, dp12, 0) })
-            // List owner button
-            addView(btnListOwner, LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { setMargins(dp12, dp3, dp12, 0) })
-            // "List" label
-            addView(TextView(activity).apply {
-                text = activity.getString(R.string.list)
-                textSize = 14f
-            }, LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ).apply { setMargins(dp12, 0, dp12, 0) })
-            // RecyclerView
-            addView(rvOwnedlists, LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
-            ))
-            // divider
-            addView(View(activity).apply {
-                setBackgroundColor(activity.attrColor(R.attr.colorSettingDivider))
-            }, LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT, activity.dp(1)
-            ))
-            // Close button bar
-            addView(LinearLayout(activity).apply {
-                addView(btnClose, LinearLayout.LayoutParams(0,
-                    LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            }, LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ))
         }
     }
 
@@ -417,29 +131,20 @@ class DlgListMember(
         }
     }
 
-    /**
-     * 表示リスト中のIDがマッチする項目の isRegisteredを変更する
-     */
     private fun updateListItem(idSample: OwnerListStatus, newRegistered: Boolean) {
-        listsAdapter.replaceTo(
-            listsAdapter.items.map<Any, Any> {
-                when {
-                    it is OwnerListStatus && it == idSample ->
-                        it.copy(isRegistered = newRegistered)
+        itemsState.value = itemsState.value.map {
+            when {
+                it is OwnerListStatus && it == idSample ->
+                    it.copy(isRegistered = newRegistered)
 
-                    else -> it
-                }
+                else -> it
             }
-        )
+        }
     }
 
-    private fun handleCheckChange(
-        data: OwnerListStatus,
-    ) = EmptyScope.launch {
+    private fun handleCheckChange(data: OwnerListStatus) = EmptyScope.launch {
         try {
-            // 表示リストの内容をすぐに変更する
             updateListItem(data, data.isRegistered)
-            // チャネルに変更リクエストを送る
             requestChannel.send(data)
         } catch (ex: Throwable) {
             log.e(ex, "handleCheckChange failed.")
@@ -448,13 +153,12 @@ class DlgListMember(
 
     private fun showLists(owner: SavedAccount?, srcList: ArrayList<TootList>?) {
         with(activity) {
-            val newList = buildList {
+            itemsState.value = buildList {
                 when {
                     owner == null || srcList == null ->
                         add(getString(R.string.cant_access_list))
 
                     else -> {
-                        // enable "New List..." if list is not null.
                         add(Double.NaN)
                         when {
                             srcList.isEmpty() ->
@@ -473,11 +177,9 @@ class DlgListMember(
                     }
                 }
             }
-            listsAdapter.replaceTo(newList)
         }
     }
 
-    // リストの一覧とターゲットユーザの登録状況を取得する
     private fun loadLists(owner: SavedAccount?) {
         if (owner == null) {
             showLists(null, null)
@@ -486,19 +188,15 @@ class DlgListMember(
         launchMain {
             var resultList: ArrayList<TootList>? = null
             val result = activity.runApiTask(owner) { client ->
-                // 現在の登録状況を知るため、対象ユーザの自タンスでのアカウントIDを取得する
-                // ドメインブロックなどの影響で同期できない場合があるが、
-                // 一覧そのものは取得できるのでこの段階ではエラーにはしない
                 val (r1, ar) = client.syncAccountByAcct(owner, whoAcct)
-                r1 ?: return@runApiTask null // cancelled.
+                r1 ?: return@runApiTask null
 
-                val whoLocal = ar?.get() // may null
+                val whoLocal = ar?.get()
                 this@DlgListMember.whoLocal = whoLocal
 
                 if (whoLocal == null) activity.showToast(true, r1.error)
 
                 if (owner.isMisskey) {
-                    // misskeyではリスト全スキャンしないとユーザの登録状況が分からない?
                     client.request(
                         "/api/users/lists/list",
                         owner
@@ -522,7 +220,6 @@ class DlgListMember(
                 } else {
                     val registeredSet = HashSet<EntityId>()
 
-                    // メンバーを指定してリスト登録状況を取得
                     if (whoLocal != null) client.request(
                         "/api/v1/accounts/${whoLocal.id}/lists"
                     )?.also { result ->
@@ -536,7 +233,6 @@ class DlgListMember(
                         }
                     }
 
-                    // リスト一覧を取得
                     client.request("/api/v1/lists")?.also { result ->
                         resultList = parseList(result.jsonArray) {
                             TootList(
@@ -558,31 +254,10 @@ class DlgListMember(
     }
 
     private fun setListOwner(a: SavedAccount?) {
-        // リストオーナボタンの文字列を更新する
-        if (a == null) {
-            btnListOwner.setText(R.string.not_selected_2)
-            btnListOwner.setTextColor(activity.attrColor(android.R.attr.textColorPrimary))
-            btnListOwner.setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
-        } else {
-            val ac = daoAcctColor.load(a)
-            btnListOwner.text = ac.nickname
-            if (daoAcctColor.hasColorBackground(ac)) {
-                btnListOwner.setBackgroundColor(ac.colorBg)
-            } else {
-                btnListOwner.setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
-            }
-            btnListOwner.setTextColor(
-                ac.colorFg.notZero() ?: activity.attrColor(android.R.attr.textColorPrimary)
-            )
-        }
-        // リスト一覧を取得する
         listOwner = a
+        listOwnerState.value = a
         loadLists(a)
     }
-
-    /**
-     * リスト登録/解除処理を行い、失敗したらエラーメッセージを返す
-     */
 
     private suspend fun handleRequest(request: OwnerListStatus): String? {
         val whoLocal = this@DlgListMember.whoLocal
@@ -596,7 +271,6 @@ class DlgListMember(
         } catch (ex: Throwable) {
             log.e(ex, "listMemberAdd failed.")
             when (ex) {
-                // チェック状態の巻き戻しは必要だが、トースト表示は必要ない
                 is CancellationException, is MemberNotFollowedException -> ""
                 else -> ex.message.notBlank() ?: ""
             }
@@ -604,45 +278,238 @@ class DlgListMember(
     }
 
     fun show() {
-        btnClose.setOnClickListener { dialog.dismissSafe() }
-        btnListOwner.setOnClickListener {
-            launchMain {
-                activity.pickAccount(
-                    bAllowPseudo = false,
-                    bAuto = false,
-                    accountListArg = accountList
-                )?.let { setListOwner(it) }
+        val dialog = Dialog(activity)
+        val act = this.activity
+        val displayName = who.decodeDisplayName(act)
+        val actHandler = act.handler
+        val composeView = ComposeView(act).apply {
+            setContent {
+                StThemedContent {
+                    DlgListMemberContent(
+                        who = who,
+                        whoAcct = whoAcct,
+                        displayName = displayName,
+                        items = itemsState.value,
+                        listOwner = listOwnerState.value,
+                        handler = actHandler,
+                        onPickOwner = {
+                            launchMain {
+                                act.pickAccount(
+                                    bAllowPseudo = false,
+                                    bAuto = false,
+                                    accountListArg = accountList
+                                )?.let { setListOwner(it) }
+                            }
+                        },
+                        onCheckChange = { data ->
+                            handleCheckChange(data)
+                        },
+                        onCreate = ::openListCreator,
+                        onClose = { dialog.dismissSafe() },
+                    )
+                }
             }
         }
-        rvOwnedlists.apply {
-            layoutManager = LinearLayoutManager(context)
-            adapter = listsAdapter
+        dialog.setContentView(composeView)
+        dialog.setOnDismissListener { requestChannel.close() }
+        dialog.window?.apply {
+            setFlags(0, Window.FEATURE_NO_TITLE)
+            setLayout(
+                WindowManager.LayoutParams.MATCH_PARENT,
+                WindowManager.LayoutParams.MATCH_PARENT
+            )
         }
+        dialog.show()
+        setListOwner(listOwner)
+    }
+}
 
-        ivUser.setImageUrl(
-            calcIconRound(ivUser.layoutParams),
-            who.avatar_static,
-            who.avatar
+@Composable
+private fun DlgListMemberContent(
+    who: TootAccount,
+    whoAcct: Acct,
+    displayName: CharSequence,
+    items: List<Any>,
+    listOwner: SavedAccount?,
+    handler: android.os.Handler,
+    onPickOwner: () -> Unit,
+    onCheckChange: (OwnerListStatus) -> Unit,
+    onCreate: () -> Unit,
+    onClose: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        Spacer(modifier = Modifier.height(6.dp))
+
+        // "Target user" section
+        Text(
+            text = stringResource(R.string.target_user),
+            fontSize = 14.sp,
+            modifier = Modifier.padding(horizontal = 12.dp),
         )
-        tvUserAcct.text = whoAcct.pretty
-
-        NetworkEmojiInvalidator(activity.handler, tvUserName)
-            .text = who.decodeDisplayName(activity)
-
-        dialog.apply {
-            setTitle(R.string.your_lists)
-            setContentView(root)
-            setOnDismissListener { requestChannel.close() }
-            window?.apply {
-                setFlags(0, Window.FEATURE_NO_TITLE)
-                setLayout(
-                    WindowManager.LayoutParams.MATCH_PARENT,
-                    WindowManager.LayoutParams.MATCH_PARENT
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 12.dp, end = 12.dp, top = 3.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            NetworkImage(
+                modifier = Modifier.size(48.dp, 40.dp),
+                cornerRadius = 0f,
+                staticUrl = who.avatar_static,
+                animatedUrl = who.avatar,
+                contentDescription = null,
+                scaleType = ImageView.ScaleType.FIT_END,
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                SpannableTextView(
+                    text = displayName,
+                    handler = handler,
+                )
+                Text(
+                    text = whoAcct.pretty,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 4.dp),
                 )
             }
-            show()
         }
-        setListOwner(listOwner)
+
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 6.dp),
+            color = MaterialTheme.colorScheme.outlineVariant,
+        )
+
+        // "List owner" section
+        Text(
+            text = stringResource(R.string.list_owner),
+            fontSize = 14.sp,
+            modifier = Modifier.padding(horizontal = 12.dp),
+        )
+        ListOwnerButton(
+            listOwner = listOwner,
+            onClick = onPickOwner,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 12.dp, end = 12.dp, top = 3.dp),
+        )
+
+        // "List" section
+        Text(
+            text = stringResource(R.string.list),
+            fontSize = 14.sp,
+            modifier = Modifier.padding(horizontal = 12.dp),
+        )
+        LazyColumn(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth(),
+        ) {
+            items(
+                items = items,
+                key = { item ->
+                    when (item) {
+                        is OwnerListStatus -> "list:${item.owner.db_id}:${item.list.id}"
+                        is Double -> "create"
+                        else -> "msg:$item"
+                    }
+                },
+            ) { item ->
+                when (item) {
+                    is OwnerListStatus -> ListCheckboxRow(
+                        data = item,
+                        onCheckChange = onCheckChange,
+                    )
+
+                    is Double -> Button(
+                        onClick = onCreate,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp),
+                    ) {
+                        Text(stringResource(R.string.list_create))
+                    }
+
+                    else -> Text(
+                        text = item.toString(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                    )
+                }
+            }
+        }
+
+        // Close button bar
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min),
+        ) {
+            TextButton(
+                onClick = onClose,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(stringResource(R.string.close))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ListOwnerButton(
+    listOwner: SavedAccount?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (listOwner == null) {
+        Button(
+            onClick = onClick,
+            modifier = modifier,
+        ) {
+            Text(stringResource(R.string.not_selected_2))
+        }
+    } else {
+        val ac = daoAcctColor.load(listOwner)
+        val hasBg = daoAcctColor.hasColorBackground(ac)
+        val bgColor = if (hasBg) Color(ac.colorBg) else Color.Transparent
+        val fgColor = ac.colorFg.notZero()?.let { Color(it) }
+            ?: MaterialTheme.colorScheme.onSurface
+        Button(
+            onClick = onClick,
+            modifier = modifier,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = bgColor,
+                contentColor = fgColor,
+            ),
+        ) {
+            Text(ac.nickname)
+        }
+    }
+}
+
+@Composable
+private fun ListCheckboxRow(
+    data: OwnerListStatus,
+    onCheckChange: (OwnerListStatus) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Checkbox(
+            checked = data.isRegistered,
+            onCheckedChange = { checked ->
+                onCheckChange(data.copy(isRegistered = checked))
+            },
+        )
+        Text(
+            text = data.list.title ?: "",
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
@@ -658,7 +525,7 @@ fun ActMain.openDlgListMember(
             activity = this,
             who = who,
             whoAcct = whoAcct,
-            listOwner = initialOwner.takeIf { !it.isPseudo },
+            initialOwner = initialOwner.takeIf { !it.isPseudo },
         ).show()
     }
 }

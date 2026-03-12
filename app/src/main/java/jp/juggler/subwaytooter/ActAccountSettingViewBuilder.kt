@@ -19,9 +19,10 @@ import androidx.appcompat.widget.Toolbar
 import jp.juggler.subwaytooter.view.MyNetworkImageView
 import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.dp
+import com.google.android.material.R as MR
 
 // Style helper: setting_divider
-private fun Context.settingDivider() = View(this).apply {
+private fun Context.settingDivider(color: Int) = View(this).apply {
     layoutParams = LinearLayout.LayoutParams(
         LinearLayout.LayoutParams.MATCH_PARENT, dp(1)
     ).apply {
@@ -29,7 +30,7 @@ private fun Context.settingDivider() = View(this).apply {
         bottomMargin = dp(12)
     }
     setPadding(0, 0, 0, 0)
-    setBackgroundColor(attrColor(R.attr.colorSettingDivider))
+    setBackgroundColor(color)
 }
 
 // Style helper: setting_row_label
@@ -188,6 +189,7 @@ private fun Context.settingImageButton(
     id: Int,
     iconResId: Int,
     contentDescResId: Int,
+    tintColor: Int,
 ) = ImageButton(this).apply {
     this.id = id
     layoutParams = LinearLayout.LayoutParams(dp(48), dp(48)).apply {
@@ -196,7 +198,7 @@ private fun Context.settingImageButton(
     background = resources.getDrawable(R.drawable.btn_bg_transparent_round6dp, theme)
     contentDescription = getString(contentDescResId)
     setImageResource(iconResId)
-    imageTintList = android.content.res.ColorStateList.valueOf(attrColor(R.attr.colorTextContent))
+    imageTintList = android.content.res.ColorStateList.valueOf(tintColor)
     scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
 }
 
@@ -216,6 +218,9 @@ private fun Context.settingWrapLabel(textResId: Int, labelFor: Int = 0) = TextVi
  */
 fun buildAccountSettingView(context: Context): View {
     val ctx = context
+    val dividerColor = ctx.attrColor(MR.attr.colorOutlineVariant)
+    val iconTintColor = ctx.attrColor(MR.attr.colorOnSurface)
+    val surfaceColor = ctx.attrColor(MR.attr.colorSurface)
 
     val innerContent = LinearLayout(ctx).apply {
         layoutParams = LinearLayout.LayoutParams(
@@ -226,7 +231,7 @@ fun buildAccountSettingView(context: Context): View {
         setPadding(0, ctx.dp(12), 0, ctx.dp(128))
 
         // === Instance section ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.instance))
         addView(ctx.settingRowForm {
             addView(TextView(ctx).apply {
@@ -236,7 +241,7 @@ fun buildAccountSettingView(context: Context): View {
         })
 
         // === User section ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.user))
         addView(ctx.settingRowForm {
             addView(TextView(ctx).apply {
@@ -247,7 +252,7 @@ fun buildAccountSettingView(context: Context): View {
         })
 
         // === Nickname section ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.nickname_label))
         addView(ctx.settingRowForm {
             addView(TextView(ctx).apply {
@@ -257,11 +262,11 @@ fun buildAccountSettingView(context: Context): View {
                 }
                 setPadding(ctx.dp(4), ctx.dp(4), ctx.dp(4), ctx.dp(4))
             })
-            addView(ctx.settingImageButton(R.id.btnUserCustom, R.drawable.ic_edit, R.string.edit))
+            addView(ctx.settingImageButton(R.id.btnUserCustom, R.drawable.ic_edit, R.string.edit, iconTintColor))
         })
 
         // === Default text section ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.toot_default_text, labelFor = R.id.etDefaultText))
         addView(ctx.settingRowForm {
             addView(EditText(ctx).apply {
@@ -275,7 +280,7 @@ fun buildAccountSettingView(context: Context): View {
         })
 
         // === Public profile section ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.public_profile))
         addView(ctx.settingRowForm {
             addView(FrameLayout(ctx).apply {
@@ -325,7 +330,7 @@ fun buildAccountSettingView(context: Context): View {
                 layoutParams = horizontalStretchParams()
                 inputType = InputType.TYPE_CLASS_TEXT
             })
-            addView(ctx.settingImageButton(R.id.btnDisplayName, R.drawable.ic_send, R.string.post))
+            addView(ctx.settingImageButton(R.id.btnDisplayName, R.drawable.ic_send, R.string.post, iconTintColor))
         })
 
         // Note
@@ -338,7 +343,7 @@ fun buildAccountSettingView(context: Context): View {
                 layoutParams = horizontalStretchParams()
                 inputType = InputType.TYPE_TEXT_FLAG_MULTI_LINE
             })
-            addView(ctx.settingImageButton(R.id.btnNote, R.drawable.ic_send, R.string.post))
+            addView(ctx.settingImageButton(R.id.btnNote, R.drawable.ic_send, R.string.post, iconTintColor))
         })
 
         // Locked
@@ -351,7 +356,7 @@ fun buildAccountSettingView(context: Context): View {
         })
 
         // === Profile metadata fields ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(LinearLayout(ctx).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -361,7 +366,7 @@ fun buildAccountSettingView(context: Context): View {
             gravity = Gravity.CENTER_VERTICAL
             orientation = LinearLayout.HORIZONTAL
             addView(ctx.settingRowLabelStretch(R.string.profile_metadata))
-            addView(ctx.settingImageButton(R.id.btnFields, R.drawable.ic_send, R.string.post))
+            addView(ctx.settingImageButton(R.id.btnFields, R.drawable.ic_send, R.string.post, iconTintColor))
         })
 
         // Field 1-4 name/value pairs
@@ -409,7 +414,7 @@ fun buildAccountSettingView(context: Context): View {
         }
 
         // === Actions section ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.actions))
         addView(Button(ctx).apply {
             id = R.id.btnOpenBrowser
@@ -440,7 +445,7 @@ fun buildAccountSettingView(context: Context): View {
         })
 
         // === Default visibility ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.default_status_visibility))
         addView(ctx.settingRowForm {
             addView(Button(ctx).apply {
@@ -450,7 +455,7 @@ fun buildAccountSettingView(context: Context): View {
         })
 
         // === Language code ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.post_language_code, labelFor = R.id.etLanguageCode))
         addView(Spinner(ctx).apply {
             id = R.id.spLanguageCode
@@ -465,22 +470,22 @@ fun buildAccountSettingView(context: Context): View {
         })
 
         // === Mark sensitive ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.mark_sensitive_by_default))
         addView(ctx.settingSwitchRow(R.id.swMarkSensitive))
 
         // === NSFW open ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.sensitive_content_default_open))
         addView(ctx.settingSwitchRow(R.id.swNSFWOpen))
 
         // === CW expand ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.cw_default_open))
         addView(ctx.settingSwitchRow(R.id.swExpandCW))
 
         // === Confirmation section ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.confirmation))
         addView(ctx.settingCheckBox(R.id.cbConfirmFollow, R.string.follow))
         addView(ctx.settingCheckBox(R.id.cbConfirmFollowLockedUser, R.string.follow_locked_user))
@@ -494,7 +499,7 @@ fun buildAccountSettingView(context: Context): View {
         addView(ctx.settingCheckBox(R.id.cbConfirmReaction, R.string.reaction))
 
         // === Notifications section ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.notifications))
         addView(ctx.settingCheckBox(R.id.cbNotificationMention, R.string.mention2))
         addView(ctx.settingCheckBox(R.id.cbNotificationBoost, R.string.boost))
@@ -509,7 +514,7 @@ fun buildAccountSettingView(context: Context): View {
         addView(ctx.settingCheckBox(R.id.cbNotificationSeveredRelationships, R.string.notification_type_severed_relationships))
 
         // === Push notification ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.push_notification_use))
         addView(ctx.settingSwitchRow(R.id.swNotificationPushEnabled))
 
@@ -605,7 +610,7 @@ fun buildAccountSettingView(context: Context): View {
         })
 
         // === Pull notification ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.pull_notification_use))
         addView(ctx.settingSwitchRow(R.id.swNotificationPullEnabled))
 
@@ -638,7 +643,7 @@ fun buildAccountSettingView(context: Context): View {
         })
 
         // === Max toot chars ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.max_toot_chars, labelFor = R.id.etMaxTootChars))
         addView(EditText(ctx).apply {
             id = R.id.etMaxTootChars
@@ -652,7 +657,7 @@ fun buildAccountSettingView(context: Context): View {
         })
 
         // === Media size max ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.media_attachment_max_byte_size, labelFor = R.id.etMediaSizeMax))
         addView(EditText(ctx).apply {
             id = R.id.etMediaSizeMax
@@ -666,7 +671,7 @@ fun buildAccountSettingView(context: Context): View {
         })
 
         // === Resize image ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.resize_image))
         addView(Spinner(ctx).apply {
             id = R.id.spResizeImage
@@ -680,7 +685,7 @@ fun buildAccountSettingView(context: Context): View {
         })
 
         // === Movie size max ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.media_attachment_max_byte_size_movie, labelFor = R.id.etMovieSizeMax))
         addView(ctx.settingRowLabel(R.string.option_deprecated_mastodon342))
         addView(EditText(ctx).apply {
@@ -695,7 +700,7 @@ fun buildAccountSettingView(context: Context): View {
         })
 
         // === Movie transcode ===
-        addView(ctx.settingDivider())
+        addView(ctx.settingDivider(dividerColor))
         addView(ctx.settingRowLabel(R.string.movie_transcode))
 
         // Transcode mode
@@ -721,7 +726,7 @@ fun buildAccountSettingView(context: Context): View {
             LinearLayout.LayoutParams.MATCH_PARENT,
             0, 1f
         )
-        setBackgroundColor(ctx.attrColor(R.attr.colorMainBackground))
+        setBackgroundColor(surfaceColor)
         isFillViewport = true
         isVerticalFadingEdgeEnabled = true
         setFadingEdgeLength(ctx.dp(20))

@@ -13,13 +13,14 @@ import jp.juggler.subwaytooter.pref.lazyContext
 import jp.juggler.util.ui.attrColor
 import kotlin.math.max
 import kotlin.math.min
+import com.google.android.material.R as MR
 
 /**
  * コードブロック用の装飾スパン
  */
 class HrSpan(
     context: Context = lazyContext,
-    private var lineColor: Int = context.attrColor(R.attr.colorTextContent),
+    private var lineColor: Int = context.attrColor(MR.attr.colorOnSurface),
     private var lineHeight: Int = (context.resources.displayMetrics.density * 1f + 0.5f).toInt(),
 ) : MetricAffectingSpan(), LeadingMarginSpan {
 

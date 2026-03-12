@@ -27,6 +27,7 @@ import jp.juggler.util.ui.resDrawable
 import jp.juggler.util.ui.wrapAndTint
 import java.util.*
 import kotlin.math.max
+import com.google.android.material.R as MR
 
 private val log = LogCategory("ActMainStyle")
 
@@ -176,15 +177,15 @@ fun ActMain.reloadColors() {
     TootColorConfig.toot_color_direct_user = 0
     TootColorConfig.toot_color_direct_me = 0
     MyClickableSpan.showLinkUnderline = PrefB.bpShowLinkUnderline.value
-    MyClickableSpan.defaultLinkColor = attrColor(R.attr.colorLink)
+    MyClickableSpan.defaultLinkColor = attrColor(androidx.appcompat.R.attr.colorPrimary)
 
-    views.llFormRoot.setBackgroundColor(attrColor(R.attr.colorMainBackground))
+    views.llFormRoot.setBackgroundColor(attrColor(MR.attr.colorSurface))
 
     CustomShare.reloadCache(this)
 }
 
 fun ActMain.showFooterColor() {
-    val colorColumnStripBackground = attrColor(R.attr.colorColumnStripBackground)
+    val colorColumnStripBackground = attrColor(MR.attr.colorSurfaceContainer)
 
     views.svColumnStrip.setBackgroundColor(colorColumnStripBackground)
     views.llQuickTootBar.setBackgroundColor(colorColumnStripBackground)
@@ -193,7 +194,7 @@ fun ActMain.showFooterColor() {
 
     val colorButtonBg = colorColumnStripBackground
 
-    val colorButtonFg = attrColor(R.attr.colorRippleEffect)
+    val colorButtonFg = attrColor(MR.attr.colorOnSurface)
 
     views.btnMenu.background =
         getAdaptiveRippleDrawableRound(this, colorButtonBg, colorButtonFg)
@@ -206,11 +207,11 @@ fun ActMain.showFooterColor() {
     views.btnQuickTootMenu.background =
         getAdaptiveRippleDrawableRound(this, colorButtonBg, colorButtonFg)
 
-    val c = attrColor(R.attr.colorTextContent)
+    val c = attrColor(MR.attr.colorOnSurface)
     val d = resDrawable(R.drawable.ic_question).wrapAndTint(color = c)
     views.ivQuickTootAccount.setDefaultImage(d)
 
-    val csl = ColorStateList.valueOf(attrColor(R.attr.colorTextContent))
+    val csl = ColorStateList.valueOf(attrColor(MR.attr.colorOnSurface))
     views.btnToot.imageTintList = csl
     views.btnMenu.imageTintList = csl
     views.btnQuickToot.imageTintList = csl
@@ -219,7 +220,7 @@ fun ActMain.showFooterColor() {
     views.vFooterDivider1.setBackgroundColor(colorColumnStripBackground)
     views.vFooterDivider2.setBackgroundColor(colorColumnStripBackground)
 
-    views.llColumnStrip.indicatorColor = attrColor(R.attr.colorTextHelp)
+    views.llColumnStrip.indicatorColor = attrColor(MR.attr.colorOnSurfaceVariant)
 }
 
 fun ActMain.closePopup() {

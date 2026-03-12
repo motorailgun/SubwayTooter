@@ -35,7 +35,6 @@ import jp.juggler.subwaytooter.column.Column
 import jp.juggler.subwaytooter.column.startGap
 import jp.juggler.subwaytooter.dialog.DlgContextMenu
 import jp.juggler.subwaytooter.util.openCustomTab
-import jp.juggler.subwaytooter.util.stColorScheme
 import jp.juggler.util.data.cast
 import jp.juggler.util.log.LogCategory
 
@@ -66,7 +65,7 @@ fun ComposeView.setTimelineContent(
     val callbacks = buildTimelineCallbacks(activity)
 
     setContent {
-        androidx.compose.material3.MaterialTheme(colorScheme = stColorScheme()) {
+        StThemedContent {
             TimelineColumn(
                 activity = activity,
                 column = column,

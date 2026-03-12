@@ -1,33 +1,57 @@
 package jp.juggler.subwaytooter.dialog
 
-import android.annotation.SuppressLint
 import android.app.Dialog
-import android.view.LayoutInflater
-import android.view.MotionEvent
-import android.view.View
-import android.view.ViewGroup
-import android.widget.Button
+import android.graphics.drawable.Drawable
 import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.activity.ComponentActivity
-import androidx.recyclerview.widget.ItemTouchHelper
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.zIndex
 import com.bumptech.glide.Glide
 import jp.juggler.subwaytooter.R
+import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.defaultColorIcon
 import jp.juggler.subwaytooter.util.PostAttachment
 import jp.juggler.util.coroutine.cancellationException
 import jp.juggler.util.data.ellipsizeDot3
-import jp.juggler.util.log.LogCategory
-import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.dismissSafe
-import jp.juggler.util.ui.dp
+import jp.juggler.util.ui.dp as dpPx
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resumeWithException
-
-private val log = LogCategory("DlgAttachmentRearrange")
 
 /**
  * 投稿画面で添付メディアを並べ替えるダイアログを開き、OKボタンが押されるまで非同期待機する。
@@ -36,299 +60,209 @@ private val log = LogCategory("DlgAttachmentRearrange")
 suspend fun ComponentActivity.dialogAttachmentRearrange(
     initialList: List<PostAttachment>,
 ): List<PostAttachment> = suspendCancellableCoroutine { cont ->
-    val dp8 = dp(8)
-    val dp48 = dp(48)
-    val dp1 = dp(1)
-    val dividerColor = attrColor(R.attr.colorSettingDivider)
-    val textColor = attrColor(R.attr.colorTextContent)
-
-    val listView = RecyclerView(this).apply {
-        clipToPadding = false
-        isScrollbarFadingEnabled = false
-        scrollBarStyle = View.SCROLLBARS_OUTSIDE_OVERLAY
-        setPadding(dp48, dp8, dp48, dp8)
-    }
-    val btnCancel = Button(this).apply {
-        text = getString(R.string.cancel)
-        setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
-        setTextColor(textColor)
-    }
-    val btnOk = Button(this).apply {
-        text = getString(R.string.ok)
-        setBackgroundResource(R.drawable.btn_bg_transparent_round6dp)
-        setTextColor(textColor)
-    }
-    // header label
-    val tvDesc = TextView(this).apply {
-        text = getString(R.string.attachment_rearrange_desc)
-        setPadding(dp8, dp8, dp8, dp8)
-        gravity = android.view.Gravity.CENTER
-        includeFontPadding = false
-        setTextColor(textColor)
-    }
-    val root = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        addView(tvDesc, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ))
-        addView(listView, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
-        ))
-        // divider
-        addView(View(this@dialogAttachmentRearrange).apply {
-            setBackgroundColor(dividerColor)
-        }, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, dp1
-        ))
-        // button bar
-        addView(LinearLayout(this@dialogAttachmentRearrange).apply {
-            orientation = LinearLayout.HORIZONTAL
-            addView(btnCancel, LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            addView(View(this@dialogAttachmentRearrange).apply {
-                setBackgroundColor(dividerColor)
-            }, LinearLayout.LayoutParams(dp1,
-                LinearLayout.LayoutParams.MATCH_PARENT))
-            addView(btnOk, LinearLayout.LayoutParams(0,
-                LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-        }, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ))
-    }
-
-    val dialog = Dialog(this).apply {
-        setContentView(root)
-        setOnDismissListener {
-            if (cont.isActive) cont.resumeWithException(cancellationException())
+    val dialog = Dialog(this)
+    val composeView = ComposeView(this).apply {
+        setContent {
+            StThemedContent {
+                AttachmentRearrangeContent(
+                    initialList = initialList,
+                    onOk = { reorderedList ->
+                        if (cont.isActive) cont.resume(reorderedList) { _, _, _ -> }
+                        dialog.dismissSafe()
+                    },
+                    onCancel = { dialog.dismissSafe() },
+                )
+            }
         }
     }
-
+    dialog.setContentView(composeView)
+    dialog.setOnDismissListener {
+        if (cont.isActive) cont.resumeWithException(cancellationException())
+    }
     cont.invokeOnCancellation { dialog.dismissSafe() }
-
-    val myAdapter = RearrangeAdapter(layoutInflater, initialList)
-
-    btnCancel.setOnClickListener {
-        dialog.dismissSafe()
-    }
-
-    btnOk.setOnClickListener {
-        if (cont.isActive) cont.resume(myAdapter.list) { _, _, _ -> }
-        dialog.dismissSafe()
-    }
-
-    listView.apply {
-        layoutManager = LinearLayoutManager(context)
-        adapter = myAdapter
-        myAdapter.itemTouchHelper.attachToRecyclerView(this)
-    }
-
-    dialog.window?.setLayout(dp(300), dp(440))
+    dialog.window?.setLayout(dpPx(300), dpPx(440))
     dialog.show()
 }
 
-/**
- * 並べ替えダイアログ内部のRecyclerViewに使うAdapter
- */
-private class RearrangeAdapter(
-    private val inflater: LayoutInflater,
+@Composable
+private fun AttachmentRearrangeContent(
     initialList: List<PostAttachment>,
-) : RecyclerView.Adapter<RearrangeAdapter.MyViewHolder>(), MyDragCallback.Changer {
+    onOk: (List<PostAttachment>) -> Unit,
+    onCancel: () -> Unit,
+) {
+    val items = remember { mutableStateListOf(*initialList.toTypedArray()) }
+    var draggingIndex by remember { mutableIntStateOf(-1) }
+    var dragOffsetY by remember { mutableFloatStateOf(0f) }
+    var itemHeight by remember { mutableFloatStateOf(0f) }
 
-    val list = ArrayList(initialList)
+    val context = LocalContext.current
+    val iconPlaceHolder = remember { defaultColorIcon(context, R.drawable.ic_hourglass) }
+    val iconError = remember { defaultColorIcon(context, R.drawable.ic_error) }
+    val iconFallback = remember { defaultColorIcon(context, R.drawable.ic_clip) }
 
-    private var lastStateViewHolder: MyViewHolder? = null
-    private var draggingItem: PostAttachment? = null
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Header description
+        Text(
+            text = stringResource(R.string.attachment_rearrange_desc),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(8.dp),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
 
-    val itemTouchHelper = ItemTouchHelper(MyDragCallback(this))
-
-    override fun getItemCount() = list.size
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
-        MyViewHolder(parent)
-
-    override fun onBindViewHolder(holder: MyViewHolder, position: Int) {
-        holder.bind(list.elementAtOrNull(position))
-    }
-
-    // implements MyDragCallback.Changer
-    override fun onMove(posFrom: Int, posTo: Int): Boolean {
-        val item = list.removeAt(posFrom)
-        list.add(posTo, item)
-        notifyItemMoved(posFrom, posTo)
-        return true
-    }
-
-    // implements MyDragCallback.Changer
-    override fun onState(
-        caller: String,
-        viewHolder: RecyclerView.ViewHolder?,
-        actionState: Int,
-    ) {
-        log.d("onState: caller=$caller, viewHolder=$viewHolder, actionState=$actionState")
-
-        val holder = (viewHolder as? MyViewHolder)
-        // 最後にドラッグ対象となったViewHolderを覚えておく
-        holder?.let { lastStateViewHolder = it }
-        // 現在ドラッグ対象のPostAttachmentを覚えておく
-        val pa = holder?.lastItem
-        draggingItem = when {
-            pa != null && actionState == ItemTouchHelper.ACTION_STATE_DRAG -> pa
-            else -> null
-        }
-        // 表示の更新
-        holder?.bind()
-        lastStateViewHolder?.takeIf { it != holder }?.bind()
-    }
-
-    private val iconPlaceHolder = defaultColorIcon(inflater.context, R.drawable.ic_hourglass)
-    private val iconError = defaultColorIcon(inflater.context, R.drawable.ic_error)
-    private val iconFallback = defaultColorIcon(inflater.context, R.drawable.ic_clip)
-
-    @SuppressLint("ClickableViewAccessibility")
-    inner class MyViewHolder(
-        parent: ViewGroup,
-    ) : RecyclerView.ViewHolder(
-        LinearLayout(parent.context).apply {
-            layoutParams = RecyclerView.LayoutParams(
-                RecyclerView.LayoutParams.MATCH_PARENT,
-                RecyclerView.LayoutParams.WRAP_CONTENT,
-            )
-            orientation = LinearLayout.HORIZONTAL
-            gravity = android.view.Gravity.CENTER_VERTICAL
-            val dp6 = (6 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
-            val dp3 = (3 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
-            val dp4 = (4 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
-            val dp80 = (80 * parent.context.resources.displayMetrics.density + 0.5f).toInt()
-            setPadding(dp6, dp3, dp6, dp3)
-        }
-    ) {
-        val ivThumbnail: ImageView
-        val tvText: TextView
-        val rootLayout = itemView as LinearLayout
-
-        var lastItem: PostAttachment? = null
-
-        init {
-            val context = parent.context
-            val dp80 = (80 * context.resources.displayMetrics.density + 0.5f).toInt()
-            val dp4 = (4 * context.resources.displayMetrics.density + 0.5f).toInt()
-            ivThumbnail = ImageView(context).apply {
-                setBackgroundColor(0x80808080.toInt())
-                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-                scaleType = ImageView.ScaleType.FIT_CENTER
-            }
-            rootLayout.addView(ivThumbnail, LinearLayout.LayoutParams(dp80, dp80))
-            tvText = TextView(context).apply {
-                gravity = android.view.Gravity.CENTER_VERTICAL
-                setTextColor(context.attrColor(R.attr.colorTextContent))
-            }
-            rootLayout.addView(tvText, LinearLayout.LayoutParams(
-                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f
-            ).apply { marginStart = dp4 })
-
-            // リスト項目のタッチですぐにドラッグを開始する
-            rootLayout.setOnTouchListener { _, event ->
-                if (event.actionMasked == MotionEvent.ACTION_DOWN) {
-                    itemTouchHelper.startDrag(this)
-                }
-                false
-            }
-        }
-
-        fun bind(item: PostAttachment? = lastItem) {
-            item ?: return
-            lastItem = item
-
-            val context = rootLayout.context
-
-            // ドラッグ中は背景色を変える
-            rootLayout.apply {
-                when {
-                    draggingItem === item -> setBackgroundColor(
-                        context.attrColor(R.attr.colorSearchFormBackground)
+        // Reorderable item list
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 48.dp, vertical = 8.dp),
+        ) {
+            items.forEachIndexed { index, item ->
+                val isDragging = draggingIndex == index
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onGloballyPositioned { coordinates ->
+                            if (itemHeight == 0f) {
+                                itemHeight = coordinates.size.height.toFloat()
+                            }
+                        }
+                        .zIndex(if (isDragging) 1f else 0f)
+                        .graphicsLayer {
+                            if (isDragging) {
+                                translationY = dragOffsetY
+                            }
+                        }
+                        .background(
+                            if (isDragging) MaterialTheme.colorScheme.surfaceContainerHigh
+                            else MaterialTheme.colorScheme.surface
+                        )
+                        .pointerInput(Unit) {
+                            detectVerticalDragGestures(
+                                onDragStart = {
+                                    draggingIndex = index
+                                    dragOffsetY = 0f
+                                },
+                                onDragEnd = {
+                                    draggingIndex = -1
+                                    dragOffsetY = 0f
+                                },
+                                onDragCancel = {
+                                    draggingIndex = -1
+                                    dragOffsetY = 0f
+                                },
+                                onVerticalDrag = { change, dragAmount ->
+                                    change.consume()
+                                    dragOffsetY += dragAmount
+                                    val threshold = itemHeight / 2
+                                    if (threshold > 0f) {
+                                        val di = draggingIndex
+                                        if (dragOffsetY > threshold && di < items.lastIndex) {
+                                            val moved = items.removeAt(di)
+                                            items.add(di + 1, moved)
+                                            draggingIndex = di + 1
+                                            dragOffsetY -= itemHeight
+                                        } else if (dragOffsetY < -threshold && di > 0) {
+                                            val moved = items.removeAt(di)
+                                            items.add(di - 1, moved)
+                                            draggingIndex = di - 1
+                                            dragOffsetY += itemHeight
+                                        }
+                                    }
+                                },
+                            )
+                        }
+                        .padding(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    AttachmentThumbnail(
+                        item = item,
+                        iconPlaceHolder = iconPlaceHolder,
+                        iconError = iconError,
+                        iconFallback = iconFallback,
                     )
 
-                    else -> background = null
+                    Spacer(modifier = Modifier.width(4.dp))
+
+                    // テキストの表示: type + description
+                    Text(
+                        text = item.attachment?.run {
+                            "${type.id} ${description?.ellipsizeDot3(40) ?: ""}"
+                        } ?: "",
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
             }
+        }
 
-            // サムネイルのロード開始
-            ivThumbnail.apply {
-                when (val imageUrl = item.attachment?.preview_url) {
-                    null, "" -> {
-                        val iconDrawable = when (item.status) {
-                            PostAttachment.Status.Progress -> iconPlaceHolder
-                            PostAttachment.Status.Error -> iconError
-                            else -> iconFallback
-                        }
-                        Glide.with(context).clear(this)
-                        setImageDrawable(iconDrawable)
-                    }
-
-                    else -> {
-                        Glide.with(context)
-                            .load(imageUrl)
-                            .placeholder(iconPlaceHolder)
-                            .error(iconError)
-                            .fallback(iconFallback)
-                            .into(this)
-                    }
-                }
+        // Divider + button bar
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            TextButton(
+                onClick = onCancel,
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(stringResource(R.string.cancel))
             }
-
-            // テキストの表示
-            tvText.text = item.attachment?.run {
-                "${type.id} ${description?.ellipsizeDot3(40) ?: ""}"
-            } ?: ""
+            VerticalDivider(
+                modifier = Modifier.fillMaxHeight(),
+                color = MaterialTheme.colorScheme.outlineVariant,
+            )
+            TextButton(
+                onClick = { onOk(items.toList()) },
+                modifier = Modifier.weight(1f),
+            ) {
+                Text(stringResource(R.string.ok))
+            }
         }
     }
 }
 
-/**
- * RectclerViewのDrag&Drop操作に関するコールバック
- */
-private class MyDragCallback(
-    private val changer: Changer,
-) : ItemTouchHelper.SimpleCallback(
-    ItemTouchHelper.UP or ItemTouchHelper.DOWN,
-    0 // no swipe
+@Composable
+private fun AttachmentThumbnail(
+    item: PostAttachment,
+    iconPlaceHolder: Drawable?,
+    iconError: Drawable?,
+    iconFallback: Drawable?,
 ) {
-    // アダプタに行わせたい処理のinterface
-    interface Changer {
-        fun onMove(posFrom: Int, posTo: Int): Boolean
-        fun onState(caller: String, viewHolder: RecyclerView.ViewHolder?, actionState: Int)
-    }
+    val imageUrl = item.attachment?.preview_url
+    AndroidView(
+        factory = { context ->
+            ImageView(context).apply {
+                setBackgroundColor(0x80808080.toInt())
+                importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO
+                scaleType = ImageView.ScaleType.FIT_CENTER
+            }
+        },
+        modifier = Modifier.size(80.dp),
+        update = { imageView ->
+            val context = imageView.context
+            when {
+                imageUrl.isNullOrEmpty() -> {
+                    val icon = when (item.status) {
+                        PostAttachment.Status.Progress -> iconPlaceHolder
+                        PostAttachment.Status.Error -> iconError
+                        else -> iconFallback
+                    }
+                    Glide.with(context).clear(imageView)
+                    imageView.setImageDrawable(icon)
+                }
 
-    override fun isLongPressDragEnabled() = false
-
-    override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) = Unit
-
-    override fun onMove(
-        recyclerView: RecyclerView,
-        viewHolder: RecyclerView.ViewHolder,
-        target: RecyclerView.ViewHolder,
-    ): Boolean = changer.onMove(
-        // position of drag from
-        viewHolder.bindingAdapterPosition,
-        // position of drag to
-        target.bindingAdapterPosition,
+                else -> {
+                    Glide.with(context)
+                        .load(imageUrl)
+                        .placeholder(iconPlaceHolder)
+                        .error(iconError)
+                        .fallback(iconFallback)
+                        .into(imageView)
+                }
+            }
+        },
     )
-
-    override fun onSelectedChanged(
-        viewHolder: RecyclerView.ViewHolder?,
-        actionState: Int,
-    ) {
-        super.onSelectedChanged(viewHolder, actionState)
-        changer.onState("onSelectedChanged", viewHolder, actionState)
-    }
-
-    override fun clearView(
-        recyclerView: RecyclerView,
-        viewHolder: RecyclerView.ViewHolder,
-    ) {
-        super.clearView(recyclerView, viewHolder)
-        changer.onState("clearView", viewHolder, ItemTouchHelper.ACTION_STATE_IDLE)
-    }
 }

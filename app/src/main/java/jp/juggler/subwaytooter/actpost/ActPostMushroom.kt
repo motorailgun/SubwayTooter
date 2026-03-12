@@ -17,6 +17,7 @@ import jp.juggler.subwaytooter.ActPost
 import jp.juggler.subwaytooter.R
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.attrColor
+import com.google.android.material.R as MR
 
 private val log = LogCategory("ActPostMushroom")
 
@@ -37,7 +38,7 @@ fun ActPost.showRecommendedPlugin(@StringRes titleId: Int) {
         override fun onClick(view: View) = openPluginList()
         override fun updateDrawState(ds: TextPaint) {
             super.updateDrawState(ds)
-            ds.color = attrColor(R.attr.colorLink)
+            ds.color = attrColor(androidx.appcompat.R.attr.colorPrimary)
         }
     }
 

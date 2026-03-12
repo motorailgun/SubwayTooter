@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -34,18 +35,12 @@ import jp.juggler.subwaytooter.table.*
 import jp.juggler.util.data.notEmpty
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
-import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.dismissSafe
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 private val log = LogCategory("pickAccount")
-
-@Composable
-private fun AppTheme(content: @Composable () -> Unit) {
-    StThemedContent(content = content)
-}
 
 @SuppressLint("InflateParams")
 suspend fun Activity.pickAccount(
@@ -129,7 +124,7 @@ suspend fun Activity.pickAccount(
 
         val composeView = ComposeView(activity).apply {
             setContent {
-                AppTheme {
+                StThemedContent {
                     Surface {
                         Column(
                             modifier = Modifier.fillMaxWidth()
@@ -138,7 +133,7 @@ suspend fun Activity.pickAccount(
                                 Text(
                                     text = message,
                                     fontSize = 16.sp,
-                                    color = Color(activity.attrColor(android.R.attr.textColorPrimary)),
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.padding(12.dp, 6.dp, 12.dp, 6.dp)
                                 )
                             }
@@ -213,7 +208,7 @@ suspend fun Activity.pickAccount(
                             }
                             
                             HorizontalDivider(
-                                color = Color(activity.attrColor(R.attr.colorSettingDivider)),
+                                color = MaterialTheme.colorScheme.outlineVariant,
                                 thickness = 1.dp
                             )
                             

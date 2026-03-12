@@ -37,12 +37,13 @@ import jp.juggler.util.ui.scan
 import jp.juggler.util.ui.setIconDrawableId
 import kotlin.math.max
 import kotlin.math.min
+import com.google.android.material.R as MR
 
 private val log = LogCategory("Styler")
 
 fun defaultColorIcon(context: Context, iconId: Int): Drawable? =
     ContextCompat.getDrawable(context, iconId)?.also {
-        it.setTint(context.attrColor(R.attr.colorTextContent))
+        it.setTint(context.attrColor(MR.attr.colorOnSurface))
         it.setTintMode(PorterDuff.Mode.SRC_IN)
     }
 
@@ -147,7 +148,7 @@ fun getVisibilityCaption(
 
     val iconId = visibility.getVisibilityIconId(isMisskeyData)
     val sv = visibility.getVisibilityString(isMisskeyData)
-    val color = context.attrColor(R.attr.colorTextContent)
+    val color = context.attrColor(MR.attr.colorOnSurface)
     val sb = SpannableStringBuilder()
 
     // アイコン部分
@@ -186,7 +187,7 @@ fun setFollowIcon(
 
     val colorFollowRequest = context.attrColor(R.attr.colorButtonAccentFollowRequest)
 
-    val colorError = context.attrColor(R.attr.colorRegexFilterError)
+    val colorError = context.attrColor(androidx.appcompat.R.attr.colorError)
 
     // 被フォロー状態
     when {
@@ -410,8 +411,8 @@ fun SpannableStringBuilder.appendMisskeyReaction(
 
 fun Context.setSwitchColor(root: View?) {
     root ?: return
-    val colorBg = attrColor(R.attr.colorMainBackground)
-    val colorOff = attrColor(R.attr.colorSwitchOff)
+    val colorBg = attrColor(MR.attr.colorSurface)
+    val colorOff = attrColor(MR.attr.colorOutline)
     val colorOn = android.graphics.Color.BLACK or 0x0080ff
 
     val colorDisabled = mixColor(colorBg, colorOff)
@@ -473,7 +474,7 @@ fun ViewGroup.generateLayoutParamsEx(): ViewGroup.LayoutParams? =
 fun ComponentActivity.enableEdgeToEdgeEx(forceDark: Boolean) {
     val colorBarBg = when{
         forceDark -> Color.BLACK
-        else -> attrColor(R.attr.colorWindowInsetsBg)
+        else -> attrColor(MR.attr.colorSurface)
     }
 
     val barStyle = if (forceDark) {

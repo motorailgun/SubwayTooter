@@ -93,6 +93,8 @@ internal class PopupAutoCompleteAcct(
         acctPopup.isTouchable = true
     }
 
+    private val textColor = activity.attrColor(android.R.attr.textColorPrimary)
+
     private fun createDropdownItem(): TextView {
         val minH = (48f * density + 0.5f).toInt()
         return TextView(activity).apply {
@@ -123,7 +125,7 @@ internal class PopupAutoCompleteAcct(
 
         run {
             val v = createDropdownItem()
-            v.setTextColor(activity.attrColor(android.R.attr.textColorPrimary))
+            v.setTextColor(textColor)
             v.setText(R.string.close)
             v.setOnClickListener { acctPopup.dismiss() }
             llItems.addView(v)
@@ -132,7 +134,7 @@ internal class PopupAutoCompleteAcct(
 
         if (pickerCaption != null && pickerCallback != null) {
             val v = createDropdownItem()
-            v.setTextColor(activity.attrColor(android.R.attr.textColorPrimary))
+            v.setTextColor(textColor)
             v.text = pickerCaption
             v.setOnClickListener {
                 acctPopup.dismiss()
@@ -144,7 +146,7 @@ internal class PopupAutoCompleteAcct(
 
         acctList?.forEach { acct ->
             val v = createDropdownItem()
-            v.setTextColor(activity.attrColor(android.R.attr.textColorPrimary))
+            v.setTextColor(textColor)
             v.text = acct
             if (acct is Spannable) {
                 NetworkEmojiInvalidator(handler, v).text = acct

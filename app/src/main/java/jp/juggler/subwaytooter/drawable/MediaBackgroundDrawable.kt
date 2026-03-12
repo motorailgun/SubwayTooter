@@ -8,15 +8,19 @@ import android.graphics.Paint
 import android.graphics.PixelFormat
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
-import jp.juggler.subwaytooter.R
 import jp.juggler.util.ui.attrColor
 import kotlin.math.min
+import com.google.android.material.R as MR
 
 class MediaBackgroundDrawable(
-    private val context: Context,
+    context: Context,
     private val tileStep: Int,
     private val kind: Kind,
 ) : Drawable() {
+
+    // Cache resolved colors at construction time to avoid per-frame theme resolution
+    private val c1 = kind.c1.invoke(context)
+    private val c2 = kind.c2.invoke(context)
 
     enum class Kind(
         val c1: Context.() -> Int,
@@ -31,8 +35,8 @@ class MediaBackgroundDrawable(
         WhiteTile({ Color.WHITE }, { Color.BLACK or 0xe0e0e0 }),
 
         EmojiPickerBg(
-            { attrColor(R.attr.colorMainBackground) },
-            { attrColor(R.attr.colorTimeSmall) },
+            { attrColor(MR.attr.colorSurface) },
+            { attrColor(MR.attr.colorOnSurfaceVariant) },
             isMediaBackground = false
         ),
 
@@ -69,8 +73,6 @@ class MediaBackgroundDrawable(
 
     override fun draw(canvas: Canvas) {
         val bounds = this.bounds
-        val c1 = kind.c1.invoke(context)
-        val c2 = kind.c2.invoke(context)
         if (c2 == 0) {
             paint.color = c1
             canvas.drawRect(bounds, paint)

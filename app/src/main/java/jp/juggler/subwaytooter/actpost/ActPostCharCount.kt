@@ -11,6 +11,7 @@ import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.data.wrapWeakReference
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.attrColor
+import com.google.android.material.R as MR
 
 private val log = LogCategory("ActPostCharCount")
 
@@ -100,7 +101,7 @@ fun ActPost.updateTextCount() {
     views.tvCharCount.setTextColor(
         attrColor(
             when {
-                remain < 0 -> R.attr.colorRegexFilterError
+                remain < 0 -> androidx.appcompat.R.attr.colorError
                 else -> android.R.attr.textColorPrimary
             }
         )

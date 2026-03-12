@@ -1,124 +1,167 @@
 package jp.juggler.subwaytooter.dialog
 
 import android.app.Dialog
-import android.view.Gravity
-import android.view.View
+import android.graphics.drawable.PictureDrawable
 import android.view.WindowManager
-import android.widget.Button
-import android.widget.EditText
-import android.widget.LinearLayout
-import android.widget.ScrollView
+import android.widget.ImageView
 import androidx.activity.ComponentActivity
-import androidx.appcompat.widget.AppCompatImageView
-import androidx.appcompat.widget.AppCompatTextView
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import com.bumptech.glide.Glide
 import jp.juggler.subwaytooter.R
+import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.view.NetworkEmojiView
 import jp.juggler.util.ui.dismissSafe
 
+/**
+ * 絵文字の詳細表示タイプ
+ */
+sealed interface EmojiDetailPreview {
+    /** カスタム絵文字：NetworkEmojiViewで表示 */
+    data class CustomEmoji(
+        val url: String?,
+        val initialAspect: Float?,
+        val disableAnimation: Boolean,
+    ) : EmojiDetailPreview
+
+    /** Unicode絵文字(Twemoji)：画像アセットで表示 */
+    data class UnicodeImage(
+        val assetsName: String?,
+        val drawableId: Int,
+        val isSvg: Boolean,
+    ) : EmojiDetailPreview
+
+    /** Unicode絵文字（互換）：テキストで表示 */
+    data class UnicodeText(
+        val text: String,
+    ) : EmojiDetailPreview
+}
+
 fun ComponentActivity.showEmojiDetailDialog(
     detail: String,
-    initialzeNiv: (NetworkEmojiView.() -> Unit)? = null,
-    initializeImage: (AppCompatImageView.() -> Unit)? = null,
-    initializeText: (AppCompatTextView.() -> Unit)? = null,
+    preview: EmojiDetailPreview,
 ) {
     val dialog = Dialog(this)
-    val density = resources.displayMetrics.density
-    val dp12 = (12 * density + 0.5f).toInt()
-    val dp200 = (200 * density + 0.5f).toInt()
-
-    val innerLayout = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        setPadding(dp12, dp12, dp12, dp12)
-    }
-
-    // NetworkEmojiView (conditional)
-    if (initialzeNiv != null) {
-        val nivEmoji = NetworkEmojiView(this).apply {
-            initialzeNiv()
+    val composeView = ComposeView(this).apply {
+        setContent {
+            StThemedContent {
+                EmojiDetailContent(
+                    detail = detail,
+                    preview = preview,
+                    onDismiss = { dialog.dismissSafe() },
+                )
+            }
         }
-        innerLayout.addView(
-            nivEmoji,
-            LinearLayout.LayoutParams(dp200, dp200).apply {
-                gravity = Gravity.CENTER_HORIZONTAL
-            },
-        )
     }
-
-    // ImageView (conditional)
-    if (initializeImage != null) {
-        val ivEmoji = AppCompatImageView(this).apply {
-            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
-            initializeImage()
-        }
-        innerLayout.addView(
-            ivEmoji,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp200,
-            ),
-        )
-    }
-
-    // Text (conditional)
-    if (initializeText != null) {
-        val tvEmoji = AppCompatTextView(this).apply {
-            gravity = Gravity.CENTER_HORIZONTAL
-            textSize = 200f
-            initializeText()
-        }
-        innerLayout.addView(
-            tvEmoji,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-            ),
-        )
-    }
-
-    // JSON detail
-    val etJson = EditText(this).apply {
-        setText(detail)
-        importantForAutofill = View.IMPORTANT_FOR_AUTOFILL_NO
-        inputType = android.text.InputType.TYPE_NULL
-        minLines = 3
-    }
-    innerLayout.addView(
-        etJson,
-        LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ),
-    )
-
-    val scrollView = ScrollView(this).apply {
-        addView(innerLayout)
-    }
-
-    val btnOk = Button(this, null, android.R.attr.buttonBarButtonStyle).apply {
-        setText(R.string.ok)
-        setOnClickListener { dialog.dismissSafe() }
-    }
-    val buttonBar = LinearLayout(this).apply {
-        orientation = LinearLayout.HORIZONTAL
-        addView(btnOk, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-    }
-
-    val root = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL
-        addView(scrollView, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f,
-        ))
-        addView(buttonBar, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-        ))
-    }
-
     dialog.setTitle(R.string.emoji_detail)
-    dialog.setContentView(root)
+    dialog.setContentView(composeView)
     dialog.window?.setLayout(
         WindowManager.LayoutParams.MATCH_PARENT,
         WindowManager.LayoutParams.WRAP_CONTENT
     )
     dialog.show()
+}
+
+@Composable
+private fun EmojiDetailContent(
+    detail: String,
+    preview: EmojiDetailPreview,
+    onDismiss: () -> Unit,
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .verticalScroll(rememberScrollState())
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            // Preview
+            when (preview) {
+                is EmojiDetailPreview.CustomEmoji -> {
+                    AndroidView(
+                        factory = { context ->
+                            NetworkEmojiView(context).apply {
+                                val dp200 = (200 * context.resources.displayMetrics.density + 0.5f).toInt()
+                                setEmoji(
+                                    url = preview.url,
+                                    initialAspect = preview.initialAspect,
+                                    defaultHeight = dp200,
+                                )
+                            }
+                        },
+                        modifier = Modifier.size(200.dp),
+                    )
+                }
+
+                is EmojiDetailPreview.UnicodeImage -> {
+                    AndroidView(
+                        factory = { context ->
+                            ImageView(context).apply {
+                                scaleType = ImageView.ScaleType.FIT_CENTER
+                                if (preview.isSvg) {
+                                    Glide.with(context)
+                                        .`as`(PictureDrawable::class.java)
+                                        .load("file:///android_asset/${preview.assetsName}")
+                                        .into(this)
+                                } else {
+                                    Glide.with(context)
+                                        .load(preview.drawableId)
+                                        .into(this)
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 200.dp),
+                    )
+                }
+
+                is EmojiDetailPreview.UnicodeText -> {
+                    Text(
+                        text = preview.text,
+                        fontSize = 100.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            // JSON detail
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+            )
+        }
+
+        // Button bar
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+        TextButton(
+            onClick = onDismiss,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(R.string.ok))
+        }
+    }
 }

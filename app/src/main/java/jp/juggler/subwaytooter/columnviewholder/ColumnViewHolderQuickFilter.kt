@@ -5,7 +5,6 @@ import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.column.*
 import jp.juggler.subwaytooter.pref.PrefB
 import jp.juggler.util.ui.applyAlphaMultiplier
-import jp.juggler.util.ui.attrColor
 
 fun ColumnViewHolder.clickQuickFilter(filter: Int) {
     column?.quickFilter = filter
@@ -31,9 +30,9 @@ fun ColumnViewHolder.showQuickFilter() {
     ui.quickFilterInsideSetting = insideColumnSetting
 
     if (insideColumnSetting) {
-        val colorFg = activity.attrColor(R.attr.colorTextContent)
+        val colorFg = colorOnSurface
         val colorBgSelected = colorFg.applyAlphaMultiplier(0.25f)
-        val colorBg = activity.attrColor(R.attr.colorColumnSettingBackground)
+        val colorBg = colorSurfaceContainerLow
         ui.quickFilterFgColor = colorFg
         ui.quickFilterBgColor = colorBg
         ui.quickFilterSelectedBgColor = colorBgSelected

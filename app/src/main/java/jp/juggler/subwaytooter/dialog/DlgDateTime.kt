@@ -22,11 +22,6 @@ import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.util.ui.dismissSafe
 import java.util.*
 
-@Composable
-private fun AppTheme(content: @Composable () -> Unit) {
-    StThemedContent(content = content)
-}
-
 class DlgDateTime(val activity: Activity) {
 
     private lateinit var dialog: Dialog
@@ -50,7 +45,7 @@ class DlgDateTime(val activity: Activity) {
 
         val composeView = ComposeView(activity).apply {
             setContent {
-                AppTheme {
+                StThemedContent {
                     var year by remember { mutableStateOf(c.get(Calendar.YEAR)) }
                     var month by remember { mutableStateOf(c.get(Calendar.MONTH)) }
                     var dayOfMonth by remember { mutableStateOf(c.get(Calendar.DAY_OF_MONTH)) }

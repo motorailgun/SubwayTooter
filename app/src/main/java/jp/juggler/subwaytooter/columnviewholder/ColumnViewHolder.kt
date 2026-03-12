@@ -34,6 +34,7 @@ import jp.juggler.util.ui.attrColor
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.lang.reflect.Field
+import com.google.android.material.R as MR
 
 /**
  * Thin wrapper around a ComposeView that hosts ColumnScreen.
@@ -116,6 +117,11 @@ class ColumnViewHolder(
     var bindingBusy: Boolean = false
     var bRefreshErrorWillShown = false
 
+    // ──────── Cached theme colors ────────
+    val colorOnSurface = activity.attrColor(MR.attr.colorOnSurface)
+    val colorSurfaceContainerLow = activity.attrColor(MR.attr.colorSurfaceContainerLow)
+    val colorSurfaceContainerHigh = activity.attrColor(MR.attr.colorSurfaceContainerHigh)
+
     // ──────── The actual view root ────────
     val viewRoot: View = createViewRoot(parent)
 
@@ -145,7 +151,7 @@ class ColumnViewHolder(
 
         columnUiState.columnContext = ac.nickname
         columnUiState.columnContextColorFg =
-            ac.colorFg.notZero() ?: activity.attrColor(R.attr.colorTimeSmall)
+            ac.colorFg.notZero() ?: activity.attrColor(MR.attr.colorOnSurfaceVariant)
         columnUiState.columnContextColorBg = ac.colorBg
         columnUiState.columnContextPadLr = activity.acctPadLr
 

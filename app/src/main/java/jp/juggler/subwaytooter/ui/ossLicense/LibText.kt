@@ -1,7 +1,7 @@
 package jp.juggler.subwaytooter.ui.ossLicense
 
 import android.net.Uri
-import androidx.compose.material3.ColorScheme
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.buildAnnotatedString
 import jp.juggler.subwaytooter.util.annotateUrl
@@ -45,10 +45,10 @@ private fun AnnotatedString.Builder.appendLine(
 fun parseLibText(
     lib: JsonObject,
     licenses: Map<String?, JsonObject>,
-    colorScheme: ColorScheme,
+    linkColor: Color,
     linkOpener: (Uri) -> Unit,
 ): LibText {
-    val colorLink = colorScheme.primary
+    val colorLink = linkColor
 
     val webSite = lib.string("website")?.toHttpUrlOrNull()?.toString()
     val name = lib.string("name")?.notEmpty()

@@ -21,11 +21,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 
 private val log = LogCategory("SuspendProgress")
 
-@Composable
-private fun AppTheme(content: @Composable () -> Unit) {
-    StThemedContent(content = content)
-}
-
 class SuspendProgress(val activity: ComponentActivity) {
     private val dialog = Dialog(activity)
 
@@ -41,7 +36,7 @@ class SuspendProgress(val activity: ComponentActivity) {
 
             val composeView = ComposeView(activity).apply {
                 setContent {
-                    AppTheme {
+                    StThemedContent {
                         val currentTitle by reporter.flowTitle.collectAsState()
                         val currentMessage by reporter.flowMessage.collectAsState()
 

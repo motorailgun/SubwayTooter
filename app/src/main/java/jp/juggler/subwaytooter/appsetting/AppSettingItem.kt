@@ -52,7 +52,6 @@ import jp.juggler.util.data.intentOpenDocument
 import jp.juggler.util.data.notZero
 import jp.juggler.util.log.showToast
 import jp.juggler.util.ui.InputTypeEx
-import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.dp
 import jp.juggler.util.ui.getAdaptiveRippleDrawable
 import jp.juggler.util.ui.getAdaptiveRippleDrawableRound

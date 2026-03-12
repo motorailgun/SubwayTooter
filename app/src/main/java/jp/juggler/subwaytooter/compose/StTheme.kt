@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
@@ -22,7 +23,7 @@ import jp.juggler.subwaytooter.util.stColorScheme
 
 /**
  * Common themed screen wrapper.
- * Provides MaterialTheme + Scaffold + TopAppBar with back navigation.
+ * Provides MaterialTheme + extended colors + Scaffold + TopAppBar with back navigation.
  * Automatically observes the UI theme preference — no colorScheme parameter needed.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -35,27 +36,29 @@ fun StScreen(
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     MaterialTheme(colorScheme = stColorScheme()) {
-        Scaffold(
-            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-            topBar = {
-                TopAppBar(
-                    title = { Text(title) },
-                    navigationIcon = {
-                        if (onBack != null) {
-                            IconButton(onClick = onBack) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                                    contentDescription = stringResource(R.string.close),
-                                )
+        CompositionLocalProvider(LocalStExtendedColors provides stExtendedColors()) {
+            Scaffold(
+                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+                topBar = {
+                    TopAppBar(
+                        title = { Text(title) },
+                        navigationIcon = {
+                            if (onBack != null) {
+                                IconButton(onClick = onBack) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                                        contentDescription = stringResource(R.string.close),
+                                    )
+                                }
                             }
-                        }
-                    },
-                    actions = actions,
-                    scrollBehavior = scrollBehavior,
-                )
-            },
-            content = content,
-        )
+                        },
+                        actions = actions,
+                        scrollBehavior = scrollBehavior,
+                    )
+                },
+                content = content,
+            )
+        }
     }
 }
 
@@ -68,7 +71,9 @@ fun StThemedContent(
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(colorScheme = stColorScheme()) {
-        content()
+        CompositionLocalProvider(LocalStExtendedColors provides stExtendedColors()) {
+            content()
+        }
     }
 }
 

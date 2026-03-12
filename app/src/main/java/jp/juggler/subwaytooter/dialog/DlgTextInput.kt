@@ -78,11 +78,6 @@ private fun Int?.isMultiLine(): Boolean {
 }
 
 @Composable
-private fun AppTheme(content: @Composable () -> Unit) {
-    StThemedContent(content = content)
-}
-
-@Composable
 private fun TextInputDialogContent(
     title: CharSequence,
     initialText: CharSequence?,
@@ -181,7 +176,7 @@ suspend fun ComponentActivity.showTextInputDialog(
     suspendCancellableCoroutine { cont ->
         val composeView = ComposeView(this).apply {
             setContent {
-                AppTheme {
+                StThemedContent {
                     TextInputDialogContent(
                         title = title,
                         initialText = initialText,
@@ -234,7 +229,7 @@ suspend fun ComponentActivity.showMediaDescEditDialog(
     suspendCancellableCoroutine { cont ->
         val composeView = ComposeView(this).apply {
             setContent {
-                AppTheme {
+                StThemedContent {
                     TextInputDialogContent(
                         title = title,
                         initialText = initialText,

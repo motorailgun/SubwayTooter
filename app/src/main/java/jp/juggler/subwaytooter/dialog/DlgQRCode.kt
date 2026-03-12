@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -19,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -40,7 +40,6 @@ import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.withProgress
 import jp.juggler.util.log.LogCategory
-import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.resDrawable
 import kotlinx.coroutines.withContext
 
@@ -94,11 +93,10 @@ fun ComponentActivity.dialogQrCode(
                                 .size(280.dp)
                         )
 
-                        val context = LocalContext.current
                         HorizontalDivider(
                             modifier = Modifier.fillMaxWidth(),
                             thickness = 1.dp,
-                            color = androidx.compose.ui.graphics.Color(context.attrColor(R.attr.colorSettingDivider))
+                            color = MaterialTheme.colorScheme.outlineVariant
                         )
 
                         TextButton(

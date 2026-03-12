@@ -14,6 +14,7 @@ import jp.juggler.subwaytooter.pref.lazyContext
 import jp.juggler.util.ui.attrColor
 import kotlin.math.max
 import kotlin.math.min
+import com.google.android.material.R as MR
 
 /**
  * コードブロック用の装飾スパン
@@ -23,7 +24,7 @@ class BlockCodeSpan(
     private var typeface: Typeface = Typeface.MONOSPACE,
     private var relativeTextSize: Float = 0.7f,
     private var margin: Int = 0,
-    private var textColor: Int = context.attrColor(R.attr.colorTextContent),
+    private var textColor: Int = context.attrColor(MR.attr.colorOnSurface),
     private var backgroundColor: Int = 0x40808080,
 ) : MetricAffectingSpan(), LeadingMarginSpan {
 

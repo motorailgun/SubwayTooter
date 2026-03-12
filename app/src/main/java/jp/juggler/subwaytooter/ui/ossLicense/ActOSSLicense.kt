@@ -28,6 +28,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,11 +38,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.App1
 import jp.juggler.subwaytooter.R
+import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.util.collectOnLifeCycle
-import jp.juggler.subwaytooter.util.getStColorTheme
+import android.content.res.Configuration
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import jp.juggler.subwaytooter.util.openBrowser
 import jp.juggler.subwaytooter.util.provideViewModel
-import jp.juggler.subwaytooter.util.stColorScheme
 import jp.juggler.subwaytooter.util.toAnnotatedString
 import jp.juggler.util.data.notEmpty
 import jp.juggler.util.log.LogCategory
@@ -77,7 +80,10 @@ class ActOSSLicense : ComponentActivity() {
         }
 
         try {
-            viewModel.load(colorScheme = getStColorTheme())
+            val isDark = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
+                Configuration.UI_MODE_NIGHT_YES
+            val linkColor = if (isDark) darkColorScheme().primary else lightColorScheme().primary
+            viewModel.load(linkColor = linkColor)
         } catch (ex: Throwable) {
             log.e(ex, "dependency in fo loading failed.")
         }
@@ -118,7 +124,7 @@ class ActOSSLicense : ComponentActivity() {
     ) {
         val isProgressShown = isProgressShownFlow.collectAsState(false)
         val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-        MaterialTheme(colorScheme = stColorScheme()) {
+        StThemedContent {
             Scaffold(
                 modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                 topBar = {

@@ -1,314 +1,70 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- light theme -->
-    <style name="AppTheme.Light.Base" parent="Theme.AppCompat.Light.NoActionBar">
+    <style name="AppTheme.Light.Base" parent="Theme.Material3.Light.NoActionBar">
+        <!-- Custom attrs still referenced from XML drawables -->
+        <item name="colorLink">?attr/colorPrimary</item>
+        <item name="list_item_bg_pressed_dragged">?attr/colorPrimaryContainer</item>
+        <item name="color_column_header">?attr/colorSurfaceContainer</item>
+        <item name="colorStatusButtonsPopupBg">?attr/colorSurfaceContainer</item>
+        <item name="colorButtonBgCw">?attr/colorSurfaceVariant</item>
+        <item name="colorRippleEffect">?attr/colorControlHighlight</item>
+        <item name="colorRefreshErrorBg">?attr/colorErrorContainer</item>
+        <item name="colorRegexFilterError">?attr/colorError</item>
+        <item name="colorThumbnailBackground">?attr/colorSurfaceVariant</item>
+        <item name="colorActionBarBg">?attr/colorPrimary</item>
 
-        <!-- AppCompat ============================================ -->
-
-        <!--ActionBarの文字色 -->
-        <item name="android:textColor">@color/Light_colorTextContent</item>
-        <item name="android:textColorPrimary">@color/Light_colorTextContent</item>
-        <item name="android:textColorSecondary">@color/Light_colorTextContent</item>
-        <item name="android:textColorTertiary">@color/Light_colorTextContent</item>
-        <item name="android:textColorHint">@color/Light_colorTextHint</item>
-
-        <!-- TabLayoutの下線やRadioButton選択時などの色 -->
-        <item name="colorAccent">@color/Light_colorAppCompatAccent</item>
-
-        <!-- ActionBarの背景色 -->
-        <item name="colorPrimary">@color/Light_colorActionBarBg</item>
-        <item name="colorActionBarBg">@color/Light_colorActionBarBg</item>
-        <item name="colorActionBarBgStacked">@color/Light_colorActionBarBgStacked</item>
-
-        <!-- 歴史的には OSのステータスバー背景や contextual app bar 背景など。最近の事情は不明 -->
-        <item name="colorPrimaryDark">@color/Light_colorActionBarBgDark</item>
-
-        <!--
-            (後方互換用)ステータスバーやナビゲーションバーの色
-            targetSdk35以降はこの設定は
-            API28まではコードから設定したバー色で更新される
-            API29以降は
-         -->
-        <item name="android:statusBarColor">@color/Light_colorWindowInsetsBg</item>
-        <item name="android:navigationBarColor">@color/Light_colorWindowInsetsBg</item>
-
-        <!-- OSのシステムバーの背景色。Window Insets の領域に表示される色 -->
-        <item name="colorWindowInsetsBg">@color/Light_colorWindowInsetsBg</item>
-        <item name="android:windowBackground">@color/Light_colorWindowInsetsBg</item>
-
-        <!-- AppCompat ここまで ============================================ -->
-
-        <item name="colorLink">@color/Light_colorLink</item>
-        <item name="list_item_bg_pressed_dragged">@color/Light_colotListItemDrag</item>
-        <item name="color_column_header">@color/Light_colorColumnHeaderBg</item>
-        <item name="colorConversationMainTootBg">@color/Light_colorConversationMainTootBg</item>
-        <item name="colorRippleEffect">@color/Light_colorRippleEffect</item>
-        <item name="colorButtonSelected">@color/Light_colorButtonSelected</item>
-        <item name="colorReplyBackground">@color/Light_colorReplyBackground</item>
-        <item name="colorColumnListDeleteBackground">@color/Light_colorColumnListDeleteBackground
-        </item>
-        <item name="colorColumnListDeleteText">@color/Light_colorColumnListDeleteText</item>
-        <item name="colorColumnListDragHandleBackground">
-            @color/Light_colorColumnListDragHandleBackground
-        </item>
-        <item name="colorThumbnailBackground">@color/Light_colorThumbnailBackground</item>
-        <item name="colorColumnListItemText">@color/Light_colorTextColumnListItem</item>
-        <item name="colorTimeSmall">@color/Light_colorTextTimeSmall</item>
-        <item name="colorTextContent">@color/Light_colorTextContent</item>
-        <item name="colorTextHint">@color/Light_colorTextHint</item>
-        <item name="colorTextHelp">@color/Light_colorTextHelp</item>
-
-        <item name="colorProfileBackgroundMask">@color/Light_colorProfileBackgroundMask</item>
-        <item name="colorShowMediaBackground">@color/Light_colorShowMediaBackground</item>
-        <item name="colorShowMediaText">@color/Light_colorShowMediaText</item>
-        <item name="colorColumnHeaderAcct">@color/Light_colorTextColumnHeaderAcct</item>
-        <item name="colorColumnHeaderPageNumber">@color/Light_colorTextColumnHeaderPageNumber</item>
-        <item name="colorColumnSettingBackground">@color/Light_colorColumnSettingBackground</item>
-        <item name="colorSearchFormBackground">@color/Light_colorSearchFormBackground</item>
-        <item name="colorSettingDivider">@color/Light_colorTextDivider</item>
-        <item name="colorRegexFilterError">@color/Light_colorRegexFilterError</item>
-        <item name="colorPostFormBackground">@color/Light_colorPostFormBackground</item>
-        <item name="colorColumnStripBackground">@color/Light_colorColumnStripBackground</item>
-        <item name="colorColumnHeaderName">@color/Light_colorTextColumnHeaderName</item>
-        <item name="colorStatusButtonsPopupBg">@color/Light_colorStatusButtonsPopupBg</item>
-        <item name="colorButtonBgCw">@color/Light_colorButtonBgCw</item>
-        <item name="colorRefreshErrorBg">@color/Light_colorRefreshErrorBg</item>
-        <item name="colorMainBackground">@color/Light_colorBackground</item>
+        <!-- App-specific button accent colors (not M3 standard) -->
         <item name="colorButtonAccentBoost">@color/Light_colorButtonAccentBoost</item>
         <item name="colorButtonAccentFavourite">@color/Light_colorButtonAccentFavourite</item>
         <item name="colorButtonAccentBookmark">@color/Light_colorButtonAccentBookmark</item>
         <item name="colorButtonAccentFollow">@color/Light_colorButtonAccentFollow</item>
-        <item name="colorButtonAccentFollowRequest">@color/Light_colorButtonAccentFollowRequest
-        </item>
+        <item name="colorButtonAccentFollowRequest">@color/Light_colorButtonAccentFollowRequest</item>
         <item name="colorButtonAccentReaction">@color/Light_colorButtonAccentReaction</item>
-
-        <item name="colorSwitchOff">@color/Light_colorSwitchOff</item>
-
-        <!-- アクションバー -->
-        <item name="android:actionBarStyle">@style/ActionBarStyle.Light</item>
     </style>
 
-    <style name="ActionBarStyle.Light" parent="android:Widget.Holo.ActionBar.Solid">
-        <item name="android:titleTextStyle">@style/ActionBarTitleStyle.Light</item>
-        <item name="android:subtitleTextStyle">@style/ActionBarSubitleStyle.Light</item>
-        <item name="android:background">@drawable/action_bar_bg</item>
-        <item name="android:backgroundStacked">@drawable/action_bar_bg</item>
-        <item name="android:backgroundSplit">@drawable/action_bar_bg</item>
-    </style>
+    <style name="AppTheme.Dark.Base" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- Custom attrs still referenced from XML drawables -->
+        <item name="colorLink">?attr/colorPrimary</item>
+        <item name="list_item_bg_pressed_dragged">?attr/colorPrimaryContainer</item>
+        <item name="color_column_header">?attr/colorSurfaceContainer</item>
+        <item name="colorStatusButtonsPopupBg">?attr/colorSurfaceContainer</item>
+        <item name="colorButtonBgCw">?attr/colorSurfaceVariant</item>
+        <item name="colorRippleEffect">?attr/colorControlHighlight</item>
+        <item name="colorRefreshErrorBg">?attr/colorErrorContainer</item>
+        <item name="colorRegexFilterError">?attr/colorError</item>
+        <item name="colorThumbnailBackground">?attr/colorSurfaceVariant</item>
+        <item name="colorActionBarBg">?attr/colorPrimary</item>
 
-    <style name="ActionBarTitleStyle.Light" parent="@android:style/TextAppearance.Holo.Widget.ActionBar.Title">
-        <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/Light_colorTextContent</item>
-    </style>
-
-    <style name="ActionBarSubitleStyle.Light" parent="@android:style/TextAppearance.Holo.Widget.ActionBar.Subtitle">
-        <item name="android:textColor">@color/Light_colorTextTimeSmall</item>
-    </style>
-
-    <style name="AppTheme.Dark.Base" parent="Theme.AppCompat.NoActionBar">
-
-        <!-- AppCompat ============================================ -->
-
-        <!-- テキスト色 -->
-        <item name="android:textColor">@color/Dark_colorTextContent</item>
-        <item name="android:textColorPrimary">@color/Dark_colorTextContent</item>
-        <item name="android:textColorSecondary">@color/Dark_colorTextContent</item>
-        <item name="android:textColorTertiary">@color/Dark_colorTextContent</item>
-        <item name="android:textColorHint">@color/Dark_colorTextHint</item>
-
-        <!-- TabLayoutの下線やRadioButton選択時などの色 -->
-        <item name="colorAccent">@color/Dark_colorAppCompatAccent</item>
-
-        <!-- ActionBarの背景色 -->
-        <item name="colorPrimary">@color/Dark_colorActionBarBg</item>
-        <item name="colorActionBarBg">@color/Dark_colorActionBarBg</item>
-        <item name="colorActionBarBgStacked">@color/Dark_colorActionBarBgStacked</item>
-
-        <!-- 歴史的には OSのステータスバー背景や contextual app bar 背景など。最近の事情は不明 -->
-        <item name="colorPrimaryDark">@color/Dark_colorActionBarBgDark</item>
-
-        <!-- (後方互換用)ステータスバーやナビゲーションバーの色 -->
-        <item name="android:statusBarColor">@color/Dark_colorWindowInsetsBg</item>
-        <item name="android:navigationBarColor">@color/Dark_colorWindowInsetsBg</item>
-
-        <!-- OSのシステムバーの背景色。Window Insets の領域に表示される色 -->
-        <item name="colorWindowInsetsBg">@color/Dark_colorWindowInsetsBg</item>
-        <item name="android:windowBackground">@color/Light_colorWindowInsetsBg</item>
-
-        <!-- AppCompat ここまで ============================================ -->
-
-        <item name="colorLink">@color/Dark_colorLink</item>
-        <item name="list_item_bg_pressed_dragged">@color/Dark_colorListItemDrag</item>
-        <item name="color_column_header">@color/Dark_colorColumnHeader</item>
-        <item name="colorConversationMainTootBg">@color/Dark_colorConversationMainTootBg</item>
-        <item name="colorRippleEffect">@color/Dark_colorRippleEffect</item>
-        <item name="colorButtonSelected">@color/Dark_colorButtonSelected</item>
-        <item name="colorReplyBackground">@color/Dark_colorReplyBackground</item>
-        <item name="colorColumnListDeleteBackground">@color/Dark_colorColumnListDeleteBackground
-        </item>
-        <item name="colorColumnListDeleteText">@color/Dark_colorColumnListDeleteText</item>
-        <item name="colorColumnListDragHandleBackground">
-            @color/Dark_colorColumnListDragHandleBackground
-        </item>
-        <item name="colorThumbnailBackground">@color/Dark_colorThumbnailBackground</item>
-
-        <item name="colorColumnListItemText">@color/Dark_colorTextColumnListItem</item>
-        <item name="colorTimeSmall">@color/Dark_colorTextTimeSmall</item>
-        <item name="colorTextContent">@color/Dark_colorTextContent</item>
-        <item name="colorTextHint">@color/Dark_colorTextHint</item>
-        <item name="colorTextHelp">@color/Dark_colorTextHelp</item>
-
-        <item name="colorProfileBackgroundMask">@color/Dark_colorProfileBackgroundMask</item>
-        <item name="colorShowMediaBackground">@color/Dark_colorShowMediaBackground</item>
-        <item name="colorShowMediaText">@color/Dark_colorShowMediaText</item>
-        <item name="colorColumnHeaderAcct">@color/Dark_colorTextColumnHeaderAcct</item>
-        <item name="colorColumnHeaderPageNumber">@color/Dark_colorTextColumnHeaderPageNumber</item>
-        <item name="colorColumnSettingBackground">@color/Dark_colorColumnSettingBackground</item>
-        <item name="colorSearchFormBackground">@color/Dark_colorSearchFormBackground</item>
-        <item name="colorSettingDivider">@color/Dark_colorSettingDivider</item>
-        <item name="colorRegexFilterError">@color/Dark_colorRegexFilterError</item>
-        <item name="colorPostFormBackground">@color/Dark_colorPostFormBackground</item>
-        <item name="colorColumnStripBackground">@color/Dark_colorColumnStripBackground</item>
-        <item name="colorColumnHeaderName">@color/Dark_colorTextColumnHeaderName</item>
-        <item name="colorStatusButtonsPopupBg">@color/Dark_colorStatusButtonsPopupBg</item>
-        <item name="colorButtonBgCw">@color/Dark_colorButtonBgCw</item>
-        <item name="colorRefreshErrorBg">@color/Dark_colorRefreshErrorBg</item>
-
-        <item name="colorMainBackground">@color/Dark_colorBackground</item>
-
+        <!-- App-specific button accent colors (not M3 standard) -->
         <item name="colorButtonAccentBoost">@color/Dark_colorButtonAccentBoost</item>
         <item name="colorButtonAccentFavourite">@color/Dark_colorButtonAccentFavourite</item>
         <item name="colorButtonAccentBookmark">@color/Dark_colorButtonAccentBookmark</item>
         <item name="colorButtonAccentFollow">@color/Dark_colorButtonAccentFollow</item>
-        <item name="colorButtonAccentFollowRequest">@color/Dark_colorButtonAccentFollowRequest
-        </item>
+        <item name="colorButtonAccentFollowRequest">@color/Dark_colorButtonAccentFollowRequest</item>
         <item name="colorButtonAccentReaction">@color/Dark_colorButtonAccentReaction</item>
-
-        <item name="colorSwitchOff">@color/Dark_colorSwitchOff</item>
-
-        <!-- アクションバー -->
-        <item name="android:actionBarStyle">@style/ActionBarStyle.Dark</item>
     </style>
 
-    <style name="ActionBarStyle.Dark" parent="android:Widget.Holo.ActionBar.Solid">
-        <item name="android:titleTextStyle">@style/ActionBarTitleStyle.Dark</item>
-        <item name="android:subtitleTextStyle">@style/ActionBarSubitleStyle.Dark</item>
-        <item name="android:background">@drawable/action_bar_bg</item>
-        <item name="android:backgroundStacked">@drawable/action_bar_bg</item>
-        <item name="android:backgroundSplit">@drawable/action_bar_bg</item>
-    </style>
+    <style name="AppTheme.Mastodon.Base" parent="Theme.Material3.Dark.NoActionBar">
+        <!-- Custom attrs still referenced from XML drawables -->
+        <item name="colorLink">?attr/colorPrimary</item>
+        <item name="list_item_bg_pressed_dragged">?attr/colorPrimaryContainer</item>
+        <item name="color_column_header">?attr/colorSurfaceContainer</item>
+        <item name="colorStatusButtonsPopupBg">?attr/colorSurfaceContainer</item>
+        <item name="colorButtonBgCw">?attr/colorSurfaceVariant</item>
+        <item name="colorRippleEffect">?attr/colorControlHighlight</item>
+        <item name="colorRefreshErrorBg">?attr/colorErrorContainer</item>
+        <item name="colorRegexFilterError">?attr/colorError</item>
+        <item name="colorThumbnailBackground">?attr/colorSurfaceVariant</item>
+        <item name="colorActionBarBg">?attr/colorPrimary</item>
 
-    <style name="ActionBarTitleStyle.Dark" parent="@android:style/TextAppearance.Holo.Widget.ActionBar.Title">
-        <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/Dark_colorTextContent</item>
-    </style>
-
-    <style name="ActionBarSubitleStyle.Dark" parent="@android:style/TextAppearance.Holo.Widget.ActionBar.Subtitle">
-        <item name="android:textColor">@color/Dark_colorTextTimeSmall</item>
-    </style>
-
-    <style name="AppTheme.Mastodon.Base" parent="Theme.AppCompat.NoActionBar">
-
-        <!-- AppCompat ============================================ -->
-
-        <!-- テキスト色 -->
-        <item name="android:textColor">@color/Mastodon_colorTextContent</item>
-        <item name="android:textColorPrimary">@color/Mastodon_colorTextContent</item>
-        <item name="android:textColorSecondary">@color/Mastodon_colorTextContent</item>
-        <item name="android:textColorTertiary">@color/Mastodon_colorTextContent</item>
-        <item name="android:textColorHint">@color/Mastodon_colorTextHint</item>
-
-        <!-- TabLayoutの下線やRadioButton選択時などの色 -->
-        <item name="colorAccent">@color/Mastodon_colorAppCompatAccent</item>
-
-        <!-- ActionBarの背景色 -->
-        <item name="colorPrimary">@color/Mastodon_colorActionBarBg</item>
-        <item name="colorActionBarBg">@color/Mastodon_colorActionBarBg</item>
-        <item name="colorActionBarBgStacked">@color/Mastodon_colorActionBarBgStacked</item>
-
-        <!-- 歴史的には OSのステータスバー背景や contextual app bar 背景など。最近の事情は不明 -->
-        <item name="colorPrimaryDark">@color/Mastodon_colorActionBarBgDark</item>
-
-        <!-- (後方互換用)ステータスバーやナビゲーションバーの色 -->
-        <item name="android:statusBarColor">@color/Mastodon_colorWindowInsetsBg</item>
-        <item name="android:navigationBarColor">@color/Mastodon_colorWindowInsetsBg</item>
-
-        <!-- OSのシステムバーの背景色。Window Insets の領域に表示される色 -->
-        <item name="colorWindowInsetsBg">@color/Mastodon_colorWindowInsetsBg</item>
-        <item name="android:windowBackground">@color/Light_colorWindowInsetsBg</item>
-
-        <!-- AppCompat ここまで ============================================ -->
-
-        <item name="colorLink">@color/Mastodon_colorLink</item>
-        <item name="list_item_bg_pressed_dragged">@color/Mastodon_colorListItemDrag</item>
-        <item name="color_column_header">@color/Mastodon_colorColumnHeader</item>
-        <item name="colorConversationMainTootBg">@color/Mastodon_colorConversationMainTootBg</item>
-        <item name="colorRippleEffect">@color/Mastodon_colorRippleEffect</item>
-        <item name="colorButtonSelected">@color/Mastodon_colorButtonSelected</item>
-        <item name="colorReplyBackground">@color/Mastodon_colorReplyBackground</item>
-        <item name="colorColumnListDeleteBackground">@color/Mastodon_colorColumnListDeleteBackground
-        </item>
-        <item name="colorColumnListDeleteText">@color/Mastodon_colorColumnListDeleteText</item>
-        <item name="colorColumnListDragHandleBackground">
-            @color/Mastodon_colorColumnListDragHandleBackground
-        </item>
-        <item name="colorThumbnailBackground">@color/Mastodon_colorThumbnailBackground</item>
-
-        <item name="colorColumnListItemText">@color/Mastodon_colorTextColumnListItem</item>
-        <item name="colorTimeSmall">@color/Mastodon_colorTextTimeSmall</item>
-        <item name="colorTextContent">@color/Mastodon_colorTextContent</item>
-        <item name="colorTextHint">@color/Mastodon_colorTextHint</item>
-        <item name="colorTextHelp">@color/Mastodon_colorTextHelp</item>
-
-        <item name="colorProfileBackgroundMask">@color/Mastodon_colorProfileBackgroundMask</item>
-        <item name="colorShowMediaBackground">@color/Mastodon_colorShowMediaBackground</item>
-        <item name="colorShowMediaText">@color/Mastodon_colorShowMediaText</item>
-        <item name="colorColumnHeaderAcct">@color/Mastodon_colorTextColumnHeaderAcct</item>
-        <item name="colorColumnHeaderPageNumber">@color/Mastodon_colorTextColumnHeaderPageNumber
-        </item>
-        <item name="colorColumnSettingBackground">@color/Mastodon_colorColumnSettingBackground
-        </item>
-        <item name="colorSearchFormBackground">@color/Mastodon_colorSearchFormBackground</item>
-        <item name="colorSettingDivider">@color/Mastodon_colorSettingDivider</item>
-        <item name="colorRegexFilterError">@color/Mastodon_colorRegexFilterError</item>
-        <item name="colorPostFormBackground">@color/Mastodon_colorPostFormBackground</item>
-        <item name="colorColumnStripBackground">@color/Mastodon_colorColumnStripBackground</item>
-        <item name="colorColumnHeaderName">@color/Mastodon_colorTextColumnHeaderName</item>
-        <item name="colorStatusButtonsPopupBg">@color/Mastodon_colorStatusButtonsPopupBg</item>
-        <item name="colorButtonBgCw">@color/Mastodon_colorButtonBgCw</item>
-        <item name="colorRefreshErrorBg">@color/Mastodon_colorRefreshErrorBg</item>
-
-        <item name="colorMainBackground">@color/Mastodon_colorBackground</item>
-
+        <!-- App-specific button accent colors (not M3 standard) -->
         <item name="colorButtonAccentBoost">@color/Mastodon_colorButtonAccentBoost</item>
         <item name="colorButtonAccentFavourite">@color/Mastodon_colorButtonAccentFavourite</item>
         <item name="colorButtonAccentBookmark">@color/Mastodon_colorButtonAccentBookmark</item>
         <item name="colorButtonAccentFollow">@color/Mastodon_colorButtonAccentFollow</item>
-        <item name="colorButtonAccentFollowRequest">@color/Mastodon_colorButtonAccentFollowRequest
-        </item>
+        <item name="colorButtonAccentFollowRequest">@color/Mastodon_colorButtonAccentFollowRequest</item>
         <item name="colorButtonAccentReaction">@color/Mastodon_colorButtonAccentReaction</item>
-
-        <item name="colorSwitchOff">@color/Mastodon_colorSwitchOff</item>
-
-        <!-- アクションバー -->
-        <item name="android:actionBarStyle">@style/ActionBarStyle.Mastodon</item>
-    </style>
-
-    <style name="ActionBarStyle.Mastodon" parent="android:Widget.Holo.ActionBar.Solid">
-        <item name="android:titleTextStyle">@style/ActionBarTitleStyle.Mastodon</item>
-        <item name="android:subtitleTextStyle">@style/ActionBarSubitleStyle.Mastodon</item>
-        <item name="android:background">@drawable/action_bar_bg</item>
-        <item name="android:backgroundStacked">@drawable/action_bar_bg</item>
-        <item name="android:backgroundSplit">@drawable/action_bar_bg</item>
-    </style>
-
-    <style name="ActionBarTitleStyle.Mastodon" parent="@android:style/TextAppearance.Holo.Widget.ActionBar.Title">
-        <item name="android:textStyle">bold</item>
-        <item name="android:textColor">@color/Mastodon_colorTextContent</item>
-    </style>
-
-    <style name="ActionBarSubitleStyle.Mastodon" parent="@android:style/TextAppearance.Holo.Widget.ActionBar.Subtitle">
-        <item name="android:textColor">@color/Mastodon_colorTextTimeSmall</item>
     </style>
 
     <!-- ======================================================================== -->
@@ -379,7 +135,7 @@
 
     <style name="setting_row_help">
         <item name="android:background">@drawable/btn_bg_transparent_round6dp</item>
-        <item name="android:textColor">?attr/colorTextHelp</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
         <item name="android:layout_width">40dp</item>
         <item name="android:layout_height">40dp</item>
         <item name="android:minWidth">32dp</item>
@@ -398,7 +154,7 @@
 
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">1dp</item>
-        <item name="android:background">?attr/colorSettingDivider</item>
+        <item name="android:background">?attr/colorOutlineVariant</item>
         <item name="android:layout_marginTop">12dp</item>
         <item name="android:layout_marginBottom">12dp</item>
         <item name="android:padding">0dp</item>
@@ -459,7 +215,7 @@
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">1dp</item>
 
-        <item name="android:background">?attr/colorSettingDivider</item>
+        <item name="android:background">?attr/colorOutlineVariant</item>
 
     </style>
 
@@ -473,7 +229,7 @@
         <item name="android:paddingVertical">4dp</item>
         <item name="android:paddingHorizontal">8dp</item>
         <item name="android:textAllCaps">false</item>
-        <item name="android:textColor">?attr/colorTimeSmall</item>
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
         <item name="android:textSize">12sp</item>
     </style>
 

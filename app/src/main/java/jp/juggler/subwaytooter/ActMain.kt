@@ -115,6 +115,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import java.util.LinkedList
+import com.google.android.material.R as MR
 
 class ActMain : ComponentActivity(),
     View.OnClickListener,
@@ -206,7 +207,7 @@ class ActMain : ComponentActivity(),
             gravity = android.view.Gravity.CENTER
             setPadding(dp(12), dp(12), dp(12), dp(12))
             setText(R.string.column_empty)
-            setTextColor(attrColor(R.attr.colorTextContent))
+            setTextColor(attrColor(MR.attr.colorOnSurface))
             textSize = 16f
         }
 
@@ -237,7 +238,7 @@ class ActMain : ComponentActivity(),
         val vFooterDivider1 = View(ctx).apply {
             id = R.id.vFooterDivider1
             layoutParams = LinearLayout.LayoutParams(dp(1), LinearLayout.LayoutParams.MATCH_PARENT)
-            setBackgroundColor(attrColor(R.attr.colorColumnStripBackground))
+            setBackgroundColor(attrColor(MR.attr.colorSurfaceContainer))
         }
 
         val llColumnStrip = jp.juggler.subwaytooter.actmain.ColumnStripLinearLayout(ctx).apply {
@@ -252,7 +253,7 @@ class ActMain : ComponentActivity(),
         val svColumnStrip = HorizontalScrollView(ctx).apply {
             id = R.id.svColumnStrip
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
-            setBackgroundColor(attrColor(R.attr.colorColumnStripBackground))
+            setBackgroundColor(attrColor(MR.attr.colorSurfaceContainer))
             isFillViewport = true
             isHorizontalScrollBarEnabled = false
             isHorizontalFadingEdgeEnabled = true
@@ -263,7 +264,7 @@ class ActMain : ComponentActivity(),
         val vFooterDivider2 = View(ctx).apply {
             id = R.id.vFooterDivider2
             layoutParams = LinearLayout.LayoutParams(dp(1), LinearLayout.LayoutParams.MATCH_PARENT)
-            setBackgroundColor(attrColor(R.attr.colorColumnStripBackground))
+            setBackgroundColor(attrColor(MR.attr.colorSurfaceContainer))
         }
 
         val btnToot = ImageButton(ctx).apply {
@@ -339,7 +340,7 @@ class ActMain : ComponentActivity(),
                 DrawerLayout.LayoutParams.MATCH_PARENT,
                 DrawerLayout.LayoutParams.MATCH_PARENT
             )
-            setBackgroundColor(attrColor(R.attr.colorMainBackground))
+            setBackgroundColor(attrColor(MR.attr.colorSurface))
             orientation = LinearLayout.VERTICAL
 
             // Content area (weight=1)
@@ -379,7 +380,7 @@ class ActMain : ComponentActivity(),
             ).apply {
                 gravity = android.view.Gravity.START
             }
-            setBackgroundColor(attrColor(R.attr.colorMainBackground))
+            setBackgroundColor(attrColor(MR.attr.colorSurface))
         }
 
         val drawerLayout = jp.juggler.subwaytooter.view.MyDrawerLayout(ctx).apply {
@@ -957,7 +958,7 @@ class ActMain : ComponentActivity(),
             }"
         )
         if (Build.MANUFACTURER?.contains("samsung", ignoreCase = true) == true) {
-            val colorBarBg = attrColor(R.attr.colorWindowInsetsBg)
+            val colorBarBg = attrColor(MR.attr.colorSurface)
             // Window Insets の色を再設定する
             window.setBackgroundDrawable(ColorDrawable(colorBarBg))
             // 余計なオーバードローを一回追加する

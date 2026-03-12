@@ -17,7 +17,7 @@ import kotlin.math.min
 class BlockQuoteSpan(
     context: Context,
     private val quoteWidth: Int = (context.resources.displayMetrics.density * 4f + 0.5f).toInt(),
-    private val blockQuoteColor: Int = context.attrColor(R.attr.colorTextHint),
+    private val blockQuoteColor: Int = context.attrColor(android.R.attr.textColorHint),
 ) : LeadingMarginSpan {
     private val rect = Rect()
     private val paint = Paint()
