@@ -40,38 +40,21 @@ fun ActPost.appendContentText(
     ).decodeEmoji(src)
     if (svEmoji.isEmpty()) return
 
-    val editable = views.etContent.text
-    if (editable == null) {
-        val sb = StringBuilder()
-        if (selectBefore) {
-            val start = 0
-            sb.append(' ')
-            sb.append(svEmoji)
-            views.etContent.setText(sb)
-            views.etContent.setSelection(start)
-        } else {
-            sb.append(svEmoji)
-            views.etContent.setText(sb)
-            views.etContent.setSelection(sb.length)
-        }
-    } else {
-        if (editable.isNotEmpty() &&
-            !CharacterGroup.isWhitespace(editable[editable.length - 1].code)
-        ) {
-            editable.append(' ')
-        }
+    val currentText = views.etContent.text.toString()
+    val emojiStr = svEmoji.toString()
+    val needsSpace = currentText.isNotEmpty() &&
+        !CharacterGroup.isWhitespace(currentText.last().code)
+    val prefix = if (needsSpace) " " else ""
 
-        if (selectBefore) {
-            val start = editable.length
-            editable.append(' ')
-            editable.append(svEmoji)
-            views.etContent.text = editable
-            views.etContent.setSelection(start)
-        } else {
-            editable.append(svEmoji)
-            views.etContent.text = editable
-            views.etContent.setSelection(editable.length)
-        }
+    if (selectBefore) {
+        val selStart = currentText.length + prefix.length
+        val newText = "$currentText$prefix $emojiStr"
+        views.etContent.setText(newText)
+        views.etContent.setSelection(selStart)
+    } else {
+        val newText = "$currentText$prefix$emojiStr"
+        views.etContent.setText(newText)
+        views.etContent.setSelection(newText.length)
     }
 }
 
@@ -161,7 +144,7 @@ suspend fun ActPost.updateText(
     resetText()
 
     // Android 9 から、明示的にフォーカスを当てる必要がある
-    views.etContent.requestFocus()
+    try { contentFocusRequester.requestFocus() } catch (_: Exception) {}
 
     this.attachmentList.clear()
     saveAttachmentList()
@@ -262,7 +245,7 @@ fun ActPost.performMore() {
     launchAndShowError {
         actionsDialog {
             action(getString(R.string.open_picker_emoji)) {
-                completionHelper.openEmojiPickerFromMore()
+                 openEmojiPickerForContent()
             }
 
             action(getString(R.string.clear_text)) {
@@ -385,5 +368,5 @@ fun ActPost.performPost() {
 }
 
 fun ActPost.showContentWarningEnabled() {
-    views.etContentWarning.vg(views.cbContentWarning.isChecked)
+    views.cwFrame.vg(views.cbContentWarning.isChecked)
 }

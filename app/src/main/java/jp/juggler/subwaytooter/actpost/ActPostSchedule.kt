@@ -49,7 +49,7 @@ suspend fun ActPost.initializeFromScheduledStatus(account: SavedAccount, jsonTex
         states.visibility = item.visibility
         views.cbNSFW.isChecked = item.sensitive
 
-        views.etContent.setText(item.text)
+        views.etContent.setText(item.text ?: "")
 
         val cw = item.spoilerText
         views.etContentWarning.setText(cw ?: "")

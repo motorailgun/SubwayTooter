@@ -8,7 +8,6 @@ import android.text.TextPaint
 import android.text.method.LinkMovementMethod
 import android.text.style.ClickableSpan
 import android.view.View
-import android.widget.EditText
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.annotation.StringRes
@@ -71,38 +70,20 @@ fun ActPost.showRecommendedPlugin(@StringRes titleId: Int) {
 
 fun ActPost.openMushroom() {
     try {
-        var text: String? = null
-        when {
-            views.etContentWarning.hasFocus() -> {
-                states.mushroomInput = 1
-                text = prepareMushroomText(views.etContentWarning)
-            }
-
-            views.etContent.hasFocus() -> {
-                states.mushroomInput = 0
-                text = prepareMushroomText(views.etContent)
-            }
-
-            else -> for (i in 0..3) {
-                if (etChoices[i].hasFocus()) {
-                    states.mushroomInput = i + 2
-                    text = prepareMushroomText(etChoices[i])
-                }
-            }
+        val (mushroomInput: Int, et: TextEditState) = when (focusedEditField) {
+            1 -> 1 to views.etContentWarning
+            in 2..5 -> focusedEditField to etChoices[focusedEditField - 2]
+            else -> 0 to views.etContent
         }
-        if (text == null) {
-            states.mushroomInput = 0
-            text = prepareMushroomText(views.etContent)
-        }
+        states.mushroomInput = mushroomInput
+        val text = prepareMushroomText(et)
 
         val intent = Intent("com.adamrocker.android.simeji.ACTION_INTERCEPT")
         intent.addCategory("com.adamrocker.android.simeji.REPLACE")
         intent.putExtra("replace_key", text)
 
-        // Create intent to show chooser
         val chooser = Intent.createChooser(intent, getString(R.string.select_plugin))
 
-        // Verify the intent will resolve to at least one activity
         if (intent.resolveActivity(packageManager) == null) {
             showRecommendedPlugin(R.string.plugin_not_installed)
             return
@@ -115,7 +96,7 @@ fun ActPost.openMushroom() {
     }
 }
 
-fun ActPost.prepareMushroomText(et: EditText): String {
+fun ActPost.prepareMushroomText(et: TextEditState): String {
     states.mushroomStart = et.selectionStart
     states.mushroomEnd = et.selectionEnd
     return when {
@@ -124,17 +105,16 @@ fun ActPost.prepareMushroomText(et: EditText): String {
     }
 }
 
-fun ActPost.applyMushroomText(et: EditText, text: String) {
+fun ActPost.applyMushroomText(et: TextEditState, text: String) {
     val src = et.text.toString()
     if (states.mushroomStart > src.length) states.mushroomStart = src.length
     if (states.mushroomEnd > src.length) states.mushroomEnd = src.length
 
     val sb = StringBuilder()
     sb.append(src.substring(0, states.mushroomStart))
-    // int new_sel_start = sb.length();
     sb.append(text)
     val newSelEnd = sb.length
     sb.append(src.substring(states.mushroomEnd))
     et.setText(sb)
-    et.setSelection(newSelEnd, newSelEnd)
+    et.setSelection(newSelEnd)
 }

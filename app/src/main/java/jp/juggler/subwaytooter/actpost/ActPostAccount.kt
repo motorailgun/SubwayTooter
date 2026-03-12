@@ -24,8 +24,6 @@ private val log = LogCategory("ActPostAccount")
 fun ActPost.selectAccount(a: SavedAccount?) {
     this.account = a
 
-    completionHelper.setInstance(a)
-
     val defaultTextColor = attrColor(android.R.attr.textColorPrimary)
 
     if (a == null) {

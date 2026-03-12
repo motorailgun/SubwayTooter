@@ -5,20 +5,14 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.Handler
-import android.text.Editable
-import android.text.InputType
-import android.text.TextWatcher
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewTreeObserver
-import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
-import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.LinearLayout
@@ -26,20 +20,40 @@ import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.ViewCompositionStrategy
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import jp.juggler.subwaytooter.compose.StThemedContent
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
 import jp.juggler.subwaytooter.action.saveWindowSize
 import jp.juggler.subwaytooter.actpost.ActPostRootLinearLayout
 import jp.juggler.subwaytooter.actpost.ActPostStates
-import jp.juggler.subwaytooter.actpost.CompletionHelper
 import jp.juggler.subwaytooter.actpost.FeaturedTagCache
+import jp.juggler.subwaytooter.actpost.TextEditState
 import jp.juggler.subwaytooter.actpost.addAttachment
 import jp.juggler.subwaytooter.actpost.applyMushroomText
 import jp.juggler.subwaytooter.actpost.onPickCustomThumbnailImpl
 import jp.juggler.subwaytooter.actpost.onPostAttachmentCompleteImpl
 import jp.juggler.subwaytooter.actpost.openAttachment
 import jp.juggler.subwaytooter.actpost.openMushroom
+import jp.juggler.subwaytooter.actpost.openEmojiPickerForContent
+import jp.juggler.subwaytooter.actpost.openFeaturedTagList
 import jp.juggler.subwaytooter.actpost.openVisibilityPicker
 import jp.juggler.subwaytooter.actpost.performAccountChooser
 import jp.juggler.subwaytooter.actpost.performAttachmentClick
@@ -72,7 +86,6 @@ import jp.juggler.subwaytooter.util.AttachmentUploader
 import jp.juggler.subwaytooter.util.PostAttachment
 import jp.juggler.subwaytooter.util.loadLanguageList
 import jp.juggler.subwaytooter.util.openBrowser
-import jp.juggler.subwaytooter.view.MyEditText
 import jp.juggler.subwaytooter.view.MyNetworkImageView
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
@@ -91,6 +104,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import java.lang.ref.WeakReference
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
@@ -115,26 +129,28 @@ class ActPostViews(
     val tvAttachmentProgress: TextView,
     val cbNSFW: CheckBox,
     val cbContentWarning: CheckBox,
-    val etContentWarning: MyEditText,
+    val cwFrame: View,
+    val etContentWarning: TextEditState,
     val btnFeaturedTag: ImageButton,
     val btnEmojiPicker: ImageButton,
-    val etContent: MyEditText,
+    val etContent: TextEditState,
+    val etContentView: View,
     val spLanguage: Spinner,
     val tvSchedule: TextView,
     val ibSchedule: ImageButton,
     val ibScheduleReset: ImageButton,
     val spPollType: Spinner,
     val llEnquete: LinearLayout,
-    val etChoice1: MyEditText,
-    val etChoice2: MyEditText,
-    val etChoice3: MyEditText,
-    val etChoice4: MyEditText,
+    val etChoice1: TextEditState,
+    val etChoice2: TextEditState,
+    val etChoice3: TextEditState,
+    val etChoice4: TextEditState,
     val cbMultipleChoice: CheckBox,
     val cbHideTotals: CheckBox,
     val llExpire: LinearLayout,
-    val etExpireDays: EditText,
-    val etExpireHours: EditText,
-    val etExpireMinutes: EditText,
+    val etExpireDays: TextEditState,
+    val etExpireHours: TextEditState,
+    val etExpireMinutes: TextEditState,
     val llFooterBar: LinearLayout,
     val btnAttachment: ImageButton,
     val btnVisibility: ImageButton,
@@ -186,16 +202,37 @@ fun createActPostViews(context: Context): ActPostViews {
         imageTintList = tintColor
     }
 
-    fun makeChoiceEditText() = MyEditText(context).apply {
+    fun makeChoiceEditText() = TextEditState()
+    fun makeChoiceComposeView(state: TextEditState, fieldIndex: Int) = ComposeView(context).apply {
         layoutParams = FrameLayout.LayoutParams(matchParent, wrapContent)
-        gravity = Gravity.START or Gravity.TOP
-        inputType = InputType.TYPE_CLASS_TEXT
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+            StThemedContent {
+                val textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface)
+                BasicTextField(
+                    value = state.fieldValue,
+                    onValueChange = { state.fieldValue = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { fs ->
+                            if (fs.isFocused) (context as ActPost).focusedEditField = fieldIndex
+                        },
+                    textStyle = textStyle,
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    decorationBox = { innerTextField ->
+                        Box(Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
+                            innerTextField()
+                        }
+                    },
+                )
+            }
+        }
     }
-
-    fun makeChoiceFrame(editText: MyEditText) = FrameLayout(context).apply {
+    fun makeChoiceFrame(state: TextEditState, fieldIndex: Int) = FrameLayout(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
         setBackgroundColor(colorSurfaceContainerHigh)
-        addView(editText)
+        addView(makeChoiceComposeView(state, fieldIndex))
     }
 
     fun makeChoiceLabel(textRes: Int) = TextView(context).apply {
@@ -205,12 +242,30 @@ fun createActPostViews(context: Context): ActPostViews {
         setText(textRes)
     }
 
-    fun makeExpireEditText(defaultText: String = "") = EditText(context).apply {
+    fun makeExpireEditText(defaultText: String = "") = TextEditState(defaultText)
+    fun makeExpireComposeView(state: TextEditState) = ComposeView(context).apply {
         layoutParams = LinearLayout.LayoutParams(wrapContent, wrapContent)
-        gravity = Gravity.CENTER
-        inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-        minWidth = context.dp(48)
-        if (defaultText.isNotEmpty()) setText(defaultText)
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+            StThemedContent {
+                BasicTextField(
+                    value = state.fieldValue,
+                    onValueChange = { state.fieldValue = it },
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                    textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    decorationBox = { innerTextField ->
+                        Box {
+                            if (state.text.isEmpty()) {
+                                Text("0", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f))
+                            }
+                            innerTextField()
+                        }
+                    },
+                )
+            }
+        }
     }
 
     fun makeExpireLabel(textRes: Int, marginStart: Int = 0, marginEnd: Int = 0) =
@@ -372,16 +427,44 @@ fun createActPostViews(context: Context): ActPostViews {
     }
 
     // --- Content Warning input ---
-    val etContentWarning = MyEditText(context).apply {
+    val etContentWarning = TextEditState()
+    val etContentWarningView = ComposeView(context).apply {
         layoutParams = FrameLayout.LayoutParams(matchParent, wrapContent)
-        setHint(R.string.content_warning_hint)
-        inputType = InputType.TYPE_CLASS_TEXT
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+            StThemedContent {
+                val textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface)
+                BasicTextField(
+                    value = etContentWarning.fieldValue,
+                    onValueChange = { etContentWarning.fieldValue = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { fs ->
+                            if (fs.isFocused) (context as ActPost).focusedEditField = 1
+                        },
+                    textStyle = textStyle,
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+                    decorationBox = { innerTextField ->
+                        Box(Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
+                            if (etContentWarning.text.isEmpty()) {
+                                Text(
+                                    context.getString(R.string.content_warning_hint),
+                                    style = textStyle.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)),
+                                )
+                            }
+                            innerTextField()
+                        }
+                    },
+                )
+            }
+        }
     }
 
     val cwFrame = FrameLayout(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
         setBackgroundColor(colorSurfaceContainerHigh)
-        addView(etContentWarning)
+        addView(etContentWarningView)
     }
 
     // --- Content label row (with emoji/hashtag buttons) ---
@@ -421,18 +504,48 @@ fun createActPostViews(context: Context): ActPostViews {
     }
 
     // --- Content input ---
-    val etContent = MyEditText(context).apply {
+    val etContent = TextEditState()
+    val etContentView = ComposeView(context).apply {
         layoutParams = FrameLayout.LayoutParams(matchParent, wrapContent)
-        gravity = Gravity.START or Gravity.TOP
-        setHint(R.string.content_hint)
-        inputType = InputType.TYPE_TEXT_FLAG_MULTI_LINE
-        minLines = 5
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+            StThemedContent {
+                val textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface)
+                BasicTextField(
+                    value = etContent.fieldValue,
+                    onValueChange = { etContent.fieldValue = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester((context as ActPost).contentFocusRequester)
+                        .onFocusChanged { fs ->
+                            if (fs.isFocused) (context as ActPost).focusedEditField = 0
+                        },
+                    textStyle = textStyle,
+                    minLines = 5,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Text,
+                        imeAction = ImeAction.None,
+                    ),
+                    decorationBox = { innerTextField ->
+                        Box(Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
+                            if (etContent.text.isEmpty()) {
+                                Text(
+                                    context.getString(R.string.content_hint),
+                                    style = textStyle.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)),
+                                )
+                            }
+                            innerTextField()
+                        }
+                    },
+                )
+            }
+        }
     }
 
     val contentFrame = FrameLayout(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
         setBackgroundColor(colorSurfaceContainerHigh)
-        addView(etContent)
+        addView(etContentView)
     }
 
     // --- Language row ---
@@ -513,13 +626,13 @@ fun createActPostViews(context: Context): ActPostViews {
         }
         orientation = LinearLayout.HORIZONTAL
         addView(makeExpireLabel(R.string.expiration, marginEnd = 4))
-        addView(etExpireDays)
+        addView(makeExpireComposeView(etExpireDays))
         addView(makeExpireLabel(R.string.poll_expire_days))
         addView(makeExpireLabel(R.string.plus, marginStart = 4, marginEnd = 4))
-        addView(etExpireHours)
+        addView(makeExpireComposeView(etExpireHours))
         addView(makeExpireLabel(R.string.poll_expire_hours))
         addView(makeExpireLabel(R.string.plus, marginStart = 4, marginEnd = 4))
-        addView(etExpireMinutes)
+        addView(makeExpireComposeView(etExpireMinutes))
         addView(makeExpireLabel(R.string.poll_expire_minutes))
     }
 
@@ -527,13 +640,13 @@ fun createActPostViews(context: Context): ActPostViews {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
         orientation = LinearLayout.VERTICAL
         addView(makeChoiceLabel(R.string.choice1))
-        addView(makeChoiceFrame(etChoice1))
+        addView(makeChoiceFrame(etChoice1, 2))
         addView(makeChoiceLabel(R.string.choice2))
-        addView(makeChoiceFrame(etChoice2))
+        addView(makeChoiceFrame(etChoice2, 3))
         addView(makeChoiceLabel(R.string.choice3))
-        addView(makeChoiceFrame(etChoice3))
+        addView(makeChoiceFrame(etChoice3, 4))
         addView(makeChoiceLabel(R.string.choice4))
-        addView(makeChoiceFrame(etChoice4))
+        addView(makeChoiceFrame(etChoice4, 5))
         addView(cbMultipleChoice)
         addView(cbHideTotals)
         addView(llExpire)
@@ -645,10 +758,12 @@ fun createActPostViews(context: Context): ActPostViews {
         tvAttachmentProgress = tvAttachmentProgress,
         cbNSFW = cbNSFW,
         cbContentWarning = cbContentWarning,
+        cwFrame = cwFrame,
         etContentWarning = etContentWarning,
         btnFeaturedTag = btnFeaturedTag,
         btnEmojiPicker = btnEmojiPicker,
         etContent = etContent,
+        etContentView = etContentView,
         spLanguage = spLanguage,
         tvSchedule = tvSchedule,
         ibSchedule = ibSchedule,
@@ -739,13 +854,18 @@ class ActPost : ComponentActivity(),
 
     val views by lazy { createActPostViews(this) }
     lateinit var ivMedia: List<MyNetworkImageView>
-    lateinit var etChoices: List<MyEditText>
+    val etChoices: List<TextEditState> get() = listOf(views.etChoice1, views.etChoice2, views.etChoice3, views.etChoice4)
+
+    /** Which text field has focus: 0=content, 1=cw, 2-5=choice1-4. Used by Mushroom plugin. */
+    var focusedEditField: Int = 0
+
+    /** FocusRequester wired to etContent's BasicTextField. */
+    val contentFocusRequester = FocusRequester()
 
     lateinit var handler: Handler
     lateinit var appState: AppState
     lateinit var attachmentUploader: AttachmentUploader
     lateinit var attachmentPicker: AttachmentPicker
-    lateinit var completionHelper: CompletionHelper
 
     var density: Float = 0f
 
@@ -866,7 +986,6 @@ class ActPost : ComponentActivity(),
         } catch (ex: Throwable) {
             log.e(ex, "progressChannel close failed.")
         }
-        completionHelper.onDestroy()
         attachmentUploader.onActivityDestroy()
         super.onDestroy()
     }
@@ -922,10 +1041,10 @@ class ActPost : ComponentActivity(),
             views.btnRemoveReply -> launchAndShowError { removeReply() }
             views.btnMore -> performMore()
             views.btnPlugin -> launchAndShowError { openMushroom() }
-            views.btnEmojiPicker -> completionHelper.openEmojiPickerFromMore()
-            views.btnFeaturedTag -> completionHelper.openFeaturedTagList(
-                featuredTagCache[account?.acct?.ascii ?: ""]?.list
-            )
+            views.btnEmojiPicker -> launchAndShowError { openEmojiPickerForContent() }
+            views.btnFeaturedTag -> launchAndShowError {
+                openFeaturedTagList(featuredTagCache[account?.acct?.ascii ?: ""]?.list)
+            }
 
             views.btnAttachmentsRearrange -> rearrangeAttachments()
             views.ibSchedule -> performSchedule()
@@ -981,11 +1100,6 @@ class ActPost : ComponentActivity(),
             // ビューのw,hはシステムバーその他を含まないので使わない
         }
 
-        // https://github.com/tateisu/SubwayTooter/issues/123
-        // 早い段階で指定する必要がある
-        views.etContent.inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE
-        views.etContent.imeOptions = EditorInfo.IME_ACTION_NONE
-
         views.spPollType.apply {
             this.adapter = ArrayAdapter(
                 this@ActPost,
@@ -1023,13 +1137,6 @@ class ActPost : ComponentActivity(),
             views.ivMedia4,
         )
 
-        etChoices = listOf(
-            views.etChoice1,
-            views.etChoice2,
-            views.etChoice3,
-            views.etChoice4,
-        )
-
         arrayOf(
             views.ibSchedule,
             views.ibScheduleReset,
@@ -1050,39 +1157,21 @@ class ActPost : ComponentActivity(),
 
         views.cbContentWarning.setOnCheckedChangeListener { _, _ -> showContentWarningEnabled() }
 
-        completionHelper = CompletionHelper(this, appState.handler)
-        completionHelper.attachEditText(
-            views.root,
-            views.etContent,
-            false,
-            object : CompletionHelper.Callback2 {
-                override fun onTextUpdate() {
-                    updateTextCount()
-                }
-
-                override fun canOpenPopup(): Boolean = true
-            })
-
-        val textWatcher: TextWatcher = object : TextWatcher {
-            override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-            override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-            override fun afterTextChanged(editable: Editable) {
-                updateTextCount()
+        // Observe all text fields to update the character count
+        launchMain {
+            androidx.compose.runtime.snapshotFlow { views.etContent.fieldValue.text }
+                .collectLatest { updateTextCount() }
+        }
+        launchMain {
+            androidx.compose.runtime.snapshotFlow { views.etContentWarning.fieldValue.text }
+                .collectLatest { updateTextCount() }
+        }
+        for (et in etChoices) {
+            launchMain {
+                androidx.compose.runtime.snapshotFlow { et.fieldValue.text }
+                    .collectLatest { updateTextCount() }
             }
         }
-
-        views.etContentWarning.addTextChangedListener(textWatcher)
-
-        for (et in etChoices) {
-            et.addTextChangedListener(textWatcher)
-        }
-
-        val scrollListener: ViewTreeObserver.OnScrollChangedListener =
-            ViewTreeObserver.OnScrollChangedListener { completionHelper.onScrollChanged() }
-
-        views.scrollView.viewTreeObserver.addOnScrollChangedListener(scrollListener)
-
-        views.etContent.contentCallback = { addAttachment(it) }
 
         views.spLanguage.adapter = ArrayAdapter(
             this,

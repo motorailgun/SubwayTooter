@@ -227,22 +227,17 @@ private fun ActPost.appendArrachmentUrl(a: TootAttachment) {
         log.w("missing attachment.textUrl")
         return
     }
-    val e = views.etContent.editableText
-    if (e == null) {
-        // 編注中テキストにアクセスできないなら先頭に空白とURLを置いて、先頭を選択する
-        val appendText = " $textUrl"
-        views.etContent.setText(appendText)
-        views.etContent.setSelection(0, 0)
+    // 末尾に空白とURLを置く。選択位置は変わらない。
+    val selStart = views.etContent.selectionStart
+    val selEnd = views.etContent.selectionEnd
+    val current = views.etContent.text.toString()
+    val newText = if (current.isEmpty() || CharacterGroup.isWhitespace(current.last().code)) {
+        current + textUrl
     } else {
-        // 末尾に空白とURLを置く。選択位置は変わらない。
-        val selStart = views.etContent.selectionStart
-        val selEnd = views.etContent.selectionEnd
-        if (e.lastOrNull()?.let { CharacterGroup.isWhitespace(it.code) } != true) {
-            e.append(" ")
-        }
-        e.append(textUrl)
-        views.etContent.setSelection(selStart, selEnd)
+        "$current $textUrl"
     }
+    views.etContent.setText(newText)
+    views.etContent.setSelection(selStart, selEnd)
 }
 
 // 添付した画像をタップ

@@ -401,8 +401,8 @@ fun ActPost.initializeFromRedraftStatus(account: SavedAccount, jsonText: String)
             else -> {
                 views.spPollType.setSelection(1)
                 text = decodeOptions.decodeHTML(srcEnquete.question)
-                views.etContent.text = text
-                views.etContent.setSelection(text.length)
+                    views.etContent.setText(text)
+                    views.etContent.setSelection(text.length)
 
                 var srcIndex = 0
                 for (et in etChoices) {
@@ -496,7 +496,7 @@ fun ActPost.initializeFromEditStatus(account: SavedAccount, jsonText: String) {
             else -> {
                 views.spPollType.setSelection(1)
                 text = decodeOptions.decodeHTML(srcEnquete.question)
-                views.etContent.text = text
+                    views.etContent.setText(text)
                 views.etContent.setSelection(text.length)
 
                 var srcIndex = 0
