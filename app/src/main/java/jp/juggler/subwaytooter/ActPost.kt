@@ -2,6 +2,7 @@ package jp.juggler.subwaytooter
 
 import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.content.res.ColorStateList
 import android.os.Bundle
 import android.os.Handler
@@ -20,29 +21,52 @@ import android.widget.ScrollView
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import jp.juggler.subwaytooter.compose.StThemedContent
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
 import jp.juggler.subwaytooter.action.saveWindowSize
-import jp.juggler.subwaytooter.actpost.ActPostRootLinearLayout
 import jp.juggler.subwaytooter.actpost.ActPostStates
 import jp.juggler.subwaytooter.actpost.FeaturedTagCache
 import jp.juggler.subwaytooter.actpost.TextEditState
@@ -77,7 +101,9 @@ import jp.juggler.subwaytooter.actpost.updateText
 import jp.juggler.subwaytooter.actpost.updateTextCount
 import jp.juggler.subwaytooter.api.entity.TootScheduled
 import jp.juggler.subwaytooter.api.entity.TootStatus
+import jp.juggler.subwaytooter.getVisibilityIconId
 import jp.juggler.subwaytooter.pref.PrefB
+import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.subwaytooter.span.MyClickableSpan
 import jp.juggler.subwaytooter.span.MyClickableSpanHandler
 import jp.juggler.subwaytooter.table.SavedAccount
@@ -99,7 +125,6 @@ import jp.juggler.util.ui.ActivityResultHandler
 import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.dp
 import jp.juggler.util.ui.isNotOk
-import jp.juggler.util.ui.setContentViewAndInsets
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
@@ -111,7 +136,6 @@ import java.util.concurrent.ConcurrentHashMap
 import com.google.android.material.R as MR
 
 class ActPostViews(
-    val root: ActPostRootLinearLayout,
     val scrollView: ScrollView,
     val llReply: LinearLayout,
     val ivReply: MyNetworkImageView,
@@ -151,13 +175,6 @@ class ActPostViews(
     val etExpireDays: TextEditState,
     val etExpireHours: TextEditState,
     val etExpireMinutes: TextEditState,
-    val llFooterBar: LinearLayout,
-    val btnAttachment: ImageButton,
-    val btnVisibility: ImageButton,
-    val btnPlugin: ImageButton,
-    val btnMore: ImageButton,
-    val tvCharCount: TextView,
-    val btnPost: ImageButton,
 )
 
 @Suppress("LongMethod")
@@ -179,18 +196,6 @@ fun createActPostViews(context: Context): ActPostViews {
         }
         background = btnBg()
         scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
-    }
-
-    fun makeImageButton48(
-        iconRes: Int,
-        marginStart: Int = 0,
-    ) = ImageButton(context).apply {
-        layoutParams = LinearLayout.LayoutParams(context.dp(48), context.dp(48)).apply {
-            if (marginStart > 0) this.marginStart = context.dp(marginStart)
-        }
-        background = btnBg()
-        setImageResource(iconRes)
-        imageTintList = tintColor
     }
 
     fun makeImageButton40(iconRes: Int, marginStart: Int = 0) = ImageButton(context).apply {
@@ -689,58 +694,7 @@ fun createActPostViews(context: Context): ActPostViews {
         addView(llContent)
     }
 
-    // --- Footer bar ---
-    val btnAttachment = makeImageButton48(R.drawable.ic_clip)
-    val btnVisibility = ImageButton(context).apply {
-        layoutParams = LinearLayout.LayoutParams(context.dp(48), context.dp(48)).apply {
-            marginStart = context.dp(4)
-        }
-        background = btnBg()
-        imageTintList = tintColor
-        contentDescription = context.getString(R.string.visibility)
-        minimumHeight = context.dp(48)
-        minimumWidth = context.dp(48)
-    }
-    val btnPlugin = makeImageButton48(R.drawable.ic_extension, marginStart = 4)
-    val btnMore = makeImageButton48(R.drawable.ic_more, marginStart = 4)
-
-    val tvCharCount = TextView(context).apply {
-        layoutParams = LinearLayout.LayoutParams(wrapContent, context.dp(48), 1f).apply {
-            marginEnd = context.dp(4)
-        }
-        gravity = Gravity.END or Gravity.CENTER_VERTICAL
-        minWidth = context.dp(32)
-    }
-
-    val btnPost = makeImageButton48(R.drawable.ic_send)
-
-    val llFooterBar = LinearLayout(context).apply {
-        layoutParams = LinearLayout.LayoutParams(matchParent, context.dp(48))
-        setBackgroundColor(colorSurfaceContainer)
-        isBaselineAligned = false
-        orientation = LinearLayout.HORIZONTAL
-        addView(btnAttachment)
-        addView(btnVisibility)
-        addView(btnPlugin)
-        addView(btnMore)
-        // spacer
-        addView(View(context).apply {
-            layoutParams = LinearLayout.LayoutParams(0, 0, 1f)
-        })
-        addView(tvCharCount)
-        addView(btnPost)
-    }
-
-    // --- Root ---
-    val root = ActPostRootLinearLayout(context).apply {
-        layoutParams = ViewGroup.LayoutParams(matchParent, matchParent)
-        orientation = LinearLayout.VERTICAL
-        addView(scrollView)
-        addView(llFooterBar)
-    }
-
     return ActPostViews(
-        root = root,
         scrollView = scrollView,
         llReply = llReply,
         ivReply = ivReply,
@@ -780,13 +734,6 @@ fun createActPostViews(context: Context): ActPostViews {
         etExpireDays = etExpireDays,
         etExpireHours = etExpireHours,
         etExpireMinutes = etExpireMinutes,
-        llFooterBar = llFooterBar,
-        btnAttachment = btnAttachment,
-        btnVisibility = btnVisibility,
-        btnPlugin = btnPlugin,
-        btnMore = btnMore,
-        tvCharCount = tvCharCount,
-        btnPost = btnPost,
     )
 }
 
@@ -861,6 +808,10 @@ class ActPost : ComponentActivity(),
 
     /** FocusRequester wired to etContent's BasicTextField. */
     val contentFocusRequester = FocusRequester()
+
+    var charCountText by mutableStateOf("")
+    var charCountColorArgb by mutableIntStateOf(0)
+    var visibilityIconRes by mutableIntStateOf(R.drawable.ic_public)
 
     lateinit var handler: Handler
     lateinit var appState: AppState
@@ -951,8 +902,28 @@ class ActPost : ComponentActivity(),
 
         progressChannel = Channel(capacity = Channel.CONFLATED)
 
+        charCountColorArgb = attrColor(android.R.attr.textColorPrimary)
+        visibilityIconRes = (states.visibility ?: jp.juggler.subwaytooter.api.entity.TootVisibility.Public)
+            .getVisibilityIconId(account?.isMisskey == true)
+
         App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
+        setContent {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(WindowInsets.systemBars.union(WindowInsets.ime).asPaddingValues())
+                    .onSizeChanged {
+                        if (isMultiWindowPost) saveWindowSize()
+                    }
+            ) {
+                if (PrefB.bpPostButtonBarTop.value) PostFooterBar()
+                AndroidView(
+                    factory = { views.scrollView },
+                    modifier = Modifier.weight(1f),
+                )
+                if (!PrefB.bpPostButtonBarTop.value) PostFooterBar()
+            }
+        }
         initUI()
 
         // 進捗表示チャネルの回収コルーチン
@@ -1031,16 +1002,11 @@ class ActPost : ComponentActivity(),
         refActPost = WeakReference(this)
         when (v) {
             views.btnAccount, views.ivAccount -> performAccountChooser()
-            views.btnVisibility -> openVisibilityPicker()
-            views.btnAttachment -> openAttachment()
             views.ivMedia1 -> performAttachmentClick(0)
             views.ivMedia2 -> performAttachmentClick(1)
             views.ivMedia3 -> performAttachmentClick(2)
             views.ivMedia4 -> performAttachmentClick(3)
-            views.btnPost -> performPost()
             views.btnRemoveReply -> launchAndShowError { removeReply() }
-            views.btnMore -> performMore()
-            views.btnPlugin -> launchAndShowError { openMushroom() }
             views.btnEmojiPicker -> launchAndShowError { openEmojiPickerForContent() }
             views.btnFeaturedTag -> launchAndShowError {
                 openFeaturedTagList(featuredTagCache[account?.acct?.ascii ?: ""]?.list)
@@ -1056,7 +1022,7 @@ class ActPost : ComponentActivity(),
         return when {
             super.onKeyShortcut(keyCode, event) -> true
             event?.isCtrlPressed == true && keyCode == KeyEvent.KEYCODE_T -> {
-                views.btnPost.performClick()
+                performPost()
                 true
             }
 
@@ -1082,22 +1048,84 @@ class ActPost : ComponentActivity(),
         onPostAttachmentCompleteImpl(pa)
     }
 
-    fun initUI() {
-        if (PrefB.bpPostButtonBarTop.value) {
-            val bar = views.llFooterBar
-            val parent = bar.parent as ViewGroup
-            parent.removeView(bar)
-            parent.addView(bar, 0)
+    @Composable
+    private fun PostFooterBar() {
+        val horizontalPadding = footerHorizontalPaddingDp()
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .padding(horizontal = horizontalPadding),
+        ) {
+            FooterIconButton(R.drawable.ic_clip, getString(R.string.media_attachment)) {
+                openAttachment()
+            }
+            FooterIconButton(
+                visibilityIconRes,
+                getString(R.string.visibility),
+            ) {
+                openVisibilityPicker()
+            }
+            FooterIconButton(R.drawable.ic_extension, getString(R.string.plugin_app_intro)) {
+                launchAndShowError { openMushroom() }
+            }
+            FooterIconButton(R.drawable.ic_more, getString(R.string.more)) {
+                performMore()
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = charCountText,
+                color = Color(charCountColorArgb),
+                modifier = Modifier
+                    .padding(end = 4.dp)
+                    .align(androidx.compose.ui.Alignment.CenterVertically),
+            )
+            FooterIconButton(R.drawable.ic_send, getString(R.string.toot)) {
+                performPost()
+            }
         }
+    }
 
+    @Composable
+    private fun FooterIconButton(
+        iconRes: Int,
+        contentDescription: String,
+        onClick: () -> Unit,
+    ) {
+        IconButton(
+            onClick = onClick,
+            modifier = Modifier.size(48.dp),
+        ) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = contentDescription,
+            )
+        }
+    }
+
+    private fun footerHorizontalPaddingDp() = run {
+        val dm = resources.displayMetrics
+        val widthDp = dm.widthPixels / dm.density
+        val basePx = if (
+            widthDp >= 640f &&
+            resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+        ) {
+            when (PrefI.ipJustifyWindowContentPortrait.value) {
+                PrefI.JWCP_START,
+                PrefI.JWCP_END,
+                -> 0
+                else -> kotlin.math.max(0, (dm.widthPixels - (0.5f + 460f * dm.density).toInt()) / 2)
+            }
+        } else {
+            kotlin.math.max(0, (dm.widthPixels - (0.5f + 460f * dm.density).toInt()) / 2)
+        }
+        (basePx / dm.density).dp
+    }
+
+    fun initUI() {
         if (!isMultiWindowPost) {
             fixHorizontalMargin(views.scrollView)
-            fixHorizontalMargin(views.llFooterBar)
-        }
-
-        views.root.callbackOnSizeChanged = { _, _, _, _ ->
-            if (isMultiWindowPost) saveWindowSize()
-            // ビューのw,hはシステムバーその他を含まないので使わない
         }
 
         views.spPollType.apply {
@@ -1141,14 +1169,9 @@ class ActPost : ComponentActivity(),
             views.ibSchedule,
             views.ibScheduleReset,
             views.btnAccount,
-            views.btnVisibility,
-            views.btnAttachment,
-            views.btnPost,
             views.btnRemoveReply,
             views.btnFeaturedTag,
-            views.btnPlugin,
             views.btnEmojiPicker,
-            views.btnMore,
             views.ivAccount,
             views.btnAttachmentsRearrange,
         ).forEach { it.setOnClickListener(this) }

@@ -97,13 +97,13 @@ fun ActPost.updateTextCount() {
 
     val remain = max - length
 
-    views.tvCharCount.text = remain.toString()
-    views.tvCharCount.setTextColor(
-        attrColor(
-            when {
-                remain < 0 -> androidx.appcompat.R.attr.colorError
-                else -> android.R.attr.textColorPrimary
-            }
-        )
+    val color = attrColor(
+        when {
+            remain < 0 -> androidx.appcompat.R.attr.colorError
+            else -> android.R.attr.textColorPrimary
+        }
     )
+
+    charCountText = remain.toString()
+    charCountColorArgb = color
 }
