@@ -9,7 +9,7 @@ import android.widget.LinearLayout
 import jp.juggler.subwaytooter.ActMain
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootStatus
-import jp.juggler.subwaytooter.itemviewholder.ItemViewHolder
+import jp.juggler.subwaytooter.util.TootColorConfig
 import jp.juggler.subwaytooter.pref.PrefB
 import jp.juggler.subwaytooter.pref.PrefF
 import jp.juggler.subwaytooter.pref.PrefI
@@ -171,10 +171,10 @@ fun reloadTimeZone() {
 fun ActMain.reloadColors() {
     ListDivider.color = 0
     TabletColumnDivider.color = 0
-    ItemViewHolder.toot_color_unlisted = 0
-    ItemViewHolder.toot_color_follower = 0
-    ItemViewHolder.toot_color_direct_user = 0
-    ItemViewHolder.toot_color_direct_me = 0
+    TootColorConfig.toot_color_unlisted = 0
+    TootColorConfig.toot_color_follower = 0
+    TootColorConfig.toot_color_direct_user = 0
+    TootColorConfig.toot_color_direct_me = 0
     MyClickableSpan.showLinkUnderline = PrefB.bpShowLinkUnderline.value
     MyClickableSpan.defaultLinkColor = attrColor(R.attr.colorLink)
 
@@ -223,9 +223,5 @@ fun ActMain.showFooterColor() {
 }
 
 fun ActMain.closePopup() {
-    try {
-        popupStatusButtons?.dismiss()
-    } catch (ignored: Throwable) {
-    }
-    popupStatusButtons = null
+    // no-op: old StatusButtonsPopup removed
 }

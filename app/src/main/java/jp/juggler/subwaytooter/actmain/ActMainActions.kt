@@ -17,10 +17,7 @@ import jp.juggler.subwaytooter.column.Column
 import jp.juggler.subwaytooter.column.ColumnType
 import jp.juggler.subwaytooter.columnviewholder.ColumnViewHolder
 import jp.juggler.subwaytooter.columnviewholder.TabletColumnViewHolder
-import jp.juggler.subwaytooter.columnviewholder.ViewHolderHeaderBase
-import jp.juggler.subwaytooter.columnviewholder.ViewHolderItem
 import jp.juggler.subwaytooter.dialog.actionsDialog
-import jp.juggler.subwaytooter.itemviewholder.ItemViewHolder
 import jp.juggler.subwaytooter.pref.*
 import jp.juggler.subwaytooter.push.PushWorker
 import jp.juggler.subwaytooter.span.MyClickableSpan
@@ -137,27 +134,9 @@ fun ActMain.onMyClickableSpanClickedImpl(viewClicked: View, span: MyClickableSpa
     var view = viewClicked
     loop@ while (true) {
         when (val tag = view.tag) {
-            is ItemViewHolder -> {
-                column = tag.column
-                whoRef = tag.getAccount()
-                break@loop
-            }
-
-            is ViewHolderItem -> {
-                column = tag.ivh.column
-                whoRef = tag.ivh.getAccount()
-                break@loop
-            }
-
             is ColumnViewHolder -> {
                 column = tag.column
                 whoRef = null
-                break@loop
-            }
-
-            is ViewHolderHeaderBase -> {
-                column = tag.column
-                whoRef = tag.getAccount()
                 break@loop
             }
 

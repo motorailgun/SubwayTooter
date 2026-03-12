@@ -49,7 +49,7 @@ import jp.juggler.subwaytooter.api.entity.*
 import jp.juggler.subwaytooter.api.entity.TootAttachment.Companion.tootAttachmentJson
 import jp.juggler.subwaytooter.dialog.actionsDialog
 import jp.juggler.subwaytooter.drawable.MediaBackgroundDrawable
-import jp.juggler.subwaytooter.itemviewholder.reUrlGif
+import jp.juggler.subwaytooter.util.reUrlGif
 import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.subwaytooter.util.permissionSpecMediaDownload
 import jp.juggler.subwaytooter.util.requester

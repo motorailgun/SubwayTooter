@@ -1,4 +1,4 @@
-package jp.juggler.subwaytooter.itemviewholder
+package jp.juggler.subwaytooter.dialog
 
 import android.annotation.SuppressLint
 import android.app.Dialog

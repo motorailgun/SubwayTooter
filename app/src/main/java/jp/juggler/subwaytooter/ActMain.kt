@@ -82,7 +82,6 @@ import jp.juggler.subwaytooter.column.saveScrollPosition
 import jp.juggler.subwaytooter.column.startLoading
 import jp.juggler.subwaytooter.column.viewHolder
 import jp.juggler.subwaytooter.dialog.DlgQuickTootMenu
-import jp.juggler.subwaytooter.itemviewholder.StatusButtonsPopup
 import jp.juggler.subwaytooter.notification.checkNotificationImmediateAll
 import jp.juggler.subwaytooter.pref.PrefB
 import jp.juggler.subwaytooter.pref.PrefI
@@ -180,7 +179,7 @@ class ActMain : ComponentActivity(),
     // 画面上のUI操作で生成されて
     // onPause,onPageDestroy 等のタイミングで閉じられる
     // 状態保存の必要なし
-    internal var popupStatusButtons: StatusButtonsPopup? = null
+    // (removed: popupStatusButtons)
 
     var phoneViews: ActMainPhoneViews? = null
     var tabletViews: ActMainTabletViews? = null

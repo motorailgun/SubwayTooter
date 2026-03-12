@@ -463,11 +463,11 @@ fun StatusBody(
     val bgColor = colorBg.notZero()
         ?: status.getBackgroundColorType(accessInfo).let { vis ->
             when (vis) {
-                TootVisibility.UnlistedHome -> jp.juggler.subwaytooter.itemviewholder.ItemViewHolder.toot_color_unlisted
-                TootVisibility.PrivateFollowers -> jp.juggler.subwaytooter.itemviewholder.ItemViewHolder.toot_color_follower
-                TootVisibility.DirectSpecified -> jp.juggler.subwaytooter.itemviewholder.ItemViewHolder.toot_color_direct_user
-                TootVisibility.DirectPrivate -> jp.juggler.subwaytooter.itemviewholder.ItemViewHolder.toot_color_direct_me
-                TootVisibility.Limited -> jp.juggler.subwaytooter.itemviewholder.ItemViewHolder.toot_color_follower
+                TootVisibility.UnlistedHome -> jp.juggler.subwaytooter.util.TootColorConfig.toot_color_unlisted
+                TootVisibility.PrivateFollowers -> jp.juggler.subwaytooter.util.TootColorConfig.toot_color_follower
+                TootVisibility.DirectSpecified -> jp.juggler.subwaytooter.util.TootColorConfig.toot_color_direct_user
+                TootVisibility.DirectPrivate -> jp.juggler.subwaytooter.util.TootColorConfig.toot_color_direct_me
+                TootVisibility.Limited -> jp.juggler.subwaytooter.util.TootColorConfig.toot_color_follower
                 else -> 0
             }
         }.notZero() ?: 0

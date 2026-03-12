@@ -1,7 +1,7 @@
 package jp.juggler.subwaytooter.pref
 
 import android.util.Log
-import jp.juggler.subwaytooter.itemviewholder.AdditionalButtonsPosition
+import jp.juggler.subwaytooter.pref.AdditionalButtonsPosition
 import jp.juggler.subwaytooter.pref.impl.IntPref
 
 object PrefI {

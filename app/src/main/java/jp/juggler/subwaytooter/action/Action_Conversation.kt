@@ -9,7 +9,6 @@ import jp.juggler.subwaytooter.api.*
 import jp.juggler.subwaytooter.api.entity.*
 import jp.juggler.subwaytooter.column.ColumnType
 import jp.juggler.subwaytooter.column.findStatus
-import jp.juggler.subwaytooter.columnviewholder.ItemListAdapter
 import jp.juggler.subwaytooter.dialog.actionsDialog
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.table.daoAcctColor
@@ -31,21 +30,13 @@ fun ActMain.clickConversation(
     pos: Int,
     accessInfo: SavedAccount,
 
-    // optional. 未読表示のクリアに使う
-    listAdapter: ItemListAdapter? = null,
-
     // どちらか非nullであること
     status: TootStatus? = null,
     summary: TootConversationSummary? = null,
 ) {
     // 未読クリアと表示の更新
     (summary ?: status?.conversationSummary)?.let {
-        if (conversationUnreadClear(accessInfo, it)) {
-            listAdapter?.notifyChange(
-                reason = "ConversationSummary reset unread",
-                reset = true
-            )
-        }
+        conversationUnreadClear(accessInfo, it)
     }
     // 会話カラムを開く
     (status ?: summary?.last_status)?.let {

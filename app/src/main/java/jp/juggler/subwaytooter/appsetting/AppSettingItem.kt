@@ -26,7 +26,7 @@ import jp.juggler.subwaytooter.actmain.selectPushDistributor
 import jp.juggler.subwaytooter.dialog.runInProgress
 import jp.juggler.subwaytooter.drawable.MediaBackgroundDrawable
 import jp.juggler.subwaytooter.enableEdgeToEdgeEx
-import jp.juggler.subwaytooter.itemviewholder.AdditionalButtonsPosition
+import jp.juggler.subwaytooter.pref.AdditionalButtonsPosition
 import jp.juggler.subwaytooter.notification.showAlertNotification
 import jp.juggler.subwaytooter.pref.PrefB
 import jp.juggler.subwaytooter.pref.PrefF

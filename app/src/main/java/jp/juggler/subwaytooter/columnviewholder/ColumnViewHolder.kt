@@ -41,7 +41,7 @@ import java.lang.reflect.Field
  * Public fields that external code references are preserved:
  *   - viewRoot, column, pageIdx, scrollPosition, isColumnSettingShown,
  *     isPageDestroyed, refreshLayout (dummy), listView (dummy), listLayoutManager (dummy),
- *     lastAnnouncementShown, bindingBusy, statusAdapter
+ *     lastAnnouncementShown, bindingBusy
  */
 @SuppressLint("ClickableViewAccessibility")
 class ColumnViewHolder(
@@ -70,7 +70,6 @@ class ColumnViewHolder(
 
     // ──────── Core state ────────
     var column: Column? = null
-    var statusAdapter: ItemListAdapter? = null
     var pageIdx: Int = 0
 
     // ──────── Compose state ────────

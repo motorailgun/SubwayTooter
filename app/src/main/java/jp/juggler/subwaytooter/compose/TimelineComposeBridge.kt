@@ -33,7 +33,7 @@ import jp.juggler.subwaytooter.api.entity.TootSearchGap
 import jp.juggler.subwaytooter.api.entity.TootTag
 import jp.juggler.subwaytooter.column.Column
 import jp.juggler.subwaytooter.column.startGap
-import jp.juggler.subwaytooter.itemviewholder.DlgContextMenu
+import jp.juggler.subwaytooter.dialog.DlgContextMenu
 import jp.juggler.subwaytooter.util.openCustomTab
 import jp.juggler.subwaytooter.util.stColorScheme
 import jp.juggler.util.data.cast

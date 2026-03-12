@@ -2,8 +2,6 @@ package jp.juggler.subwaytooter
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import jp.juggler.util.data.*
-import org.jetbrains.anko.collections.forEachReversedByIndex
-import org.jetbrains.anko.collections.forEachReversedWithIndex
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -38,12 +36,14 @@ class JsonArrayForEach {
             ++count
         }
 
-        array.forEachReversedByIndex {
+        for (i in array.indices.reversed()) {
+            val it = array[i]
             println("JsonArray.downForEach $it")
             ++count
         }
 
-        array.forEachReversedWithIndex { i, v ->
+        for (i in array.indices.reversed()) {
+            val v = array[i]
             println("JsonArray.downForEachIndexed $i $v")
             ++count
         }
