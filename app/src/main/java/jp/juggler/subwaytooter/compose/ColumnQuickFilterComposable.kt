@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.column.Column
@@ -186,3 +187,40 @@ private fun QuickFilterIconButton(
         )
     }
 }
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewColumnQuickFilterBar() {
+    ColumnQuickFilterBar(
+        uiState = ColumnUiState().apply { quickFilterVisible = true },
+        callbacks = ColumnCallbacks()
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewQuickFilterTextButton() {
+    QuickFilterTextButton(
+        text = "All",
+        selected = true,
+        fgColor = Color.White,
+        selectedBg = Color.Blue,
+        normalBg = Color.Gray,
+        onClick = {}
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewQuickFilterIconButton() {
+    QuickFilterIconButton(
+        iconRes = R.drawable.ic_reply,
+        contentDescription = "Reply",
+        selected = false,
+        fgColor = Color.White,
+        selectedBg = Color.Blue,
+        normalBg = Color.Gray,
+        onClick = {}
+    )
+}
+

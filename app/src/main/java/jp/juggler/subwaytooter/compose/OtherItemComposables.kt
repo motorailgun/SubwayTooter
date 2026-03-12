@@ -30,6 +30,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import jp.juggler.subwaytooter.ActMain
@@ -116,6 +117,16 @@ fun GapItemContent(
 /**
  * Search gap item.
  */
+@Preview(showBackground = true)
+@Composable
+fun PreviewSearchGapItemContent() {
+    SearchGapItemContent(
+        item = TootSearchGap(TootSearchGap.SearchType.Hashtag),
+        callbacks = TimelineCallbacks(),
+        contentColor = android.graphics.Color.BLACK
+    )
+}
+
 @Composable
 fun SearchGapItemContent(
     item: TootSearchGap,
@@ -405,6 +416,15 @@ fun FilterItemContent(
 /**
  * Simple message holder.
  */
+@Preview(showBackground = true)
+@Composable
+fun PreviewMessageHolderContentItem() {
+    MessageHolderContent(
+        item = TootMessageHolder(text = "This is a simple message holder"),
+        contentColor = android.graphics.Color.BLACK
+    )
+}
+
 @Composable
 fun MessageHolderContent(
     item: TootMessageHolder,
@@ -414,6 +434,16 @@ fun MessageHolderContent(
         text = item.text,
         gravity = item.gravity,
         contentColor = contentColor,
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewMessageHolderContent() {
+    MessageHolderContent(
+        text = "This is a simple message",
+        gravity = Gravity.CENTER_HORIZONTAL,
+        contentColor = android.graphics.Color.BLACK
     )
 }
 

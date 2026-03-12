@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.tooling.preview.Preview
 import jp.juggler.subwaytooter.R
 
 /**
@@ -230,5 +231,16 @@ fun ColorPickerDialog(
                 Text(stringResource(android.R.string.cancel))
             }
         },
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewColorPickerDialog() {
+    ColorPickerDialog(
+        colorInitial = 0xFFFF0000.toInt(),
+        alphaEnabled = true,
+        onDismiss = {},
+        onColorSelected = {}
     )
 }

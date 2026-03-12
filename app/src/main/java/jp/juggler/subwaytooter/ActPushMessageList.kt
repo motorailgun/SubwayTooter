@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -255,3 +256,19 @@ private fun pushMessageText(pm: PushMessage): String = arrayOf(
     pm.textExpand,
     pm.formatError?.let { "error: $it" },
 ).mapNotNull { it?.notBlank() }.joinToString("\n")
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewPushMessageRow() {
+    PushMessageRow(
+        pm = PushMessage(),
+        errorDrawable = android.graphics.drawable.ColorDrawable(0),
+        onClick = {}
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewGlideImage() {
+    GlideImage(model = null)
+}

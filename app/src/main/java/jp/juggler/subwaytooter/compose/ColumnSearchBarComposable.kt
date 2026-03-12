@@ -31,6 +31,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import jp.juggler.subwaytooter.R
@@ -267,3 +268,31 @@ fun ColumnListBar(
         }
     }
 }
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewColumnSearchBar() {
+    ColumnSearchBar(
+        uiState = ColumnUiState().apply { searchBarVisible = true },
+        callbacks = ColumnCallbacks()
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewColumnAggBoostBar() {
+    ColumnAggBoostBar(
+        uiState = ColumnUiState().apply { aggBoostBarVisible = true },
+        callbacks = ColumnCallbacks()
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewColumnListBar() {
+    ColumnListBar(
+        uiState = ColumnUiState().apply { listBarVisible = true },
+        callbacks = ColumnCallbacks()
+    )
+}
+

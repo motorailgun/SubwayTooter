@@ -21,6 +21,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
 import jp.juggler.subwaytooter.ActMain
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.InstanceCapability
@@ -214,4 +215,27 @@ fun ActionButtonWithCount(
             )
         }
     }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewActionButton() {
+    ActionButton(
+        iconId = R.drawable.ic_reply,
+        contentDescription = "Reply",
+        tint = Color.Black,
+        onClick = {}
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewActionButtonWithCount() {
+    ActionButtonWithCount(
+        iconId = R.drawable.ic_reply,
+        contentDescription = "Reply",
+        tint = Color.Black,
+        count = 5L,
+        onClick = {}
+    )
 }

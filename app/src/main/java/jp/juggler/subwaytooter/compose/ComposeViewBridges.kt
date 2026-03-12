@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.viewinterop.AndroidView
 import jp.juggler.subwaytooter.util.NetworkEmojiInvalidator
 import jp.juggler.subwaytooter.view.MyLinkMovementMethod
@@ -127,3 +128,21 @@ fun SpannableTextView(
         },
     )
 }
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewNetworkImage() {
+    NetworkImage(
+        staticUrl = "https://example.com/image.png",
+        contentDescription = "Preview Image"
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewSpannableTextView() {
+    SpannableTextView(
+        text = "Hello, world!"
+    )
+}
+

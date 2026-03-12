@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.util.stColorScheme
 
@@ -70,3 +71,22 @@ fun StThemedContent(
         content()
     }
 }
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewStScreen() {
+    StScreen(
+        title = "Preview Title",
+        onBack = {},
+        content = { Text("Content") }
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewStThemedContent() {
+    StThemedContent {
+        Text("Content")
+    }
+}
+
