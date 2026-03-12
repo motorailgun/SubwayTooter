@@ -70,7 +70,7 @@ fun ActPost.updateTextCount() {
         EmojiDecoder.decodeShortCode(views.etContent.text.toString())
     )
 
-    if (views.cbContentWarning.isChecked) {
+    if (contentWarningChecked) {
         length += TootAccount.countText(
             EmojiDecoder.decodeShortCode(views.etContentWarning.text.toString())
         )
@@ -86,7 +86,7 @@ fun ActPost.updateTextCount() {
         }
     }
 
-    when (views.spPollType.selectedItemPosition) {
+    when (pollTypeIndex) {
         1 -> checkEnqueteLength()
 
         2 -> {

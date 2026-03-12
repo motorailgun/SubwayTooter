@@ -86,9 +86,9 @@ private suspend fun checkExist(url: String?): Boolean {
 fun ActPost.saveDraft() {
     val content = views.etContent.text.toString()
     val contentWarning =
-        if (views.cbContentWarning.isChecked) views.etContentWarning.text.toString() else ""
+        if (contentWarningChecked) views.etContentWarning.text.toString() else ""
 
-    val isEnquete = views.spPollType.selectedItemPosition > 0
+    val isEnquete = pollTypeIndex > 0
 
     val strChoice = arrayOf(
         if (isEnquete) etChoices[0].text.toString() else "",
@@ -117,17 +117,17 @@ fun ActPost.saveDraft() {
         val json = JsonObject()
         json[DRAFT_CONTENT] = content
         json[DRAFT_CONTENT_WARNING] = contentWarning
-        json[DRAFT_CONTENT_WARNING_CHECK] = views.cbContentWarning.isChecked
-        json[DRAFT_NSFW_CHECK] = views.cbNSFW.isChecked
+        json[DRAFT_CONTENT_WARNING_CHECK] = contentWarningChecked
+        json[DRAFT_NSFW_CHECK] = nsfwChecked
         json[DRAFT_ACCOUNT_DB_ID] = account?.db_id ?: -1L
         json[DRAFT_ATTACHMENT_LIST] = tmpAttachmentList
         json[DRAFT_REPLY_TEXT] = states.inReplyToText
         json[DRAFT_REPLY_IMAGE] = states.inReplyToImage
         json[DRAFT_REPLY_URL] = states.inReplyToUrl
-        json[DRAFT_QUOTE] = views.cbQuote.isChecked
-        json[DRAFT_POLL_TYPE] = views.spPollType.selectedItemPosition.toPollTypeString()
-        json[DRAFT_POLL_MULTIPLE] = views.cbMultipleChoice.isChecked
-        json[DRAFT_POLL_HIDE_TOTALS] = views.cbHideTotals.isChecked
+        json[DRAFT_QUOTE] = quoteChecked
+        json[DRAFT_POLL_TYPE] = pollTypeIndex.toPollTypeString()
+        json[DRAFT_POLL_MULTIPLE] = pollMultipleChoiceChecked
+        json[DRAFT_POLL_HIDE_TOTALS] = pollHideTotalsChecked
         json[DRAFT_POLL_EXPIRE_DAY] = views.etExpireDays.text.toString()
         json[DRAFT_POLL_EXPIRE_HOUR] = views.etExpireHours.text.toString()
         json[DRAFT_POLL_EXPIRE_MINUTE] = views.etExpireMinutes.text.toString()
@@ -259,23 +259,23 @@ fun ActPost.restoreDraft(draft: JsonObject) {
             views.etContent.setSelection(evEmoji.length)
             views.etContentWarning.setText(contentWarning)
             views.etContentWarning.setSelection(contentWarning.length)
-            views.cbContentWarning.isChecked = contentWarningChecked
-            views.cbNSFW.isChecked = nsfwChecked
+            this@restoreDraft.contentWarningChecked = contentWarningChecked
+            this@restoreDraft.nsfwChecked = nsfwChecked
             if (draftVisibility != null) states.visibility = draftVisibility
 
-            views.cbQuote.isChecked = draft.optBoolean(DRAFT_QUOTE)
+            quoteChecked = draft.optBoolean(DRAFT_QUOTE)
 
             val sv = draft.string(DRAFT_POLL_TYPE)
             if (sv != null) {
-                views.spPollType.setSelection(min(1, sv.toPollTypeIndex()))
+                pollTypeIndex = min(1, sv.toPollTypeIndex())
             } else {
                 // old draft
                 val bv = draft.optBoolean(DRAFT_IS_ENQUETE, false)
-                views.spPollType.setSelection(if (bv) 1 else 0)
+                pollTypeIndex = if (bv) 1 else 0
             }
 
-            views.cbMultipleChoice.isChecked = draft.optBoolean(DRAFT_POLL_MULTIPLE)
-            views.cbHideTotals.isChecked = draft.optBoolean(DRAFT_POLL_HIDE_TOTALS)
+            pollMultipleChoiceChecked = draft.optBoolean(DRAFT_POLL_MULTIPLE)
+            pollHideTotalsChecked = draft.optBoolean(DRAFT_POLL_HIDE_TOTALS)
             views.etExpireDays.setText(draft.optString(DRAFT_POLL_EXPIRE_DAY, "1"))
             views.etExpireHours.setText(draft.optString(DRAFT_POLL_EXPIRE_HOUR, ""))
             views.etExpireMinutes.setText(draft.optString(DRAFT_POLL_EXPIRE_MINUTE, ""))
@@ -362,7 +362,7 @@ fun ActPost.initializeFromRedraftStatus(account: SavedAccount, jsonText: String)
             saveAttachmentList()
         }
 
-        views.cbNSFW.isChecked = baseStatus.sensitive == true
+        nsfwChecked = baseStatus.sensitive == true
 
         // 再編集の場合はdefault_textは反映されない
 
@@ -384,7 +384,7 @@ fun ActPost.initializeFromRedraftStatus(account: SavedAccount, jsonText: String)
         text = decodeOptions.decodeEmoji(baseStatus.spoiler_text)
         views.etContentWarning.setText(text)
         views.etContentWarning.setSelection(text.length)
-        views.cbContentWarning.isChecked = text.isNotEmpty()
+        contentWarningChecked = text.isNotEmpty()
 
         val srcEnquete = baseStatus.enquete
         val srcItems = srcEnquete?.items
@@ -399,7 +399,7 @@ fun ActPost.initializeFromRedraftStatus(account: SavedAccount, jsonText: String)
             }
 
             else -> {
-                views.spPollType.setSelection(1)
+                pollTypeIndex = 1
                 text = decodeOptions.decodeHTML(srcEnquete.question)
                     views.etContent.setText(text)
                     views.etContent.setSelection(text.length)
@@ -457,7 +457,7 @@ fun ActPost.initializeFromEditStatus(account: SavedAccount, jsonText: String) {
                 saveAttachmentList()
             }
 
-        views.cbNSFW.isChecked = baseStatus.sensitive == true
+        nsfwChecked = baseStatus.sensitive == true
 
         // 再編集の場合はdefault_textは反映されない
 
@@ -479,7 +479,7 @@ fun ActPost.initializeFromEditStatus(account: SavedAccount, jsonText: String) {
         text = decodeOptions.decodeEmoji(baseStatus.spoiler_text)
         views.etContentWarning.setText(text)
         views.etContentWarning.setSelection(text.length)
-        views.cbContentWarning.isChecked = text.isNotEmpty()
+        contentWarningChecked = text.isNotEmpty()
 
         val srcEnquete = baseStatus.enquete
         val srcItems = srcEnquete?.items
@@ -494,7 +494,7 @@ fun ActPost.initializeFromEditStatus(account: SavedAccount, jsonText: String) {
             }
 
             else -> {
-                views.spPollType.setSelection(1)
+                pollTypeIndex = 1
                 text = decodeOptions.decodeHTML(srcEnquete.question)
                     views.etContent.setText(text)
                 views.etContent.setSelection(text.length)

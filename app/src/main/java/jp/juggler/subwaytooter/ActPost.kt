@@ -10,10 +10,7 @@ import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.CheckBox
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.LinearLayout
@@ -37,17 +34,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -63,8 +67,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import jp.juggler.subwaytooter.compose.NetworkImage
 import jp.juggler.subwaytooter.compose.StThemedContent
-import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayout
 import jp.juggler.subwaytooter.action.saveWindowSize
 import jp.juggler.subwaytooter.actpost.ActPostStates
@@ -135,43 +139,25 @@ import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import com.google.android.material.R as MR
 
+data class AttachmentSlotUi(
+    val visible: Boolean = false,
+    val previewUrl: String? = null,
+    val fallbackIconRes: Int = R.drawable.ic_clip,
+)
+
 class ActPostViews(
     val scrollView: ScrollView,
-    val llReply: LinearLayout,
     val ivReply: MyNetworkImageView,
-    val tvReplyTo: TextView,
-    val btnRemoveReply: ImageButton,
-    val cbQuote: CheckBox,
-    val ivAccount: MyNetworkImageView,
-    val btnAccount: Button,
-    val llAttachment: FlexboxLayout,
-    val ivMedia1: MyNetworkImageView,
-    val ivMedia2: MyNetworkImageView,
-    val ivMedia3: MyNetworkImageView,
-    val ivMedia4: MyNetworkImageView,
-    val btnAttachmentsRearrange: ImageButton,
-    val tvAttachmentProgress: TextView,
-    val cbNSFW: CheckBox,
-    val cbContentWarning: CheckBox,
     val cwFrame: View,
     val etContentWarning: TextEditState,
-    val btnFeaturedTag: ImageButton,
-    val btnEmojiPicker: ImageButton,
     val etContent: TextEditState,
     val etContentView: View,
     val spLanguage: Spinner,
-    val tvSchedule: TextView,
-    val ibSchedule: ImageButton,
-    val ibScheduleReset: ImageButton,
-    val spPollType: Spinner,
-    val llEnquete: LinearLayout,
+    val llEnquete: View,
     val etChoice1: TextEditState,
     val etChoice2: TextEditState,
     val etChoice3: TextEditState,
     val etChoice4: TextEditState,
-    val cbMultipleChoice: CheckBox,
-    val cbHideTotals: CheckBox,
-    val llExpire: LinearLayout,
     val etExpireDays: TextEditState,
     val etExpireHours: TextEditState,
     val etExpireMinutes: TextEditState,
@@ -186,26 +172,8 @@ fun createActPostViews(context: Context): ActPostViews {
     val colorSurfaceContainerHigh = context.attrColor(MR.attr.colorSurfaceContainerHigh)
     val colorSurfaceContainerHighest = context.attrColor(MR.attr.colorSurfaceContainerHighest)
     val colorSurface = context.attrColor(MR.attr.colorSurface)
-    val colorSurfaceContainer = context.attrColor(MR.attr.colorSurfaceContainer)
     val btnBg = ContextCompat.getDrawable(context, R.drawable.btn_bg_transparent_round6dp)
     fun btnBg() = ContextCompat.getDrawable(context, R.drawable.btn_bg_transparent_round6dp)
-
-    fun makeMediaView() = MyNetworkImageView(context).apply {
-        layoutParams = FlexboxLayout.LayoutParams(context.dp(48), context.dp(48)).apply {
-            marginEnd = context.dp(4)
-        }
-        background = btnBg()
-        scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
-    }
-
-    fun makeImageButton40(iconRes: Int, marginStart: Int = 0) = ImageButton(context).apply {
-        layoutParams = LinearLayout.LayoutParams(context.dp(40), context.dp(40)).apply {
-            if (marginStart > 0) this.marginStart = context.dp(marginStart)
-        }
-        background = btnBg()
-        setImageResource(iconRes)
-        imageTintList = tintColor
-    }
 
     fun makeChoiceEditText() = TextEditState()
     fun makeChoiceComposeView(state: TextEditState, fieldIndex: Int) = ComposeView(context).apply {
@@ -234,53 +202,37 @@ fun createActPostViews(context: Context): ActPostViews {
             }
         }
     }
-    fun makeChoiceFrame(state: TextEditState, fieldIndex: Int) = FrameLayout(context).apply {
-        layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
-        setBackgroundColor(colorSurfaceContainerHigh)
-        addView(makeChoiceComposeView(state, fieldIndex))
-    }
-
-    fun makeChoiceLabel(textRes: Int) = TextView(context).apply {
-        layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent).apply {
-            topMargin = context.dp(3)
-        }
-        setText(textRes)
-    }
-
     fun makeExpireEditText(defaultText: String = "") = TextEditState(defaultText)
-    fun makeExpireComposeView(state: TextEditState) = ComposeView(context).apply {
-        layoutParams = LinearLayout.LayoutParams(wrapContent, wrapContent)
-        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
-        setContent {
-            StThemedContent {
-                BasicTextField(
-                    value = state.fieldValue,
-                    onValueChange = { state.fieldValue = it },
-                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
-                    textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    decorationBox = { innerTextField ->
-                        Box {
-                            if (state.text.isEmpty()) {
-                                Text("0", color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f))
-                            }
-                            innerTextField()
-                        }
-                    },
-                )
-            }
-        }
+    @Composable
+    fun ChoiceField(textRes: Int, state: TextEditState, fieldIndex: Int) {
+        OutlinedTextField(
+            value = state.fieldValue,
+            onValueChange = { state.fieldValue = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 3.dp)
+                .onFocusChanged { fs ->
+                    if (fs.isFocused) (context as ActPost).focusedEditField = fieldIndex
+                },
+            label = { Text(context.getString(textRes)) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
+        )
     }
 
-    fun makeExpireLabel(textRes: Int, marginStart: Int = 0, marginEnd: Int = 0) =
-        TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(wrapContent, wrapContent).apply {
-                if (marginStart > 0) this.marginStart = context.dp(marginStart)
-                if (marginEnd > 0) this.marginEnd = context.dp(marginEnd)
-            }
-            setText(textRes)
-        }
+    @Composable
+    fun ExpireField(state: TextEditState) {
+        OutlinedTextField(
+            value = state.fieldValue,
+            onValueChange = { state.fieldValue = it },
+            modifier = Modifier
+                .width(84.dp)
+                .padding(horizontal = 4.dp, vertical = 4.dp),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            placeholder = { Text("0") },
+        )
+    }
 
     // --- Reply section ---
     val ivReply = MyNetworkImageView(context).apply {
@@ -291,312 +243,384 @@ fun createActPostViews(context: Context): ActPostViews {
         scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
     }
 
-    val tvReplyTo = TextView(context).apply {
-        layoutParams = LinearLayout.LayoutParams(0, wrapContent, 1f)
-        gravity = Gravity.CENTER_VERTICAL
-    }
-
-    val btnRemoveReply = ImageButton(context).apply {
-        layoutParams = LinearLayout.LayoutParams(context.dp(40), context.dp(40)).apply {
-            marginStart = context.dp(4)
-        }
-        background = btnBg()
-        setImageResource(R.drawable.ic_close)
-        imageTintList = tintColor
-        contentDescription = context.getString(R.string.delete)
-    }
-
-    val cbQuote = CheckBox(context).apply {
-        layoutParams = LinearLayout.LayoutParams(wrapContent, wrapContent)
-        setText(R.string.use_quote_toot)
-    }
-
-    val llReply = LinearLayout(context).apply {
+    val replyRow = ComposeView(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent).apply {
             bottomMargin = context.dp(4)
         }
-        setBackgroundColor(colorSurfaceContainerHighest)
-        orientation = LinearLayout.VERTICAL
-        val pad = context.dp(6)
-        setPadding(pad, pad, pad, pad)
-
-        addView(TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
-            setText(R.string.reply_to_this_status)
-        })
-
-        addView(LinearLayout(context).apply {
-            layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
-            gravity = Gravity.CENTER_VERTICAL
-            orientation = LinearLayout.HORIZONTAL
-            addView(ivReply)
-            addView(tvReplyTo)
-            addView(btnRemoveReply)
-        })
-
-        addView(cbQuote)
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+            StThemedContent {
+                val activity = context as ActPost
+                if (activity.showReplySection || activity.showQuoteOption) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(colorSurfaceContainerHighest))
+                            .padding(6.dp),
+                    ) {
+                        if (activity.showReplySection) {
+                            Text(text = context.getString(R.string.reply_to_this_status))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                            ) {
+                                AndroidView(factory = { ivReply })
+                                Text(
+                                    text = activity.replyToText,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(start = 8.dp),
+                                )
+                                IconButton(
+                                    onClick = { activity.launchAndShowError { activity.removeReply() } },
+                                    modifier = Modifier.size(40.dp),
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.ic_close),
+                                        contentDescription = context.getString(R.string.delete),
+                                    )
+                                }
+                            }
+                        }
+                        if (activity.showQuoteOption) {
+                            Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                                androidx.compose.material3.Checkbox(
+                                    checked = activity.quoteChecked,
+                                    onCheckedChange = { activity.quoteChecked = it },
+                                )
+                                Text(text = context.getString(R.string.use_quote_toot))
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // --- Account row ---
-    val ivAccount = MyNetworkImageView(context).apply {
-        layoutParams = LinearLayout.LayoutParams(context.dp(32), context.dp(32)).apply {
-            marginEnd = context.dp(2)
-        }
-        contentDescription = context.getString(R.string.quick_post_account)
-        scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
-    }
-
-    val btnAccount = Button(context).apply {
-        layoutParams = LinearLayout.LayoutParams(0, wrapContent, 1f)
-        background = btnBg()
-        gravity = Gravity.CENTER_VERTICAL
-        val padH = context.dp(8)
-        setPadding(padH, paddingTop, padH, paddingBottom)
-        isAllCaps = false
-    }
-
-    val accountRow = LinearLayout(context).apply {
+    val accountRow = ComposeView(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
-        isBaselineAligned = false
-        gravity = Gravity.CENTER_VERTICAL
-        orientation = LinearLayout.HORIZONTAL
-        addView(TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(wrapContent, wrapContent).apply {
-                marginEnd = context.dp(4)
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+            StThemedContent {
+                val activity = context as ActPost
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = context.getString(R.string.post_from),
+                        modifier = Modifier.padding(end = 4.dp),
+                    )
+                    IconButton(onClick = { activity.performAccountChooser() }, modifier = Modifier.size(40.dp)) {
+                        NetworkImage(
+                            modifier = Modifier.fillMaxSize(),
+                            cornerRadius = activity.accountAvatarCorner,
+                            staticUrl = activity.accountAvatarStaticUrl,
+                            animatedUrl = activity.accountAvatarAnimatedUrl,
+                            contentDescription = context.getString(R.string.quick_post_account),
+                            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER,
+                        )
+                    }
+                    TextButton(
+                        onClick = { activity.performAccountChooser() },
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(activity.accountButtonText)
+                    }
+                }
             }
-            setText(R.string.post_from)
-        })
-        addView(ivAccount)
-        addView(btnAccount)
-    }
-
-    // --- Attachment section ---
-    val ivMedia1 = makeMediaView()
-    val ivMedia2 = makeMediaView()
-    val ivMedia3 = makeMediaView()
-    val ivMedia4 = makeMediaView()
-
-    val btnAttachmentsRearrange = ImageButton(context).apply {
-        layoutParams = FlexboxLayout.LayoutParams(context.dp(40), context.dp(48)).apply {
-            marginEnd = context.dp(4)
         }
-        background = btnBg()
-        setImageResource(R.drawable.swap_horiz_24px)
-        imageTintList = tintColor
-        contentDescription = context.getString(R.string.rearrange)
-        visibility = View.GONE
     }
 
-    val tvAttachmentProgress = TextView(context).apply {
-        layoutParams = FlexboxLayout.LayoutParams(wrapContent, wrapContent)
-        maxWidth = context.dp(160)
-        textSize = 11f // sp
-        visibility = View.GONE
-    }
-
-    val llAttachment = FlexboxLayout(context).apply {
+    val attachmentRow = ComposeView(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent).apply {
             topMargin = context.dp(4)
         }
-        flexWrap = FlexWrap.WRAP
-        addView(ivMedia1)
-        addView(ivMedia2)
-        addView(ivMedia3)
-        addView(ivMedia4)
-        addView(btnAttachmentsRearrange)
-        addView(tvAttachmentProgress)
-    }
-
-    // --- NSFW / CW checkboxes ---
-    val cbNSFW = CheckBox(context).apply {
-        layoutParams = FlexboxLayout.LayoutParams(wrapContent, wrapContent).apply {
-            marginEnd = context.dp(4)
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+            StThemedContent {
+                val activity = context as ActPost
+                if (activity.showAttachmentSection) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row {
+                            activity.attachmentSlots.forEachIndexed { index, slot ->
+                                if (slot.visible) {
+                                    IconButton(
+                                        onClick = { activity.performAttachmentClick(index) },
+                                        modifier = Modifier.size(48.dp),
+                                    ) {
+                                        if (slot.previewUrl != null) {
+                                            NetworkImage(
+                                                modifier = Modifier.fillMaxSize(),
+                                                cornerRadius = activity.attachmentThumbCorner,
+                                                staticUrl = slot.previewUrl,
+                                                scaleType = android.widget.ImageView.ScaleType.FIT_CENTER,
+                                                contentDescription = context.getString(R.string.media_attachment),
+                                            )
+                                        } else {
+                                            Icon(
+                                                painter = painterResource(slot.fallbackIconRes),
+                                                contentDescription = context.getString(R.string.media_attachment),
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            if (activity.showAttachmentRearrange) {
+                                IconButton(
+                                    onClick = { activity.rearrangeAttachments() },
+                                    modifier = Modifier.size(40.dp),
+                                ) {
+                                    Icon(
+                                        painter = painterResource(R.drawable.swap_horiz_24px),
+                                        contentDescription = context.getString(R.string.rearrange),
+                                    )
+                                }
+                            }
+                            if (activity.attachmentProgressText.isNotEmpty()) {
+                                Text(
+                                    text = activity.attachmentProgressText,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
-        gravity = Gravity.CENTER_VERTICAL or Gravity.START
-        setText(R.string.nsfw)
     }
 
-    val cbContentWarning = CheckBox(context).apply {
-        layoutParams = FlexboxLayout.LayoutParams(wrapContent, wrapContent)
-        gravity = Gravity.CENTER_VERTICAL or Gravity.START
-        setText(R.string.content_warning)
-    }
-
-    val nsfwCwRow = FlexboxLayout(context).apply {
+    val nsfwCwRow = ComposeView(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent).apply {
             topMargin = context.dp(4)
         }
-        flexWrap = FlexWrap.WRAP
-        addView(cbNSFW)
-        addView(cbContentWarning)
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+            StThemedContent {
+                val activity = context as ActPost
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                ) {
+                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        androidx.compose.material3.Checkbox(
+                            checked = activity.nsfwChecked,
+                            onCheckedChange = { activity.nsfwChecked = it },
+                        )
+                        Text(text = context.getString(R.string.nsfw))
+                    }
+                    Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                        androidx.compose.material3.Checkbox(
+                            checked = activity.contentWarningChecked,
+                            onCheckedChange = {
+                                activity.contentWarningChecked = it
+                                activity.showContentWarningEnabled()
+                                activity.updateTextCount()
+                            },
+                        )
+                        Text(text = context.getString(R.string.content_warning))
+                    }
+                }
+            }
+        }
     }
 
     // --- Content Warning input ---
     val etContentWarning = TextEditState()
-    val etContentWarningView = ComposeView(context).apply {
-        layoutParams = FrameLayout.LayoutParams(matchParent, wrapContent)
+    val cwFrame = ComposeView(context).apply {
+        layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
         setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         setContent {
             StThemedContent {
-                val textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface)
-                BasicTextField(
+                OutlinedTextField(
                     value = etContentWarning.fieldValue,
                     onValueChange = { etContentWarning.fieldValue = it },
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(top = 3.dp)
                         .onFocusChanged { fs ->
                             if (fs.isFocused) (context as ActPost).focusedEditField = 1
                         },
-                    textStyle = textStyle,
                     singleLine = true,
+                    label = { Text(context.getString(R.string.content_warning)) },
+                    placeholder = { Text(context.getString(R.string.content_warning_hint)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-                    decorationBox = { innerTextField ->
-                        Box(Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
-                            if (etContentWarning.text.isEmpty()) {
-                                Text(
-                                    context.getString(R.string.content_warning_hint),
-                                    style = textStyle.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)),
-                                )
-                            }
-                            innerTextField()
-                        }
-                    },
                 )
             }
         }
     }
 
-    val cwFrame = FrameLayout(context).apply {
-        layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
-        setBackgroundColor(colorSurfaceContainerHigh)
-        addView(etContentWarningView)
-    }
-
     // --- Content label row (with emoji/hashtag buttons) ---
-    val btnFeaturedTag = ImageButton(context).apply {
-        layoutParams = LinearLayout.LayoutParams(context.dp(40), context.dp(40)).apply {
-            marginStart = context.dp(8)
-        }
-        background = btnBg()
-        setImageResource(R.drawable.ic_hashtag)
-        imageTintList = tintColor
-        contentDescription = context.getString(R.string.open_picker_emoji)
-    }
-
-    val btnEmojiPicker = ImageButton(context).apply {
-        layoutParams = LinearLayout.LayoutParams(context.dp(40), context.dp(40)).apply {
-            marginStart = context.dp(8)
-        }
-        background = btnBg()
-        setImageResource(R.drawable.ic_face)
-        imageTintList = tintColor
-        contentDescription = context.getString(R.string.open_picker_emoji)
-    }
-
-    val contentLabelRow = LinearLayout(context).apply {
+    val contentLabelRow = ComposeView(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
-        isBaselineAligned = false
-        orientation = LinearLayout.HORIZONTAL
-        addView(TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(0, wrapContent, 1f).apply {
-                gravity = Gravity.BOTTOM
-                topMargin = context.dp(8)
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+            StThemedContent {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = context.getString(R.string.content),
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(top = 8.dp),
+                    )
+                    IconButton(onClick = {
+                        (context as ActPost).openFeaturedTagList(
+                            (context as ActPost).featuredTagCache[(context as ActPost).account?.acct?.ascii ?: ""]?.list
+                        )
+                    }, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_hashtag),
+                            contentDescription = context.getString(R.string.featured_hashtags),
+                        )
+                    }
+                    IconButton(onClick = { (context as ActPost).openEmojiPickerForContent() }, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_face),
+                            contentDescription = context.getString(R.string.open_picker_emoji),
+                        )
+                    }
+                }
             }
-            setText(R.string.content)
-        })
-        addView(btnFeaturedTag)
-        addView(btnEmojiPicker)
+        }
     }
 
     // --- Content input ---
     val etContent = TextEditState()
-    val etContentView = ComposeView(context).apply {
-        layoutParams = FrameLayout.LayoutParams(matchParent, wrapContent)
+    val contentFrame = ComposeView(context).apply {
+        layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
         setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
         setContent {
             StThemedContent {
-                val textStyle = LocalTextStyle.current.copy(color = MaterialTheme.colorScheme.onSurface)
-                BasicTextField(
+                OutlinedTextField(
                     value = etContent.fieldValue,
                     onValueChange = { etContent.fieldValue = it },
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(top = 3.dp)
                         .focusRequester((context as ActPost).contentFocusRequester)
                         .onFocusChanged { fs ->
                             if (fs.isFocused) (context as ActPost).focusedEditField = 0
                         },
-                    textStyle = textStyle,
                     minLines = 5,
+                    maxLines = Int.MAX_VALUE,
+                    label = { Text(context.getString(R.string.content)) },
+                    placeholder = { Text(context.getString(R.string.content_hint)) },
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
                         imeAction = ImeAction.None,
                     ),
-                    decorationBox = { innerTextField ->
-                        Box(Modifier.padding(horizontal = 8.dp, vertical = 8.dp)) {
-                            if (etContent.text.isEmpty()) {
-                                Text(
-                                    context.getString(R.string.content_hint),
-                                    style = textStyle.copy(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)),
-                                )
-                            }
-                            innerTextField()
-                        }
-                    },
                 )
             }
         }
     }
-
-    val contentFrame = FrameLayout(context).apply {
-        layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
-        setBackgroundColor(colorSurfaceContainerHigh)
-        addView(etContentView)
-    }
+    val etContentView: View = contentFrame
 
     // --- Language row ---
     val spLanguage = Spinner(context).apply {
         layoutParams = LinearLayout.LayoutParams(0, context.dp(48), 1f)
     }
 
-    val languageRow = LinearLayout(context).apply {
+    val languageRow = ComposeView(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent).apply {
             topMargin = context.dp(2)
         }
-        isBaselineAligned = false
-        gravity = Gravity.CENTER_VERTICAL
-        orientation = LinearLayout.HORIZONTAL
-        addView(TextView(context).apply {
-            layoutParams = LinearLayout.LayoutParams(wrapContent, wrapContent).apply {
-                marginEnd = context.dp(4)
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+            StThemedContent {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = context.getString(R.string.language),
+                        modifier = Modifier.padding(end = 4.dp),
+                    )
+                    AndroidView(
+                        factory = { spLanguage },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(48.dp),
+                    )
+                }
             }
-            setText(R.string.language)
-        })
-        addView(spLanguage)
+        }
     }
 
     // --- Schedule section ---
-    val tvSchedule = TextView(context).apply {
-        layoutParams = LinearLayout.LayoutParams(0, wrapContent, 1f).apply {
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        gravity = Gravity.CENTER
-    }
-
-    val ibSchedule = makeImageButton40(R.drawable.ic_edit)
-    val ibScheduleReset = makeImageButton40(R.drawable.ic_close)
-
-    val scheduleRow = LinearLayout(context).apply {
+    val scheduleRow = ComposeView(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
-        orientation = LinearLayout.HORIZONTAL
-        addView(tvSchedule)
-        addView(ibSchedule)
-        addView(ibScheduleReset)
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+            StThemedContent {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = (context as ActPost).scheduleText,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(onClick = { (context as ActPost).performSchedule() }, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_edit),
+                            contentDescription = context.getString(R.string.scheduled_status),
+                        )
+                    }
+                    IconButton(onClick = { (context as ActPost).resetSchedule() }, modifier = Modifier.size(40.dp)) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_close),
+                            contentDescription = context.getString(R.string.delete),
+                        )
+                    }
+                }
+            }
+        }
     }
 
-    // --- Poll type spinner ---
-    val spPollType = Spinner(context).apply {
+    val pollTypeRow = ComposeView(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent).apply {
             topMargin = context.dp(32)
+        }
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+            StThemedContent {
+                val activity = context as ActPost
+                var expanded by remember { mutableStateOf(false) }
+                val choices = listOf(
+                    context.getString(R.string.poll_dont_make),
+                    context.getString(R.string.poll_make),
+                )
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    OutlinedButton(
+                        onClick = { expanded = true },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(choices.getOrElse(activity.pollTypeIndex) { choices[0] })
+                    }
+                    DropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false },
+                    ) {
+                        choices.forEachIndexed { index, label ->
+                            DropdownMenuItem(
+                                text = { Text(label) },
+                                onClick = {
+                                    expanded = false
+                                    activity.pollTypeIndex = index
+                                    activity.showPoll()
+                                    activity.updateTextCount()
+                                },
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -606,55 +630,61 @@ fun createActPostViews(context: Context): ActPostViews {
     val etChoice3 = makeChoiceEditText()
     val etChoice4 = makeChoiceEditText()
 
-    val cbMultipleChoice = CheckBox(context).apply {
-        layoutParams = LinearLayout.LayoutParams(wrapContent, wrapContent).apply {
-            topMargin = context.dp(3)
-        }
-        setText(R.string.allow_multiple_choice)
-    }
-
-    val cbHideTotals = CheckBox(context).apply {
-        layoutParams = LinearLayout.LayoutParams(wrapContent, wrapContent).apply {
-            topMargin = context.dp(3)
-        }
-        setText(R.string.hide_totals)
-    }
-
     // --- Expiration row ---
     val etExpireDays = makeExpireEditText("1")
     val etExpireHours = makeExpireEditText()
     val etExpireMinutes = makeExpireEditText()
 
-    val llExpire = LinearLayout(context).apply {
-        layoutParams = LinearLayout.LayoutParams(wrapContent, wrapContent).apply {
-            topMargin = context.dp(3)
-        }
-        orientation = LinearLayout.HORIZONTAL
-        addView(makeExpireLabel(R.string.expiration, marginEnd = 4))
-        addView(makeExpireComposeView(etExpireDays))
-        addView(makeExpireLabel(R.string.poll_expire_days))
-        addView(makeExpireLabel(R.string.plus, marginStart = 4, marginEnd = 4))
-        addView(makeExpireComposeView(etExpireHours))
-        addView(makeExpireLabel(R.string.poll_expire_hours))
-        addView(makeExpireLabel(R.string.plus, marginStart = 4, marginEnd = 4))
-        addView(makeExpireComposeView(etExpireMinutes))
-        addView(makeExpireLabel(R.string.poll_expire_minutes))
-    }
-
-    val llEnquete = LinearLayout(context).apply {
+    val llEnquete = ComposeView(context).apply {
         layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
-        orientation = LinearLayout.VERTICAL
-        addView(makeChoiceLabel(R.string.choice1))
-        addView(makeChoiceFrame(etChoice1, 2))
-        addView(makeChoiceLabel(R.string.choice2))
-        addView(makeChoiceFrame(etChoice2, 3))
-        addView(makeChoiceLabel(R.string.choice3))
-        addView(makeChoiceFrame(etChoice3, 4))
-        addView(makeChoiceLabel(R.string.choice4))
-        addView(makeChoiceFrame(etChoice4, 5))
-        addView(cbMultipleChoice)
-        addView(cbHideTotals)
-        addView(llExpire)
+        setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnViewTreeLifecycleDestroyed)
+        setContent {
+            StThemedContent {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    val activity = context as ActPost
+                    ChoiceField(R.string.choice1, etChoice1, 2)
+                    ChoiceField(R.string.choice2, etChoice2, 3)
+                    ChoiceField(R.string.choice3, etChoice3, 4)
+                    ChoiceField(R.string.choice4, etChoice4, 5)
+                    if (activity.pollTypeIndex == 1) {
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            androidx.compose.material3.Checkbox(
+                                checked = activity.pollMultipleChoiceChecked,
+                                onCheckedChange = { activity.pollMultipleChoiceChecked = it },
+                            )
+                            Text(text = context.getString(R.string.allow_multiple_choice))
+                        }
+                        Row(verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            androidx.compose.material3.Checkbox(
+                                checked = activity.pollHideTotalsChecked,
+                                onCheckedChange = { activity.pollHideTotalsChecked = it },
+                            )
+                            Text(text = context.getString(R.string.hide_totals))
+                        }
+                        Row(modifier = Modifier.padding(top = 3.dp)) {
+                            Text(
+                                text = context.getString(R.string.expiration),
+                                modifier = Modifier.padding(end = 4.dp),
+                            )
+                            ExpireField(etExpireDays)
+                            Text(text = context.getString(R.string.poll_expire_days))
+                            Text(
+                                text = context.getString(R.string.plus),
+                                modifier = Modifier.padding(start = 4.dp, end = 4.dp),
+                            )
+                            ExpireField(etExpireHours)
+                            Text(text = context.getString(R.string.poll_expire_hours))
+                            Text(
+                                text = context.getString(R.string.plus),
+                                modifier = Modifier.padding(start = 4.dp, end = 4.dp),
+                            )
+                            ExpireField(etExpireMinutes)
+                            Text(text = context.getString(R.string.poll_expire_minutes))
+                        }
+                    }
+                }
+            }
+        }
     }
 
     // --- Content area (ScrollView child) ---
@@ -663,9 +693,9 @@ fun createActPostViews(context: Context): ActPostViews {
         orientation = LinearLayout.VERTICAL
         val pad12 = context.dp(12)
         setPadding(pad12, pad12, pad12, context.dp(320))
-        addView(llReply)
+        addView(replyRow)
         addView(accountRow)
-        addView(llAttachment)
+        addView(attachmentRow)
         addView(nsfwCwRow)
         addView(cwFrame)
         addView(contentLabelRow)
@@ -678,7 +708,7 @@ fun createActPostViews(context: Context): ActPostViews {
             setText(R.string.scheduled_status)
         })
         addView(scheduleRow)
-        addView(spPollType)
+        addView(pollTypeRow)
         addView(llEnquete)
     }
 
@@ -696,41 +726,17 @@ fun createActPostViews(context: Context): ActPostViews {
 
     return ActPostViews(
         scrollView = scrollView,
-        llReply = llReply,
         ivReply = ivReply,
-        tvReplyTo = tvReplyTo,
-        btnRemoveReply = btnRemoveReply,
-        cbQuote = cbQuote,
-        ivAccount = ivAccount,
-        btnAccount = btnAccount,
-        llAttachment = llAttachment,
-        ivMedia1 = ivMedia1,
-        ivMedia2 = ivMedia2,
-        ivMedia3 = ivMedia3,
-        ivMedia4 = ivMedia4,
-        btnAttachmentsRearrange = btnAttachmentsRearrange,
-        tvAttachmentProgress = tvAttachmentProgress,
-        cbNSFW = cbNSFW,
-        cbContentWarning = cbContentWarning,
         cwFrame = cwFrame,
         etContentWarning = etContentWarning,
-        btnFeaturedTag = btnFeaturedTag,
-        btnEmojiPicker = btnEmojiPicker,
         etContent = etContent,
         etContentView = etContentView,
         spLanguage = spLanguage,
-        tvSchedule = tvSchedule,
-        ibSchedule = ibSchedule,
-        ibScheduleReset = ibScheduleReset,
-        spPollType = spPollType,
         llEnquete = llEnquete,
         etChoice1 = etChoice1,
         etChoice2 = etChoice2,
         etChoice3 = etChoice3,
         etChoice4 = etChoice4,
-        cbMultipleChoice = cbMultipleChoice,
-        cbHideTotals = cbHideTotals,
-        llExpire = llExpire,
         etExpireDays = etExpireDays,
         etExpireHours = etExpireHours,
         etExpireMinutes = etExpireMinutes,
@@ -800,7 +806,6 @@ class ActPost : ComponentActivity(),
     }
 
     val views by lazy { createActPostViews(this) }
-    lateinit var ivMedia: List<MyNetworkImageView>
     val etChoices: List<TextEditState> get() = listOf(views.etChoice1, views.etChoice2, views.etChoice3, views.etChoice4)
 
     /** Which text field has focus: 0=content, 1=cw, 2-5=choice1-4. Used by Mushroom plugin. */
@@ -812,6 +817,25 @@ class ActPost : ComponentActivity(),
     var charCountText by mutableStateOf("")
     var charCountColorArgb by mutableIntStateOf(0)
     var visibilityIconRes by mutableIntStateOf(R.drawable.ic_public)
+    var scheduleText by mutableStateOf("")
+    var pollTypeIndex by mutableIntStateOf(0)
+    var pollMultipleChoiceChecked by mutableStateOf(false)
+    var pollHideTotalsChecked by mutableStateOf(false)
+    var nsfwChecked by mutableStateOf(false)
+    var contentWarningChecked by mutableStateOf(false)
+    var quoteChecked by mutableStateOf(false)
+    var showQuoteOption by mutableStateOf(false)
+    var showReplySection by mutableStateOf(false)
+    var replyToText by mutableStateOf("")
+    var accountButtonText by mutableStateOf("")
+    var accountAvatarStaticUrl by mutableStateOf<String?>(null)
+    var accountAvatarAnimatedUrl by mutableStateOf<String?>(null)
+    var accountAvatarCorner by mutableStateOf(0f)
+    var showAttachmentSection by mutableStateOf(false)
+    var attachmentSlots by mutableStateOf(List(4) { AttachmentSlotUi() })
+    var attachmentThumbCorner by mutableStateOf(0f)
+    var showAttachmentRearrange by mutableStateOf(false)
+    var attachmentProgressText by mutableStateOf("")
 
     lateinit var handler: Handler
     lateinit var appState: AppState
@@ -905,6 +929,23 @@ class ActPost : ComponentActivity(),
         charCountColorArgb = attrColor(android.R.attr.textColorPrimary)
         visibilityIconRes = (states.visibility ?: jp.juggler.subwaytooter.api.entity.TootVisibility.Public)
             .getVisibilityIconId(account?.isMisskey == true)
+        scheduleText = getString(R.string.unspecified)
+        pollTypeIndex = 0
+        nsfwChecked = false
+        contentWarningChecked = false
+        quoteChecked = false
+        showQuoteOption = false
+        showReplySection = false
+        replyToText = ""
+        accountButtonText = getString(R.string.not_selected_2)
+        accountAvatarStaticUrl = null
+        accountAvatarAnimatedUrl = null
+        accountAvatarCorner = calcIconRound(dp(32))
+        showAttachmentSection = false
+        attachmentSlots = List(4) { AttachmentSlotUi() }
+        attachmentThumbCorner = calcIconRound(dp(48))
+        showAttachmentRearrange = false
+        attachmentProgressText = ""
 
         App1.setActivityTheme(this)
         setContent {
@@ -1001,20 +1042,7 @@ class ActPost : ComponentActivity(),
     override fun onClick(v: View) {
         refActPost = WeakReference(this)
         when (v) {
-            views.btnAccount, views.ivAccount -> performAccountChooser()
-            views.ivMedia1 -> performAttachmentClick(0)
-            views.ivMedia2 -> performAttachmentClick(1)
-            views.ivMedia3 -> performAttachmentClick(2)
-            views.ivMedia4 -> performAttachmentClick(3)
-            views.btnRemoveReply -> launchAndShowError { removeReply() }
-            views.btnEmojiPicker -> launchAndShowError { openEmojiPickerForContent() }
-            views.btnFeaturedTag -> launchAndShowError {
-                openFeaturedTagList(featuredTagCache[account?.acct?.ascii ?: ""]?.list)
-            }
-
-            views.btnAttachmentsRearrange -> rearrangeAttachments()
-            views.ibSchedule -> performSchedule()
-            views.ibScheduleReset -> resetSchedule()
+            else -> Unit
         }
     }
 
@@ -1127,58 +1155,6 @@ class ActPost : ComponentActivity(),
         if (!isMultiWindowPost) {
             fixHorizontalMargin(views.scrollView)
         }
-
-        views.spPollType.apply {
-            this.adapter = ArrayAdapter(
-                this@ActPost,
-                android.R.layout.simple_spinner_item,
-                arrayOf(
-                    getString(R.string.poll_dont_make),
-                    getString(R.string.poll_make),
-                )
-            ).apply {
-                setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            }
-
-            this.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-                override fun onNothingSelected(parent: AdapterView<*>?) {
-                    showPoll()
-                    updateTextCount()
-                }
-
-                override fun onItemSelected(
-                    parent: AdapterView<*>?,
-                    view: View?,
-                    position: Int,
-                    id: Long,
-                ) {
-                    showPoll()
-                    updateTextCount()
-                }
-            }
-        }
-
-        ivMedia = listOf(
-            views.ivMedia1,
-            views.ivMedia2,
-            views.ivMedia3,
-            views.ivMedia4,
-        )
-
-        arrayOf(
-            views.ibSchedule,
-            views.ibScheduleReset,
-            views.btnAccount,
-            views.btnRemoveReply,
-            views.btnFeaturedTag,
-            views.btnEmojiPicker,
-            views.ivAccount,
-            views.btnAttachmentsRearrange,
-        ).forEach { it.setOnClickListener(this) }
-
-        ivMedia.forEach { it.setOnClickListener(this) }
-
-        views.cbContentWarning.setOnCheckedChangeListener { _, _ -> showContentWarningEnabled() }
 
         // Observe all text fields to update the character count
         launchMain {

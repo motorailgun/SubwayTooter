@@ -7,16 +7,13 @@ import jp.juggler.util.ui.vg
 private fun Double?.finiteOrZero(): Double = if (this?.isFinite() == true) this else 0.0
 
 fun ActPost.showPoll() {
-    val i = views.spPollType.selectedItemPosition
+    val i = pollTypeIndex
     views.llEnquete.vg(i != 0)
-    views.llExpire.vg(i == 1)
-    views.cbHideTotals.vg(i == 1)
-    views.cbMultipleChoice.vg(i == 1)
 }
 
 // 投票が有効で何か入力済みなら真
 fun ActPost.hasPoll(): Boolean {
-    if (views.spPollType.selectedItemPosition <= 0) return false
+    if (pollTypeIndex <= 0) return false
     return etChoices.any { it.text.toString().isNotBlank() }
 }
 

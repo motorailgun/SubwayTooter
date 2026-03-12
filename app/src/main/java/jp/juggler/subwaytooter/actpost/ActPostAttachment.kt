@@ -3,10 +3,10 @@ package jp.juggler.subwaytooter.actpost
 import android.graphics.Bitmap
 import android.net.Uri
 import android.text.InputType
-import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import jp.juggler.subwaytooter.ActPost
+import jp.juggler.subwaytooter.AttachmentSlotUi
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.ApiTask
 import jp.juggler.subwaytooter.api.TootApiResult
@@ -17,8 +17,6 @@ import jp.juggler.subwaytooter.api.entity.TootAttachment.Companion.tootAttachmen
 import jp.juggler.subwaytooter.api.entity.TootAttachmentType
 import jp.juggler.subwaytooter.api.entity.parseItem
 import jp.juggler.subwaytooter.api.runApiTask
-import jp.juggler.subwaytooter.calcIconRound
-import jp.juggler.subwaytooter.defaultColorIcon
 import jp.juggler.subwaytooter.dialog.actionsDialog
 import jp.juggler.subwaytooter.dialog.decodeAttachmentBitmap
 import jp.juggler.subwaytooter.dialog.dialogAttachmentRearrange
@@ -28,7 +26,6 @@ import jp.juggler.subwaytooter.dialog.showTextInputDialog
 import jp.juggler.subwaytooter.pref.PrefB
 import jp.juggler.subwaytooter.util.AttachmentRequest
 import jp.juggler.subwaytooter.util.PostAttachment
-import jp.juggler.subwaytooter.view.MyNetworkImageView
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.CharacterGroup
 import jp.juggler.util.data.UriAndType
@@ -42,7 +39,6 @@ import jp.juggler.util.log.withCaption
 import jp.juggler.util.network.toPutRequestBuilder
 import jp.juggler.util.ui.InputTypeEx
 import jp.juggler.util.ui.isLiveActivity
-import jp.juggler.util.ui.vg
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import kotlin.math.min
@@ -71,7 +67,7 @@ fun ActPost.decodeAttachments(sv: String) {
 }
 
 fun ActPost.showAttachmentRearrangeButton() {
-    views.btnAttachmentsRearrange.vg(
+    showAttachmentRearrange = (
         attachmentList.size >= 2 &&
                 attachmentList.none { it.status == PostAttachment.Status.Progress }
     )
@@ -79,8 +75,37 @@ fun ActPost.showAttachmentRearrangeButton() {
 
 fun ActPost.showMediaAttachment() {
     if (isFinishing) return
-    views.llAttachment.vg(attachmentList.isNotEmpty())
-    ivMedia.forEachIndexed { i, v -> showMediaAttachmentOne(v, i) }
+    showAttachmentSection = attachmentList.isNotEmpty()
+    attachmentSlots = List(4) { idx ->
+        if (idx >= attachmentList.size) {
+            AttachmentSlotUi(visible = false)
+        } else {
+            val pa = attachmentList[idx]
+            val attachment = pa.attachment
+            if (attachment == null || pa.status != PostAttachment.Status.Ok) {
+                AttachmentSlotUi(
+                    visible = true,
+                    previewUrl = null,
+                    fallbackIconRes = R.drawable.ic_upload,
+                )
+            } else {
+                val fallbackIconRes = when (attachment.type) {
+                    TootAttachmentType.Image -> R.drawable.ic_image
+                    TootAttachmentType.Video,
+                    TootAttachmentType.GIFV,
+                    -> R.drawable.ic_videocam
+
+                    TootAttachmentType.Audio -> R.drawable.ic_music_note
+                    else -> R.drawable.ic_clip
+                }
+                AttachmentSlotUi(
+                    visible = true,
+                    previewUrl = attachment.preview_url,
+                    fallbackIconRes = fallbackIconRes,
+                )
+            }
+        }
+    }
     showAttachmentRearrangeButton()
 }
 
@@ -90,41 +115,7 @@ fun ActPost.showMediaAttachmentProgress() {
     val mergedProgress = attachmentList
         .mapNotNull { it.progress.notEmpty() }
         .joinToString("\n")
-    views.tvAttachmentProgress
-        .vg(mergedProgress.isNotEmpty())
-        ?.text = mergedProgress
-}
-
-fun ActPost.showMediaAttachmentOne(iv: MyNetworkImageView, idx: Int) {
-    if (idx >= attachmentList.size) {
-        iv.visibility = View.GONE
-    } else {
-        iv.visibility = View.VISIBLE
-        val pa = attachmentList[idx]
-        val a = pa.attachment
-        when {
-            a == null || pa.status != PostAttachment.Status.Ok -> {
-                iv.setDefaultImage(defaultColorIcon(this, R.drawable.ic_upload))
-                iv.setErrorImage(defaultColorIcon(this, R.drawable.ic_clip))
-                iv.setImageUrl(calcIconRound(iv.layoutParams.width), null)
-            }
-
-            else -> {
-                val defaultIconId = when (a.type) {
-                    TootAttachmentType.Image -> R.drawable.ic_image
-                    TootAttachmentType.Video,
-                    TootAttachmentType.GIFV,
-                    -> R.drawable.ic_videocam
-
-                    TootAttachmentType.Audio -> R.drawable.ic_music_note
-                    else -> R.drawable.ic_clip
-                }
-                iv.setDefaultImage(defaultColorIcon(this, defaultIconId))
-                iv.setErrorImage(defaultColorIcon(this, defaultIconId))
-                iv.setImageUrl(calcIconRound(iv.layoutParams.width), a.preview_url)
-            }
-        }
-    }
+    attachmentProgressText = mergedProgress
 }
 
 fun ActPost.openAttachment() {

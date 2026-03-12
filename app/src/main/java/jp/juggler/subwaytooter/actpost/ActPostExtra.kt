@@ -76,7 +76,7 @@ fun ActPost.appendContentText(src: Intent) {
 fun ActPost.hasContent(): Boolean {
     val content = views.etContent.text.toString()
     val contentWarning =
-        if (views.cbContentWarning.isChecked) views.etContentWarning.text.toString() else ""
+        if (contentWarningChecked) views.etContentWarning.text.toString() else ""
 
     return when {
         content.isNotBlank() -> true
@@ -98,9 +98,11 @@ fun ActPost.resetText() {
     attachmentPicker.reset()
     scheduledStatus = null
     attachmentList.clear()
-    views.cbQuote.isChecked = false
+    quoteChecked = false
     views.etContent.setText("")
-    views.spPollType.setSelection(0, false)
+    pollTypeIndex = 0
+    pollMultipleChoiceChecked = false
+    pollHideTotalsChecked = false
     etChoices.forEach { it.setText("") }
     accountList = daoSavedAccount.loadAccountList().sortedByNickname()
     if (accountList.isEmpty()) {
@@ -173,7 +175,7 @@ suspend fun ActPost.updateText(
     }
 
     appendContentText(account?.defaultText, selectBefore = true)
-    views.cbNSFW.isChecked = account?.defaultSensitive ?: false
+    nsfwChecked = account?.defaultSensitive ?: false
 
     if (account != null) {
         // 再編集
@@ -287,14 +289,14 @@ fun ActPost.performPost() {
         var pollExpireSeconds = 0
         var pollHideTotals = false
         var pollMultipleChoice = false
-        when (views.spPollType.selectedItemPosition) {
+        when (pollTypeIndex) {
             0 -> Unit // not poll
             else -> {
                 pollType = TootPollsType.Mastodon
                 pollItems = pollChoiceList()
                 pollExpireSeconds = pollExpireSeconds()
-                pollHideTotals = views.cbHideTotals.isChecked
-                pollMultipleChoice = views.cbMultipleChoice.isChecked
+                pollHideTotals = pollHideTotalsChecked
+                pollMultipleChoice = pollMultipleChoiceChecked
             }
         }
 
@@ -303,11 +305,11 @@ fun ActPost.performPost() {
             account = account,
             content = views.etContent.text.toString().trim { it <= ' ' },
             spoilerText = when {
-                !views.cbContentWarning.isChecked -> null
+                !contentWarningChecked -> null
                 else -> views.etContentWarning.text.toString().trim { it <= ' ' }
             },
             visibilityArg = states.visibility ?: TootVisibility.Public,
-            bNSFW = views.cbNSFW.isChecked,
+            bNSFW = nsfwChecked,
             inReplyToId = states.inReplyToId,
             attachmentListArg = activity.attachmentList,
             enqueteItemsArg = pollItems,
@@ -320,7 +322,7 @@ fun ActPost.performPost() {
             redraftStatusId = states.redraftStatusId,
             editStatusId = states.editStatusId,
             emojiMapCustom = App1.custom_emoji_lister.getMapNonBlocking(account),
-            useQuoteToot = views.cbQuote.isChecked,
+            useQuoteToot = quoteChecked,
             lang = languages.elementAtOrNull(views.spLanguage.selectedItemPosition)?.first
                 ?: SavedAccount.LANG_WEB
         ).runSuspend()
@@ -368,5 +370,5 @@ fun ActPost.performPost() {
 }
 
 fun ActPost.showContentWarningEnabled() {
-    views.cwFrame.vg(views.cbContentWarning.isChecked)
+    views.cwFrame.vg(contentWarningChecked)
 }

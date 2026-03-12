@@ -17,7 +17,6 @@ import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.data.decodeJsonObject
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
-import jp.juggler.util.ui.vg
 
 private val log = LogCategory("ActPostReply")
 
@@ -29,22 +28,26 @@ fun ActPost.resetReply() {
 }
 
 fun ActPost.showQuotedRenote() {
-    views.cbQuote.vg(states.inReplyToId != null)
+    showQuoteOption = states.inReplyToId != null
 }
 
 suspend fun ActPost.showReplyTo() {
-    views.llReply.vg(states.inReplyToId != null)?.let {
-        views.tvReplyTo.text = DecodeOptions(
+    showReplySection = states.inReplyToId != null
+    if (showReplySection) {
+        replyToText = DecodeOptions(
             this,
             linkHelper = account,
             short = true,
             decodeEmoji = true,
             emojiSizeMode =  account.emojiSizeMode(),
-        ).decodeHTML(states.inReplyToText)
+        ).decodeHTML(states.inReplyToText).toString()
         views.ivReply.setImageUrl(
             calcIconRound(views.ivReply.layoutParams),
             states.inReplyToImage
         )
+    } else {
+        replyToText = ""
+        quoteChecked = false
     }
 }
 
@@ -65,14 +68,14 @@ suspend fun ActPost.initializeFromReplyStatus(account: SavedAccount, jsonText: S
 
         val isQuote = intent.getBooleanExtra(ActPost.KEY_QUOTE, false)
         if (isQuote) {
-            views.cbQuote.isChecked = true
+            quoteChecked = true
 
             // 引用リノートはCWやメンションを引き継がない
         } else {
 
             // CW をリプライ元に合わせる
             if (replyStatus.spoiler_text.isNotEmpty()) {
-                views.cbContentWarning.isChecked = true
+                contentWarningChecked = true
                 views.etContentWarning.setText(replyStatus.spoiler_text)
             }
 

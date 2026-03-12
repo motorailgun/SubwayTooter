@@ -18,7 +18,7 @@ import jp.juggler.util.log.LogCategory
 private val log = LogCategory("ActPostSchedule")
 
 fun ActPost.showSchedule() {
-    views.tvSchedule.text = when (states.timeSchedule) {
+    scheduleText = when (states.timeSchedule) {
         0L -> getString(R.string.unspecified)
         else -> TootStatus.formatTime(this, states.timeSchedule, true)
     }
@@ -47,13 +47,13 @@ suspend fun ActPost.initializeFromScheduledStatus(account: SavedAccount, jsonTex
 
         states.timeSchedule = item.timeScheduledAt
         states.visibility = item.visibility
-        views.cbNSFW.isChecked = item.sensitive
+        nsfwChecked = item.sensitive
 
         views.etContent.setText(item.text ?: "")
 
         val cw = item.spoilerText
         views.etContentWarning.setText(cw ?: "")
-        views.cbContentWarning.isChecked = cw?.isNotEmpty() == true
+        contentWarningChecked = cw?.isNotEmpty() == true
 
         // 2019/1/7 どうも添付データを古い投稿から引き継げないようだ…。
         // 2019/1/22 https://github.com/tootsuite/mastodon/pull/9894 で直った。
