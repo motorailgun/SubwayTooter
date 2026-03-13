@@ -48,7 +48,6 @@ import jp.juggler.subwaytooter.api.*
 import jp.juggler.subwaytooter.api.entity.*
 import jp.juggler.subwaytooter.api.entity.TootAttachment.Companion.tootAttachmentJson
 import jp.juggler.subwaytooter.dialog.actionsDialog
-import jp.juggler.subwaytooter.drawable.MediaBackgroundDrawable
 import jp.juggler.subwaytooter.util.reUrlGif
 import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.subwaytooter.util.permissionSpecMediaDownload
@@ -506,12 +505,6 @@ class ActMediaViewer : ComponentActivity(), View.OnClickListener {
 
     @OptIn(UnstableApi::class)
     private fun initUI() {
-        views.pbvImage.background = MediaBackgroundDrawable(
-            context = views.root.context,
-            tileStep = tileStep,
-            kind = MediaBackgroundDrawable.Kind.fromIndex(PrefI.ipMediaBackground.value)
-        )
-
         val enablePaging = mediaList.size > 1
         views.btnPrevious.isEnabledAlpha = enablePaging
         views.btnNext.isEnabledAlpha = enablePaging
@@ -1070,20 +1063,7 @@ class ActMediaViewer : ComponentActivity(), View.OnClickListener {
 
     private fun mediaBackgroundDialog() {
         launchAndShowError {
-            actionsDialog(getString(R.string.background_pattern)) {
-                for (k in MediaBackgroundDrawable.Kind.entries) {
-                    if (!k.isMediaBackground) continue
-                    action(k.name) {
-                        val idx = k.toIndex()
-                        PrefI.ipMediaBackground.value = idx
-                        views.pbvImage.background = MediaBackgroundDrawable(
-                            context = views.root.context,
-                            tileStep = tileStep,
-                            kind = k
-                        )
-                    }
-                }
-            }
+            actionsDialog(getString(R.string.background_pattern)) {}
         }
     }
 

@@ -2,20 +2,13 @@ package jp.juggler.subwaytooter.appsetting
 
 import android.content.Context
 import android.content.Intent
-import android.content.res.ColorStateList
 import android.os.Build
-import android.text.TextUtils
-import android.view.Gravity
 import android.view.View
 import android.widget.EditText
-import android.widget.FrameLayout
-import android.widget.HorizontalScrollView
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.annotation.StringRes
-import androidx.appcompat.widget.AppCompatImageView
 import jp.juggler.subwaytooter.ActAppSetting
 import jp.juggler.subwaytooter.ActDrawableList
 import jp.juggler.subwaytooter.ActExitReasons
@@ -24,8 +17,6 @@ import jp.juggler.subwaytooter.App1
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.actmain.selectPushDistributor
 import jp.juggler.subwaytooter.dialog.runInProgress
-import jp.juggler.subwaytooter.drawable.MediaBackgroundDrawable
-import jp.juggler.subwaytooter.enableEdgeToEdgeEx
 import jp.juggler.subwaytooter.pref.AdditionalButtonsPosition
 import jp.juggler.subwaytooter.notification.showAlertNotification
 import jp.juggler.subwaytooter.pref.PrefB
@@ -45,16 +36,11 @@ import jp.juggler.subwaytooter.util.CustomShareTarget
 import jp.juggler.subwaytooter.util.openBrowser
 import jp.juggler.subwaytooter.util.reNotAllowedInUserAgent
 import jp.juggler.subwaytooter.util.userAgentDefault
-import jp.juggler.subwaytooter.view.MyTextView
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.cast
 import jp.juggler.util.data.intentOpenDocument
-import jp.juggler.util.data.notZero
 import jp.juggler.util.log.showToast
 import jp.juggler.util.ui.InputTypeEx
-import jp.juggler.util.ui.dp
-import jp.juggler.util.ui.getAdaptiveRippleDrawable
-import jp.juggler.util.ui.getAdaptiveRippleDrawableRound
 import kotlinx.coroutines.delay
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -515,13 +501,6 @@ val appSettingRoot = AppSettingItem(null, SettingType.Section, R.string.app_sett
 
     section(R.string.media_attachment) {
         sw(PrefB.bpUseInternalMediaViewer, R.string.use_internal_media_viewer)
-
-        spinner(PrefI.ipMediaBackground, R.string.background_pattern) {
-            MediaBackgroundDrawable.Kind.entries
-                .filter { it.isMediaBackground }
-                .map { it.name }
-        }
-
         sw(PrefB.bpPriorLocalURL, R.string.prior_local_url_when_open_attachment)
         text(PrefS.spMediaThumbHeight, R.string.media_thumbnail_height, InputTypeEx.number)
         sw(PrefB.bpDontCropMediaThumb, R.string.dont_crop_media_thumbnail)
