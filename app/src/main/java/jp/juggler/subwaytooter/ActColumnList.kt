@@ -41,7 +41,6 @@ import jp.juggler.subwaytooter.api.entity.Acct
 import jp.juggler.subwaytooter.api.showApiError
 import jp.juggler.subwaytooter.column.ColumnEncoder
 import jp.juggler.subwaytooter.column.ColumnType
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchMain
@@ -115,68 +114,59 @@ class ActColumnList : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun ColumnListScreen() {
-        StScreen(
-            title = getString(R.string.column_list),
-            onBack = {
-                makeResult(-1)
-                finish()
-            },
-        ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+        ) {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
             ) {
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                ) {
-                    itemsIndexed(columns, key = { _, item -> item.id }) { index, item ->
-                        val dismissState = rememberSwipeToDismissBoxState(
-                            confirmValueChange = { dismissValue ->
-                                if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
-                                    handleDelete(item, index)
-                                }
-                                false // don't auto-dismiss
-                            },
+                itemsIndexed(columns, key = { _, item -> item.id }) { index, item ->
+                    val dismissState = rememberSwipeToDismissBoxState(
+                        confirmValueChange = { dismissValue ->
+                            if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
+                                handleDelete(item, index)
+                            }
+                            false // don't auto-dismiss
+                        },
+                    )
+                    SwipeToDismissBox(
+                        state = dismissState,
+                        backgroundContent = {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(MaterialTheme.colorScheme.errorContainer)
+                                    .padding(horizontal = 12.dp),
+                                contentAlignment = Alignment.CenterEnd,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.delete),
+                                    color = MaterialTheme.colorScheme.onErrorContainer,
+                                    fontSize = 20.sp,
+                                )
+                            }
+                        },
+                        enableDismissFromStartToEnd = false,
+                        enableDismissFromEndToStart = true,
+                        modifier = Modifier.animateItem(),
+                    ) {
+                        ColumnListItem(
+                            item = item,
+                            index = index,
+                            onClick = { performItemSelected(item) },
                         )
-                        SwipeToDismissBox(
-                            state = dismissState,
-                            backgroundContent = {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .background(MaterialTheme.colorScheme.errorContainer)
-                                        .padding(horizontal = 12.dp),
-                                    contentAlignment = Alignment.CenterEnd,
-                                ) {
-                                    Text(
-                                        text = stringResource(R.string.delete),
-                                        color = MaterialTheme.colorScheme.onErrorContainer,
-                                        fontSize = 20.sp,
-                                    )
-                                }
-                            },
-                            enableDismissFromStartToEnd = false,
-                            enableDismissFromEndToStart = true,
-                            modifier = Modifier.animateItem(),
-                        ) {
-                            ColumnListItem(
-                                item = item,
-                                index = index,
-                                onClick = { performItemSelected(item) },
-                            )
-                        }
                     }
                 }
-                Text(
-                    text = stringResource(R.string.column_list_desc),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(4.dp),
-                    fontSize = 12.sp,
-                    textAlign = TextAlign.Center,
-                )
             }
+            Text(
+                text = stringResource(R.string.column_list_desc),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(4.dp),
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 

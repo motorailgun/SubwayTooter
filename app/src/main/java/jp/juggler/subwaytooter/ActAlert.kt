@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.util.data.encodePercent
 import jp.juggler.util.data.notEmpty
 
@@ -51,20 +50,14 @@ class ActAlert : ComponentActivity() {
         title: String,
         message: String,
     ) {
-        StScreen(
-            title = title,
-            onBack = { finish() },
-        ) { innerPadding ->
-            SelectionContainer {
-                Text(
-                    text = message,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding)
-                        .verticalScroll(rememberScrollState())
-                        .padding(12.dp),
-                )
-            }
+        SelectionContainer {
+            Text(
+                text = message,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(12.dp),
+            )
         }
     }
 }

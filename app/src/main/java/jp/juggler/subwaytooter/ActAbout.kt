@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.util.openBrowser
 import jp.juggler.util.getPackageInfoCompat
 import jp.juggler.util.log.LogCategory
@@ -104,81 +103,75 @@ class ActAbout : ComponentActivity() {
 
     @Composable
     private fun AboutScreen(versionName: String) {
-        StScreen(
-            title = stringResource(R.string.app_name),
-            onBack = { finish() },
-        ) { innerPadding ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(12.dp),
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(12.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.app_name),
+                style = MaterialTheme.typography.headlineSmall,
+            )
+            Text(
+                text = getString(R.string.version_is, versionName),
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = { searchAcct(developer_acct) },
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(
-                    text = stringResource(R.string.app_name),
-                    style = MaterialTheme.typography.headlineSmall,
-                )
-                Text(
-                    text = getString(R.string.version_is, versionName),
-                )
-                Spacer(modifier = Modifier.height(12.dp))
+                Text(getString(R.string.search_for, developer_acct))
+            }
 
-                Button(
-                    onClick = { searchAcct(developer_acct) },
-                    modifier = Modifier.fillMaxWidth(),
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = { searchAcct(official_acct) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(getString(R.string.search_for, official_acct))
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = { openBrowser(url_release) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(url_release)
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = { openBrowser(url_weblate) },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(getString(R.string.please_help_translation))
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = "Contributors",
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+
+            for (who in translators) {
+                val acct = who.acct ?: "@?@?"
+                TextButton(
+                    onClick = {
+                        val data = Intent()
+                        data.putExtra(EXTRA_SEARCH, who.acct ?: who.name)
+                        setResult(RESULT_OK, data)
+                        finish()
+                    },
                 ) {
-                    Text(getString(R.string.search_for, developer_acct))
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Button(
-                    onClick = { searchAcct(official_acct) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(getString(R.string.search_for, official_acct))
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Button(
-                    onClick = { openBrowser(url_release) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(url_release)
-                }
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Button(
-                    onClick = { openBrowser(url_weblate) },
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(getString(R.string.please_help_translation))
-                }
-
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = "Contributors",
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                for (who in translators) {
-                    val acct = who.acct ?: "@?@?"
-                    TextButton(
-                        onClick = {
-                            val data = Intent()
-                            data.putExtra(EXTRA_SEARCH, who.acct ?: who.name)
-                            setResult(RESULT_OK, data)
-                            finish()
-                        },
-                    ) {
-                        Text(
-                            text = "${who.name}\n$acct\n${getString(R.string.thanks_for, who.lang)}",
-                        )
-                    }
+                    Text(
+                        text = "${who.name}\n$acct\n${getString(R.string.thanks_for, who.lang)}",
+                    )
                 }
             }
         }

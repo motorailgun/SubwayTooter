@@ -32,7 +32,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.dialogColorPicker
 import jp.juggler.subwaytooter.api.TootApiClient
 import jp.juggler.subwaytooter.api.TootApiResult
@@ -296,7 +295,6 @@ class ActAccountSetting : ComponentActivity(),
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        backPressed { handleBackPressed() }
 
         visualMediaPicker.register(this)
         cameraOpener.register(this)
@@ -307,7 +305,6 @@ class ActAccountSetting : ComponentActivity(),
 
         App1.setActivityTheme(this)
 
-        // Build the View tree and hide the embedded toolbar (StScreen provides it)
         val rootView = views.root
         views.toolbar.visibility = View.GONE
 
@@ -327,17 +324,11 @@ class ActAccountSetting : ComponentActivity(),
         )
 
         setContent {
-            StScreen(
-                title = a.acct.pretty,
-                onBack = { handleBackPressed() },
-            ) { innerPadding ->
-                AndroidView(
-                    factory = { rootView },
-                    modifier = Modifier
-                        .padding(innerPadding)
-                        .fillMaxSize(),
-                )
-            }
+            AndroidView(
+                factory = { rootView },
+                modifier = Modifier
+                    .fillMaxSize(),
+            )
         }
 
         launchAndShowError {
@@ -823,17 +814,6 @@ class ActAccountSetting : ComponentActivity(),
             }
             daoSavedAccount.save(account)
         }
-    }
-
-    private fun handleBackPressed() {
-        log.i("handleBackPressed")
-        if (!loadingBusy) {
-            account?.let { a ->
-                checkNotificationImmediateAll(this, onlyEnqueue = true)
-                checkNotificationImmediate(this, a.db_id)
-            }
-        }
-        finish()
     }
 
     override fun onCheckedChanged(buttonView: CompoundButton, isChecked: Boolean) {

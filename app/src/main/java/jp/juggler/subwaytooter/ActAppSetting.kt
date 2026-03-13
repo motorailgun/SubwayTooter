@@ -15,7 +15,6 @@ import android.util.JsonWriter
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.Window
 import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.ArrayAdapter
@@ -32,7 +31,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -76,12 +74,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.FileProvider
-import androidx.lifecycle.lifecycleScope
 import jp.juggler.subwaytooter.appsetting.AppSettingItem
 import jp.juggler.subwaytooter.appsetting.SettingType
 import jp.juggler.subwaytooter.appsetting.appSettingRoot
 import jp.juggler.subwaytooter.compose.ColorPickerDialog
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.DlgAppPicker
 import jp.juggler.subwaytooter.notification.restartAllWorker
 import jp.juggler.subwaytooter.pref.FILE_PROVIDER_AUTHORITY
@@ -114,9 +110,7 @@ import jp.juggler.util.queryIntentActivitiesCompat
 import jp.juggler.util.ui.ActivityResultHandler
 import jp.juggler.util.ui.isNotOk
 import jp.juggler.util.ui.launch
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -124,7 +118,6 @@ import java.io.InputStream
 import java.io.OutputStreamWriter
 import java.text.NumberFormat
 import java.util.TimeZone
-import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -239,12 +232,7 @@ class ActAppSetting : ComponentActivity() {
         removeDefaultPref()
 
         setContent {
-            StScreen(
-                title = stringResource(R.string.app_setting),
-                onBack = { handleBack() },
-            ) { innerPadding ->
-                AppSettingContent(Modifier.padding(innerPadding))
-            }
+            AppSettingContent(modifier = Modifier)
         }
     }
 

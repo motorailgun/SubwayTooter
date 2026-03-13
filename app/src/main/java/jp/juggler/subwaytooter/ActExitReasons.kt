@@ -16,7 +16,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.api.entity.TootStatus
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.util.data.decodeUTF8
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.withCaption
@@ -94,19 +93,13 @@ class ActExitReasons : ComponentActivity() {
         }
 
         setContent {
-            StScreen(
-                title = getString(R.string.exit_reasons),
-                onBack = { finish() },
-            ) { innerPadding ->
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                ) {
-                    items(exitInfoList) { info ->
-                        ExitReasonItem(info)
-                        HorizontalDivider()
-                    }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                items(exitInfoList) { info ->
+                    ExitReasonItem(info)
+                    HorizontalDivider()
                 }
             }
         }

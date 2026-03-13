@@ -16,7 +16,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.log.LogCategory
 import androidx.lifecycle.lifecycleScope
@@ -37,35 +36,30 @@ class ActDrawableList : ComponentActivity() {
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
         setContent {
-            StScreen(
-                title = "Drawables",
-                onBack = { finish() },
-            ) { innerPadding ->
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                ) {
-                    items(drawableList) { item ->
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Image(
-                                painter = painterResource(item.id),
-                                contentDescription = item.name,
-                                modifier = Modifier.size(48.dp),
-                            )
-                            Text(
-                                text = item.name,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(start = 8.dp),
-                            )
-                        }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                items(drawableList) { item ->
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Image(
+                            painter = painterResource(item.id),
+                            contentDescription = item.name,
+                            modifier = Modifier.size(48.dp),
+                        )
+                        Text(
+                            text = item.name,
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 8.dp),
+                        )
                     }
                 }
             }
+
         }
         load()
     }

@@ -60,7 +60,6 @@ import jp.juggler.subwaytooter.column.getHeaderBackgroundColor
 import jp.juggler.subwaytooter.column.getHeaderNameColor
 import jp.juggler.subwaytooter.column.getIconId
 import jp.juggler.subwaytooter.compose.ColorPickerDialog
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.data.checkMimeTypeAndGrant
@@ -134,22 +133,16 @@ class ActColumnCustomize : ComponentActivity() {
         column = appState.column(columnIndex)!!
 
         setContent {
-            StScreen(
-                title = stringResource(R.string.color_and_background),
-                onBack = {
-                    makeResult()
-                    finish()
-                },
-            ) { innerPadding ->
-                ColumnCustomizeContent(
-                    modifier = Modifier.padding(innerPadding),
-                )
-            }
+            ColumnCustomizeContent(
+                modifier = Modifier,
+            )
         }
     }
 
     override fun onDestroy() {
         closeBitmaps()
+        makeResult()
+        finish()
         super.onDestroy()
     }
 
