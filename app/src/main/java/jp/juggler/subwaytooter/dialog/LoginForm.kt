@@ -5,6 +5,7 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
+import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -115,6 +116,7 @@ class LoginForm(
     init {
         validateAndShow()
         val composeView = ComposeView(activity).apply {
+            setViewTreeLifecycleOwner(activity)
             setContent {
                 StThemedContent {
                     LoginFormContent()

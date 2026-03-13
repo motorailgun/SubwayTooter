@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.setViewTreeLifecycleOwner
 import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.util.coroutine.cancellationException
 import jp.juggler.util.data.notEmpty
@@ -45,6 +46,9 @@ class ActionsDialogInitializer(
         suspendCancellableCoroutine { cont ->
             val dialog = Dialog(context)
             val composeView = ComposeView(context).apply {
+                if (context is androidx.lifecycle.LifecycleOwner) {
+                    setViewTreeLifecycleOwner(context as androidx.lifecycle.LifecycleOwner)
+                }
                 setContent {
                     StThemedContent {
                         ActionsDialogContent(

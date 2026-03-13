@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.setViewTreeLifecycleOwner
 import jp.juggler.subwaytooter.ActMain
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.column.*
@@ -221,6 +222,7 @@ class ColumnViewHolder(
 
     private fun createViewRoot(parent: ViewGroup): View {
         val composeView = ComposeView(activity).apply {
+            setViewTreeLifecycleOwner(activity)
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
         }
         this.composeView = composeView

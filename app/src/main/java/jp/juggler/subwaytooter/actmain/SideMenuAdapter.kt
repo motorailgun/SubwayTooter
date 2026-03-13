@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
+import androidx.lifecycle.setViewTreeLifecycleOwner
 import jp.juggler.subwaytooter.ActAbout
 import jp.juggler.subwaytooter.ActAppSetting
 import jp.juggler.subwaytooter.ActAppSetting.Companion.launchAppSetting
@@ -665,6 +666,7 @@ class SideMenuAdapter(
         filterListItems()
 
         ComposeView(actMain).apply {
+            setViewTreeLifecycleOwner(actMain)
             setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
