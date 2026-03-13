@@ -31,6 +31,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.util.ui.dismissSafe
@@ -166,6 +168,12 @@ object DlgConfirm {
     ): Dialog {
         val dialog = Dialog(this)
         val composeView = ComposeView(this).apply {
+            if (this@showComposeDialog is androidx.lifecycle.LifecycleOwner) {
+                setViewTreeLifecycleOwner(this@showComposeDialog)
+            }
+            if (this@showComposeDialog is androidx.savedstate.SavedStateRegistryOwner) {
+                setViewTreeSavedStateRegistryOwner(this@showComposeDialog)
+            }
             setContent {
                 StThemedContent {
                     ConfirmContent(

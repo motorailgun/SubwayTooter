@@ -27,6 +27,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.table.*
@@ -117,6 +119,12 @@ suspend fun Activity.pickAccount(
         }
 
         val composeView = ComposeView(activity).apply {
+            if (activity is androidx.lifecycle.LifecycleOwner) {
+                setViewTreeLifecycleOwner(activity)
+            }
+            if (activity is androidx.savedstate.SavedStateRegistryOwner) {
+                setViewTreeSavedStateRegistryOwner(activity)
+            }
             setContent {
                 StThemedContent {
                     Surface {

@@ -37,6 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.util.coroutine.cancellationException
@@ -175,6 +177,8 @@ suspend fun ComponentActivity.showTextInputDialog(
     val dialog = Dialog(this)
     suspendCancellableCoroutine { cont ->
         val composeView = ComposeView(this).apply {
+            setViewTreeLifecycleOwner(this@showTextInputDialog)
+            setViewTreeSavedStateRegistryOwner(this@showTextInputDialog)
             setContent {
                 StThemedContent {
                     TextInputDialogContent(
@@ -228,6 +232,8 @@ suspend fun ComponentActivity.showMediaDescEditDialog(
 
     suspendCancellableCoroutine { cont ->
         val composeView = ComposeView(this).apply {
+            setViewTreeLifecycleOwner(this@showMediaDescEditDialog)
+            setViewTreeSavedStateRegistryOwner(this@showMediaDescEditDialog)
             setContent {
                 StThemedContent {
                     TextInputDialogContent(

@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.util.coroutine.cancellationException
 import jp.juggler.util.data.notEmpty
@@ -48,6 +49,9 @@ class ActionsDialogInitializer(
             val composeView = ComposeView(context).apply {
                 if (context is androidx.lifecycle.LifecycleOwner) {
                     setViewTreeLifecycleOwner(context as androidx.lifecycle.LifecycleOwner)
+                }
+                if (context is androidx.savedstate.SavedStateRegistryOwner) {
+                    setViewTreeSavedStateRegistryOwner(context as androidx.savedstate.SavedStateRegistryOwner)
                 }
                 setContent {
                     StThemedContent {

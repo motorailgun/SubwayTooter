@@ -6,6 +6,7 @@ import androidx.activity.ComponentActivity
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -117,6 +118,7 @@ class LoginForm(
         validateAndShow()
         val composeView = ComposeView(activity).apply {
             setViewTreeLifecycleOwner(activity)
+            setViewTreeSavedStateRegistryOwner(activity)
             setContent {
                 StThemedContent {
                     LoginFormContent()
