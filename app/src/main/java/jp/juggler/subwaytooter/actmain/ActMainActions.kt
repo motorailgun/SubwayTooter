@@ -112,15 +112,6 @@ fun ActMain.onBackPressedImpl() {
 fun ActMain.onClickImpl(v: View) {
     when (v.id) {
         R.id.btnToot -> openPost()
-        R.id.ivQuickTootAccount -> quickPostAccountDialog(
-            getString(
-                R.string.account_picker_add_timeline_of,
-                ColumnType.PROFILE.name1(this)
-            )
-        ) { openProfileQuickPostAccount(it) }
-
-        R.id.btnQuickToot -> quickPostAccountDialog { performQuickPost(it) }
-        R.id.btnQuickTootMenu -> toggleQuickPostMenu()
         R.id.btnMenu -> if (!views.drawerLayout.isDrawerOpen(GravityCompat.START)) {
             views.drawerLayout.openDrawer(GravityCompat.START)
         }

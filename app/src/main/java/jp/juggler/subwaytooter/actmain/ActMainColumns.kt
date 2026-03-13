@@ -152,8 +152,6 @@ fun ActMain.updateColumnStrip() {
     for (btn in arrayOf(
         views.btnToot,
         views.btnMenu,
-        views.btnQuickTootMenu,
-        views.btnQuickToot,
     )) {
         btn.layoutParams.width = rootH // not W
         btn.layoutParams.height = rootH
@@ -478,12 +476,7 @@ fun ActMain.scrollColumnStrip(select: Int) {
 
     launchMain {
         try {
-            val a = AccountCache.load(this@scrollColumnStrip, quickPostAccount())
-            views.ivQuickTootAccount.setImageUrl(
-                calcIconRound(views.ivQuickTootAccount.layoutParams.width),
-                urlStatic = a?.avatar_static,
-                urlAnime = a?.avatar,
-            )
+            val a = AccountCache.load(this@scrollColumnStrip, null)
         } catch (ex: Throwable) {
             log.e(ex, "load account failed.")
         }

@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,6 +33,15 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.More
+import androidx.compose.material.icons.automirrored.filled.Note
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.More
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
@@ -47,18 +57,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import jp.juggler.subwaytooter.compose.NetworkImage
@@ -131,7 +145,6 @@ import kotlinx.coroutines.flow.collectLatest
 import java.lang.ref.WeakReference
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
-import com.google.android.material.R as MR
 
 data class AttachmentSlotUi(
     val visible: Boolean = false,
@@ -234,7 +247,7 @@ class ActPost : ComponentActivity(),
 
     var charCountText by mutableStateOf("")
     var charCountColorArgb by mutableIntStateOf(0)
-    var visibilityIconRes by mutableIntStateOf(R.drawable.ic_public)
+    var visibilityIconRes by mutableStateOf(Icons.Filled.Public)
     var scheduleText by mutableStateOf("")
     var pollTypeIndex by mutableIntStateOf(0)
     var pollMultipleChoiceChecked by mutableStateOf(false)
@@ -499,7 +512,7 @@ class ActPost : ComponentActivity(),
                 .background(MaterialTheme.colorScheme.surfaceContainer)
                 .padding(horizontal = horizontalPadding),
         ) {
-            FooterIconButton(R.drawable.ic_clip, getString(R.string.media_attachment)) {
+            FooterIconButton(Icons.Filled.AttachFile, getString(R.string.media_attachment)) {
                 openAttachment()
             }
             FooterIconButton(
@@ -508,10 +521,7 @@ class ActPost : ComponentActivity(),
             ) {
                 openVisibilityPicker()
             }
-            FooterIconButton(R.drawable.ic_extension, getString(R.string.plugin_app_intro)) {
-                launchAndShowError { openMushroom() }
-            }
-            FooterIconButton(R.drawable.ic_more, getString(R.string.more)) {
+            FooterIconButton(Icons.AutoMirrored.Filled.More, getString(R.string.more)) {
                 performMore()
             }
             Spacer(modifier = Modifier.weight(1f))
@@ -522,7 +532,7 @@ class ActPost : ComponentActivity(),
                     .padding(end = 4.dp)
                     .align(androidx.compose.ui.Alignment.CenterVertically),
             )
-            FooterIconButton(R.drawable.ic_send, getString(R.string.toot)) {
+            FooterIconButton(Icons.AutoMirrored.Filled.Send, getString(R.string.toot)) {
                 performPost()
             }
         }
@@ -530,7 +540,7 @@ class ActPost : ComponentActivity(),
 
     @Composable
     private fun FooterIconButton(
-        iconRes: Int,
+        iconRes: ImageVector,
         contentDescription: String,
         onClick: () -> Unit,
     ) {
@@ -539,8 +549,32 @@ class ActPost : ComponentActivity(),
             modifier = Modifier.size(48.dp),
         ) {
             Icon(
-                painter = painterResource(iconRes),
+                imageVector = iconRes,
                 contentDescription = contentDescription,
+            )
+        }
+    }
+
+    @Composable
+    fun FooterIconButtonToggle(
+        iconRes: Int,
+        contentDescription: String,
+        onClick: () -> Unit,
+    ) {
+        var isToggled by rememberSaveable { mutableStateOf(false) }
+
+        IconButton(
+            onClick = {
+                isToggled = !isToggled
+                onClick()
+            },
+            modifier =
+                Modifier.fillMaxHeight()
+                        .alpha(if(isToggled) 0.6f else 1f),
+        ) {
+            Icon(
+                painter = painterResource(iconRes),
+                contentDescription = contentDescription
             )
         }
     }

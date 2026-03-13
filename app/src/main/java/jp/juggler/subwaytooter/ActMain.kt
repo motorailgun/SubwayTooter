@@ -20,6 +20,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
@@ -36,7 +37,6 @@ import jp.juggler.subwaytooter.actmain.handleIntentUri
 import jp.juggler.subwaytooter.actmain.handleSharedIntent
 import jp.juggler.subwaytooter.actmain.importAppData
 import jp.juggler.subwaytooter.actmain.initPhoneTablet
-import jp.juggler.subwaytooter.actmain.initUIQuickPost
 import jp.juggler.subwaytooter.actmain.isOrderChanged
 import jp.juggler.subwaytooter.actmain.justifyWindowContentPortrait
 import jp.juggler.subwaytooter.actmain.launchDialogs
@@ -60,7 +60,7 @@ import jp.juggler.subwaytooter.actmain.scrollToLastColumn
 import jp.juggler.subwaytooter.actmain.searchFromActivityResult
 import jp.juggler.subwaytooter.actmain.setColumnsOrder
 import jp.juggler.subwaytooter.actmain.showFooterColor
-import jp.juggler.subwaytooter.actmain.showQuickPostVisibility
+// import jp.juggler.subwaytooter.actmain.showQuickPostVisibility
 import jp.juggler.subwaytooter.actmain.tabOnly
 import jp.juggler.subwaytooter.actmain.updateColumnStrip
 import jp.juggler.subwaytooter.actmain.updateColumnStripSelection
@@ -193,8 +193,6 @@ class ActMain : ComponentActivity(),
 
     var dlgPrivacyPolicy: WeakReference<Dialog>? = null
 
-    var quickPostVisibility: TootVisibility = TootVisibility.AccountSetting
-
     val views by lazy {
         val ctx = this@ActMain
         val colorOnSurface = attrColor(MR.attr.colorOnSurface)
@@ -278,57 +276,6 @@ class ActMain : ComponentActivity(),
             setImageResource(R.drawable.ic_edit)
         }
 
-        val btnQuickTootMenu = ImageButton(ctx).apply {
-            id = R.id.btnQuickTootMenu
-            layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
-            contentDescription = getString(R.string.quick_toot_menu)
-            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
-        }
-
-        val etQuickToot = jp.juggler.subwaytooter.view.MyEditText(ctx).apply {
-            id = R.id.etQuickToot
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
-                marginStart = dp(4)
-                marginEnd = dp(4)
-            }
-            setHint(R.string.quick_toot_hint)
-            imeOptions = android.view.inputmethod.EditorInfo.IME_ACTION_SEND
-            inputType = android.text.InputType.TYPE_CLASS_TEXT
-            isVerticalScrollBarEnabled = true
-        }
-
-        val ivQuickTootAccount = jp.juggler.subwaytooter.view.MyNetworkImageView(ctx).apply {
-            id = R.id.ivQuickTootAccount
-            layoutParams = LinearLayout.LayoutParams(dp(32), dp(32)).apply {
-                marginEnd = dp(2)
-            }
-            contentDescription = getString(R.string.quick_post_account)
-            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
-        }
-
-        val btnQuickToot = ImageButton(ctx).apply {
-            id = R.id.btnQuickToot
-            layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
-            contentDescription = getString(R.string.post)
-            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
-            setImageResource(R.drawable.ic_send)
-        }
-
-        val llQuickTootBar = LinearLayout(ctx).apply {
-            id = R.id.llQuickTootBar
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-            isBaselineAligned = false
-            gravity = android.view.Gravity.CENTER_VERTICAL
-            orientation = LinearLayout.HORIZONTAL
-            addView(btnQuickTootMenu)
-            addView(etQuickToot)
-            addView(ivQuickTootAccount)
-            addView(btnQuickToot)
-        }
-
         val vBottomPadding = View(ctx).apply {
             id = R.id.vBottomPadding
             layoutParams = LinearLayout.LayoutParams(
@@ -371,7 +318,6 @@ class ActMain : ComponentActivity(),
                 addView(btnToot)
             })
 
-            addView(llQuickTootBar)
             addView(vBottomPadding)
         }
 
@@ -381,7 +327,7 @@ class ActMain : ComponentActivity(),
                 DrawerLayout.LayoutParams.WRAP_CONTENT,
                 DrawerLayout.LayoutParams.MATCH_PARENT
             ).apply {
-                gravity = android.view.Gravity.START
+                gravity = GravityCompat.START
             }
             setBackgroundColor(colorSurface)
         }
@@ -405,11 +351,6 @@ class ActMain : ComponentActivity(),
             svColumnStrip = svColumnStrip,
             llColumnStrip = llColumnStrip,
             btnToot = btnToot,
-            llQuickTootBar = llQuickTootBar,
-            btnQuickTootMenu = btnQuickTootMenu,
-            etQuickToot = etQuickToot,
-            ivQuickTootAccount = ivQuickTootAccount,
-            btnQuickToot = btnQuickToot,
             vBottomPadding = vBottomPadding,
             vFooterDivider1 = vFooterDivider1,
             vFooterDivider2 = vFooterDivider2,
@@ -451,34 +392,6 @@ class ActMain : ComponentActivity(),
             }
         }
     }
-
-    val dlgQuickTootMenu = DlgQuickTootMenu(this, object : DlgQuickTootMenu.Callback {
-        override var visibility: TootVisibility
-            get() = quickPostVisibility
-            set(value) {
-                if (value != quickPostVisibility) {
-                    quickPostVisibility = value
-                    PrefS.spQuickTootVisibility.value = value.id.toString()
-                    showQuickPostVisibility()
-                }
-            }
-
-        override fun onMacro(text: String) {
-            with(views.etQuickToot) {
-                val editable = this.text
-                if (editable.isNullOrEmpty()) {
-                    setText(text)
-                    requestFocus()
-                    setSelection(text.length)
-                } else {
-                    val replaceEnd = selectionStart + text.length
-                    editable.replace(selectionStart, selectionEnd, text)
-                    requestFocus()
-                    setSelection(replaceEnd)
-                }
-            }
-        }
-    })
 
     val viewPool = RecyclerView.RecycledViewPool()
 
@@ -568,7 +481,6 @@ class ActMain : ComponentActivity(),
     val arActPost = ActivityResultHandler(log) { r ->
         if (r.isNotOk) return@ActivityResultHandler
         r.data?.let { data ->
-            views.etQuickToot.setText("")
             onCompleteActPost(data)
         }
     }
@@ -914,17 +826,9 @@ class ActMain : ComponentActivity(),
     private fun findViews() {
         views.btnToot.setOnClickListener(this)
         views.btnMenu.setOnClickListener(this)
-        views.ivQuickTootAccount.setOnClickListener(this)
-        views.btnQuickToot.setOnClickListener(this)
-        views.btnQuickTootMenu.setOnClickListener(this)
     }
 
     internal fun initUI() {
-
-        quickPostVisibility =
-            TootVisibility.parseSavedVisibility(PrefS.spQuickTootVisibility.value)
-                ?: quickPostVisibility
-
         Column.reloadDefaultColor(this)
 
         galaxyBackgroundWorkaround()
@@ -943,7 +847,6 @@ class ActMain : ComponentActivity(),
 
         justifyWindowContentPortrait()
 
-        initUIQuickPost()
         views.svColumnStrip.isHorizontalFadingEdgeEnabled = true
         reloadMediaHeight()
         initPhoneTablet()

@@ -19,6 +19,20 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.DrawableRes
 import androidx.appcompat.widget.SwitchCompat
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.CompareArrows
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Public
+import androidx.compose.material.icons.outlined.AccountCircle
+import androidx.compose.material.icons.outlined.Apartment
+import androidx.compose.material.icons.outlined.CompareArrows
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.LockOpen
+import androidx.compose.material.icons.outlined.Mail
+import androidx.compose.material.icons.outlined.QuestionMark
+import androidx.compose.material.icons.outlined.Web
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.core.content.ContextCompat
 import jp.juggler.subwaytooter.api.entity.TootAccount
 import jp.juggler.subwaytooter.api.entity.TootVisibility
@@ -47,7 +61,7 @@ fun defaultColorIcon(context: Context, iconId: Int): Drawable? =
         it.setTintMode(PorterDuff.Mode.SRC_IN)
     }
 
-fun TootVisibility.getVisibilityIconId(isMisskeyData: Boolean): Int {
+fun TootVisibility.getVisibilityIconId(isMisskeyData: Boolean): ImageVector {
     val isMisskey = when (PrefI.ipVisibilityStyle.value) {
         PrefI.VS_MASTODON -> false
         PrefI.VS_MISSKEY -> true
@@ -55,39 +69,39 @@ fun TootVisibility.getVisibilityIconId(isMisskeyData: Boolean): Int {
     }
     return when {
         isMisskey -> when (this) {
-            TootVisibility.Public -> R.drawable.ic_public
-            TootVisibility.UnlistedHome -> R.drawable.ic_home
-            TootVisibility.PrivateFollowers -> R.drawable.ic_lock_open
-            TootVisibility.DirectSpecified -> R.drawable.ic_mail
-            TootVisibility.DirectPrivate -> R.drawable.ic_lock
-            TootVisibility.WebSetting -> R.drawable.ic_question
-            TootVisibility.AccountSetting -> R.drawable.ic_question
+            TootVisibility.Public -> Icons.Filled.Public
+            TootVisibility.UnlistedHome -> Icons.Outlined.Home
+            TootVisibility.PrivateFollowers -> Icons.Outlined.LockOpen
+            TootVisibility.DirectSpecified -> Icons.Outlined.Mail
+            TootVisibility.DirectPrivate -> Icons.Outlined.Lock
+            TootVisibility.WebSetting -> Icons.Outlined.Web
+            TootVisibility.AccountSetting -> Icons.Outlined.QuestionMark
 
-            TootVisibility.LocalPublic -> R.drawable.ic_local_ltl
-            TootVisibility.LocalHome -> R.drawable.ic_local_home
-            TootVisibility.LocalFollowers -> R.drawable.ic_local_lock_open
+            TootVisibility.LocalPublic -> Icons.Outlined.Apartment
+            TootVisibility.LocalHome -> Icons.Outlined.Home
+            TootVisibility.LocalFollowers -> Icons.Outlined.LockOpen
 
-            TootVisibility.Unknown -> R.drawable.ic_question
-            TootVisibility.Limited -> R.drawable.ic_account_circle
-            TootVisibility.Mutual -> R.drawable.ic_bidirectional
+            TootVisibility.Unknown -> Icons.Outlined.QuestionMark
+            TootVisibility.Limited -> Icons.Outlined.AccountCircle
+            TootVisibility.Mutual -> Icons.AutoMirrored.Outlined.CompareArrows
         }
 
         else -> when (this) {
-            TootVisibility.Public -> R.drawable.ic_public
-            TootVisibility.UnlistedHome -> R.drawable.ic_lock_open
-            TootVisibility.PrivateFollowers -> R.drawable.ic_lock
-            TootVisibility.DirectSpecified -> R.drawable.ic_mail
-            TootVisibility.DirectPrivate -> R.drawable.ic_mail
-            TootVisibility.WebSetting -> R.drawable.ic_question
-            TootVisibility.AccountSetting -> R.drawable.ic_question
+            TootVisibility.Public -> Icons.Filled.Public
+            TootVisibility.UnlistedHome -> Icons.Outlined.Home
+            TootVisibility.PrivateFollowers -> Icons.Outlined.LockOpen
+            TootVisibility.DirectSpecified -> Icons.Outlined.Mail
+            TootVisibility.DirectPrivate -> Icons.Outlined.Lock
+            TootVisibility.WebSetting -> Icons.Outlined.Web
+            TootVisibility.AccountSetting -> Icons.Outlined.QuestionMark
 
-            TootVisibility.LocalPublic -> R.drawable.ic_local_ltl
-            TootVisibility.LocalHome -> R.drawable.ic_local_lock_open
-            TootVisibility.LocalFollowers -> R.drawable.ic_local_lock
+            TootVisibility.LocalPublic -> Icons.Outlined.Apartment
+            TootVisibility.LocalHome -> Icons.Outlined.Home
+            TootVisibility.LocalFollowers -> Icons.Outlined.LockOpen
 
-            TootVisibility.Unknown -> R.drawable.ic_question
-            TootVisibility.Limited -> R.drawable.ic_account_circle
-            TootVisibility.Mutual -> R.drawable.ic_bidirectional
+            TootVisibility.Unknown -> Icons.Outlined.QuestionMark
+            TootVisibility.Limited -> Icons.Outlined.AccountCircle
+            TootVisibility.Mutual -> Icons.AutoMirrored.Outlined.CompareArrows
         }
     }
 }
@@ -145,31 +159,9 @@ fun getVisibilityCaption(
     isMisskeyData: Boolean,
     visibility: TootVisibility,
 ): CharSequence {
-
-    val iconId = visibility.getVisibilityIconId(isMisskeyData)
-    val sv = visibility.getVisibilityString(isMisskeyData)
-    val color = context.attrColor(MR.attr.colorOnSurface)
     val sb = SpannableStringBuilder()
 
-    // アイコン部分
-    val start = sb.length
-    sb.append(" ")
-    val end = sb.length
-    sb.setSpan(
-        EmojiImageSpan(
-            context,
-            iconId,
-            useColorShader = true,
-            color = color
-        ),
-        start,
-        end,
-        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-    )
-
-    // 文字列部分
-    sb.append(' ')
-    sb.append(sv)
+    // removed for now
 
     return sb
 }

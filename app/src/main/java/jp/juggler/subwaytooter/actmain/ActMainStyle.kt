@@ -123,11 +123,6 @@ fun ActMain.justifyWindowContentPortrait() {
                     layoutParams = LinearLayout.LayoutParams(padding, 0)
                 }
             )
-            views.llQuickTootBar.addViewBeforeLast(
-                View(this).apply {
-                    layoutParams = LinearLayout.LayoutParams(padding, 0)
-                }
-            )
         }
 
         PrefI.JWCP_END -> {
@@ -137,11 +132,6 @@ fun ActMain.justifyWindowContentPortrait() {
 
             fun ViewGroup.addViewAfterFirst(v: View) = addView(v, 1)
             (views.svColumnStrip.parent as LinearLayout).addViewAfterFirst(
-                View(this).apply {
-                    layoutParams = LinearLayout.LayoutParams(padding, 0)
-                }
-            )
-            views.llQuickTootBar.addViewAfterFirst(
                 View(this).apply {
                     layoutParams = LinearLayout.LayoutParams(padding, 0)
                 }
@@ -189,7 +179,6 @@ fun ActMain.showFooterColor() {
     val colorOnSurface = attrColor(MR.attr.colorOnSurface)
 
     views.svColumnStrip.setBackgroundColor(colorColumnStripBackground)
-    views.llQuickTootBar.setBackgroundColor(colorColumnStripBackground)
 
     views.vBottomPadding.setBackgroundColor(colorColumnStripBackground)
 
@@ -199,21 +188,12 @@ fun ActMain.showFooterColor() {
         getAdaptiveRippleDrawableRound(this, colorButtonBg, colorOnSurface)
     views.btnToot.background =
         getAdaptiveRippleDrawableRound(this, colorButtonBg, colorOnSurface)
-    views.btnQuickToot.background =
-        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorOnSurface)
-    views.ivQuickTootAccount.background =
-        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorOnSurface)
-    views.btnQuickTootMenu.background =
-        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorOnSurface)
 
     val d = resDrawable(R.drawable.ic_question).wrapAndTint(color = colorOnSurface)
-    views.ivQuickTootAccount.setDefaultImage(d)
 
     val csl = ColorStateList.valueOf(colorOnSurface)
     views.btnToot.imageTintList = csl
     views.btnMenu.imageTintList = csl
-    views.btnQuickToot.imageTintList = csl
-    views.btnQuickTootMenu.imageTintList = csl
 
     views.vFooterDivider1.setBackgroundColor(colorColumnStripBackground)
     views.vFooterDivider2.setBackgroundColor(colorColumnStripBackground)

@@ -69,12 +69,9 @@ fun ActMainScreen(activity: ActMain) {
     ) {
         Scaffold(
             bottomBar = {
-                Column {
-                    QuickPostBar(activity)
-                    ActMainBottomAppBar(activity, onMenuClick = {
-                        scope.launch { drawerState.open() }
-                    })
-                }
+                ActMainBottomAppBar(activity, onMenuClick = {
+                    scope.launch { drawerState.open() }
+                })
             }
         ) { innerPadding ->
             Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
@@ -129,7 +126,7 @@ fun TimelineView(activity: ActMain, column: Column) {
     // For the mechanical translation, we'll try to bridge it.
     val timelineState = remember { TimelineState() }
     val callbacks = remember { buildTimelineCallbacks(activity) }
-    
+
     TimelineColumn(
         activity = activity,
         column = column,
@@ -138,49 +135,6 @@ fun TimelineView(activity: ActMain, column: Column) {
         callbacks = callbacks,
         modifier = Modifier.fillMaxSize()
     )
-}
-
-@Composable
-fun QuickPostBar(activity: ActMain) {
-    var text by remember { mutableStateOf("") }
-    
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(4.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = { activity.onClick(activity.views.btnQuickTootMenu) }) {
-            Icon(
-                painter = painterResource(R.drawable.ic_hamburger), // Should be quick toot menu icon
-                contentDescription = stringResource(R.string.quick_toot_menu)
-            )
-        }
-        
-        TextField(
-            value = text,
-            onValueChange = { text = it },
-            modifier = Modifier.weight(1f),
-            placeholder = { Text(stringResource(R.string.quick_toot_hint)) },
-            keyboardOptions = KeyboardOptions(
-                imeAction = ImeAction.Send,
-                keyboardType = KeyboardType.Text
-            )
-        )
-        
-        // Account icon
-        IconButton(onClick = { activity.onClick(activity.views.ivQuickTootAccount) }) {
-            // Placeholder for MyNetworkImageView
-            Box(modifier = Modifier.size(32.dp).background(Color.Gray))
-        }
-        
-        IconButton(onClick = { activity.onClick(activity.views.btnQuickToot) }) {
-            Icon(
-                painter = painterResource(R.drawable.ic_send),
-                contentDescription = stringResource(R.string.post)
-            )
-        }
-    }
 }
 
 @Composable
