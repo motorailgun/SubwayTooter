@@ -34,9 +34,15 @@ class ActMainComposeState(
     val stripScrollState: ScrollState,
     val scope: CoroutineScope,
     val isTablet: Boolean,
+    val columnWidth: Int,
 ) {
     var columnList by mutableStateOf<List<Column>>(activity.appState.columnList.toList())
         private set
+
+    init {
+        // Update activity fields for compatibility if needed
+        activity.nColumnWidth = columnWidth
+    }
 
     fun refreshColumnList() {
         columnList = activity.appState.columnList.toList()
@@ -96,19 +102,28 @@ fun rememberActMainComposeState(
     scope: CoroutineScope = rememberCoroutineScope(),
 ): ActMainComposeState {
     val configuration = LocalConfiguration.current
-    val isTablet = remember(activity, configuration) {
-        calculateIsTablet(activity)
+    val screenState = remember(activity, configuration) {
+        calculateScreenState(activity)
     }
-    return remember(activity, drawerState, pagerState, tabletListState, stripScrollState, scope, isTablet) {
-        ActMainComposeState(activity, drawerState, pagerState, tabletListState, stripScrollState, scope, isTablet)
+    return remember(activity, drawerState, pagerState, tabletListState, stripScrollState, scope, screenState) {
+        ActMainComposeState(
+            activity,
+            drawerState,
+            pagerState,
+            tabletListState,
+            stripScrollState,
+            scope,
+            screenState.first,
+            screenState.second
+        )
     }
 }
 
 /**
- * Calculate whether the device is in tablet mode based on screen width.
- * Logic replicated from ActMain.initPhoneTablet()
+ * Calculate whether the device is in tablet mode and column width based on screen width.
+ * Returns Pair(isTablet, columnWidth)
  */
-private fun calculateIsTablet(activity: ActMain): Boolean {
+private fun calculateScreenState(activity: ActMain): Pair<Boolean, Int> {
     // Get the column width setting, or use default
     val columnWMinDp = ActMain.COLUMN_WIDTH_MIN_DP.toFloat()
     val columnWidthPref = PrefS.spColumnWidth.value
@@ -126,5 +141,10 @@ private fun calculateIsTablet(activity: ActMain): Boolean {
 
     // Tablet mode if tablet mode is enabled AND screen width is at least 2 columns wide
     val disableTabletMode = PrefB.bpDisableTabletMode.value
-    return !disableTabletMode && screenWidthPx >= columnWMin * 2
+    val isTablet = !disableTabletMode && screenWidthPx >= columnWMin * 2
+    
+    val nScreenColumn = if (isTablet) screenWidthPx / columnWMin else 1
+    val columnWidth = if (isTablet) screenWidthPx / nScreenColumn else screenWidthPx
+    
+    return Pair(isTablet, columnWidth)
 }
