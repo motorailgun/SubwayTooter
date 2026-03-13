@@ -10,6 +10,7 @@
     <color name="Light_colorButtonAccentFollow">#ff0088ff</color>
     <color name="Light_colorButtonAccentFollowRequest">#f00</color>
     <color name="Light_colorButtonAccentReaction">#ff0088ff</color>
+    <color name="Light_colorAppCompatAccent">#ff0088ff</color>
 
     <!-- Dark theme -->
     <color name="Dark_colorButtonAccentBookmark">#00a2ff</color>

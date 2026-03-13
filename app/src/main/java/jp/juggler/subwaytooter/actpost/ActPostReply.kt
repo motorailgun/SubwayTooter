@@ -41,10 +41,6 @@ suspend fun ActPost.showReplyTo() {
             decodeEmoji = true,
             emojiSizeMode =  account.emojiSizeMode(),
         ).decodeHTML(states.inReplyToText).toString()
-        views.ivReply.setImageUrl(
-            calcIconRound(views.ivReply.layoutParams),
-            states.inReplyToImage
-        )
     } else {
         replyToText = ""
         quoteChecked = false

@@ -1,6 +1,9 @@
 package jp.juggler.subwaytooter.actpost
 
 import android.os.Bundle
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import jp.juggler.subwaytooter.ActPost
 import jp.juggler.subwaytooter.api.TootParser
 import jp.juggler.subwaytooter.api.entity.EntityId
@@ -19,8 +22,9 @@ import kotlinx.serialization.encodeToString
 
 private val log = LogCategory("ActPostStates")
 
+// Data class for serialization only
 @Serializable
-data class ActPostStates(
+data class ActPostStatesData(
     ////////////
     // states requires special handling
     var accountDbId: Long? = null,
@@ -50,6 +54,82 @@ data class ActPostStates(
     var inReplyToUrl: String? = null,
 )
 
+// Wrapper class with mutableStateOf properties
+class ActPostStates(
+    ////////////
+    // states requires special handling
+    var accountDbId: Long? = null,
+    var pickerState: String? = null,
+    var attachmentListEncoded: String? = null,
+    var scheduledStatusEncoded: String? = null,
+    ////////////
+
+    var visibility: TootVisibility? = null,
+
+    @Serializable(with = EntityIdSerializer::class)
+    var redraftStatusId: EntityId? = null,
+
+    @Serializable(with = EntityIdSerializer::class)
+    var editStatusId: EntityId? = null,
+
+    var mushroomInput: Int = 0,
+    var mushroomStart: Int = 0,
+    var mushroomEnd: Int = 0,
+
+    var timeSchedule: Long = 0L,
+
+    inReplyToIdInitial: EntityId? = null,
+    inReplyToTextInitial: String? = null,
+    inReplyToImageInitial: String? = null,
+    inReplyToUrlInitial: String? = null,
+) {
+    // Wrap reply properties in mutableStateOf for Compose reactivity
+    var inReplyToId: EntityId? by mutableStateOf(inReplyToIdInitial)
+    var inReplyToText: String? by mutableStateOf(inReplyToTextInitial)
+    var inReplyToImage: String? by mutableStateOf(inReplyToImageInitial)
+    var inReplyToUrl: String? by mutableStateOf(inReplyToUrlInitial)
+
+    // Convert to data class for serialization
+    fun toData(): ActPostStatesData = ActPostStatesData(
+        accountDbId = accountDbId,
+        pickerState = pickerState,
+        attachmentListEncoded = attachmentListEncoded,
+        scheduledStatusEncoded = scheduledStatusEncoded,
+        visibility = visibility,
+        redraftStatusId = redraftStatusId,
+        editStatusId = editStatusId,
+        mushroomInput = mushroomInput,
+        mushroomStart = mushroomStart,
+        mushroomEnd = mushroomEnd,
+        timeSchedule = timeSchedule,
+        inReplyToId = inReplyToId,
+        inReplyToText = inReplyToText,
+        inReplyToImage = inReplyToImage,
+        inReplyToUrl = inReplyToUrl,
+    )
+
+    // Convert from data class
+    companion object {
+        fun fromData(data: ActPostStatesData): ActPostStates = ActPostStates(
+            accountDbId = data.accountDbId,
+            pickerState = data.pickerState,
+            attachmentListEncoded = data.attachmentListEncoded,
+            scheduledStatusEncoded = data.scheduledStatusEncoded,
+            visibility = data.visibility,
+            redraftStatusId = data.redraftStatusId,
+            editStatusId = data.editStatusId,
+            mushroomInput = data.mushroomInput,
+            mushroomStart = data.mushroomStart,
+            mushroomEnd = data.mushroomEnd,
+            timeSchedule = data.timeSchedule,
+            inReplyToIdInitial = data.inReplyToId,
+            inReplyToTextInitial = data.inReplyToText,
+            inReplyToImageInitial = data.inReplyToImage,
+            inReplyToUrlInitial = data.inReplyToUrl,
+        )
+    }
+}
+
 // 画面状態の保存
 fun ActPost.saveState(outState: Bundle) {
     states.accountDbId = account?.db_id
@@ -64,7 +144,7 @@ fun ActPost.saveState(outState: Bundle) {
         .toJsonArray()
         .toString()
 
-    val encoded = kJson.encodeToString(states)
+    val encoded = kJson.encodeToString(states.toData())
     log.d("onSaveInstanceState: $encoded")
     outState.putString(ActPost.STATE_ALL, encoded)
 
@@ -78,7 +158,8 @@ suspend fun ActPost.restoreState(savedInstanceState: Bundle) {
     resetText() // also load account list
 
     savedInstanceState.getString(ActPost.STATE_ALL)?.let { jsonText ->
-        states = kJson.decodeFromString(jsonText)
+        val statesData = kJson.decodeFromString<ActPostStatesData>(jsonText)
+        states = ActPostStates.fromData(statesData)
         states.pickerState?.let { attachmentPicker.restoreState(it) }
         this.account = null // いちど選択を外してから再選択させる
         accountList.find { it.db_id == states.accountDbId }?.let { selectAccount(it) }
