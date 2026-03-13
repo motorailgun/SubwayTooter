@@ -26,10 +26,17 @@ private val log = LogCategory("ActMainImportAppData")
 fun ActMain.importAppData(uri: Uri) {
 
     // remove all columns
+    phoneOnly { env -> env.pager.adapter = null }
+
     appState.editColumnList(save = false) { list ->
         list.forEach { it.dispose() }
         list.clear()
     }
+
+    phoneTab(
+        { env -> env.pager.adapter = env.pagerAdapter },
+        { env -> resizeColumnWidth(env) }
+    )
 
     updateColumnStrip()
 
@@ -113,10 +120,17 @@ fun ActMain.importAppData(uri: Uri) {
             if (it == null) return@launchProgress
 
             try {
+                phoneOnly { env -> env.pager.adapter = null }
+
                 appState.editColumnList { list ->
                     list.clear()
                     list.addAll(it)
                 }
+
+                phoneTab(
+                    { env -> env.pager.adapter = env.pagerAdapter },
+                    { env -> resizeColumnWidth(env) }
+                )
                 updateColumnStrip()
             } finally {
                 // 通知サービスをリスタート
