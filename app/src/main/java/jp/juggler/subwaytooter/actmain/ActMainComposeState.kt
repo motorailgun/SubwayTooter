@@ -21,7 +21,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import jp.juggler.subwaytooter.ActMain
 import jp.juggler.subwaytooter.pref.PrefB
 import jp.juggler.subwaytooter.pref.PrefS
-import jp.juggler.subwaytooter.column.Column
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -35,11 +34,11 @@ class ActMainComposeState(
     val scope: CoroutineScope,
     val isTablet: Boolean,
 ) {
-    var columnList by mutableStateOf<List<Column>>(activity.appState.columnList.toList())
+    var columnList by mutableStateOf(activity.appState.columnList)
         private set
 
     fun refreshColumnList() {
-        columnList = activity.appState.columnList.toList()
+        columnList = activity.appState.columnList
     }
 
     fun openDrawer() {

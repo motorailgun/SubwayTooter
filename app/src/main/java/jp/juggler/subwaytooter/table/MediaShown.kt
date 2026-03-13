@@ -55,9 +55,7 @@ class MediaShown private constructor() {
         fun deleteOld(now: Long) {
             try {
                 val expire = now - 86400000L * 365
-                if (hasTable(table)) {
-                    db.delete(table, "$COL_TIME_SAVE<?", arrayOf(expire.toString()))
-                }
+                db.delete(table, "$COL_TIME_SAVE<?", arrayOf(expire.toString()))
             } catch (ex: Throwable) {
                 log.e(ex, "deleteOld failed.")
             }
@@ -65,24 +63,10 @@ class MediaShown private constructor() {
             // 旧型式のテーブルも古い項目の削除だけ行う
             try {
                 val table = "media_shown"
-                if (hasTable(table)) {
-                    val COL_TIME_SAVE = "time_save"
-                    val expire = now - 86400000L * 365
-                    db.delete(table, "$COL_TIME_SAVE<?", arrayOf(expire.toString()))
-                }
+                val COL_TIME_SAVE = "time_save"
+                val expire = now - 86400000L * 365
+                db.delete(table, "$COL_TIME_SAVE<?", arrayOf(expire.toString()))
             } catch (ignored: Throwable) {
-            }
-        }
-
-        private fun hasTable(tableName: String): Boolean {
-            return try {
-                db.rawQuery("select count(*) from sqlite_master where type='table' and name=?", arrayOf(tableName))
-                    .use {
-                        if (it.moveToFirst()) it.getInt(0) > 0 else false
-                    }
-            } catch (ex: Throwable) {
-                log.e(ex, "hasTable failed.")
-                false
             }
         }
 

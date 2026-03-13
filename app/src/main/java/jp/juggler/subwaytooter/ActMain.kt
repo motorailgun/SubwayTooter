@@ -491,9 +491,6 @@ class ActMain : ComponentActivity(),
                         }
 
                         benchmark("fireShowContent") {
-                            if (isComposeStateInitialized()) {
-                                composeState.refreshColumnList()
-                            }
                             appState.columnList.forEach {
                                 it.fireShowContent(reason = "ActMain onStart", reset = true)
                             }
