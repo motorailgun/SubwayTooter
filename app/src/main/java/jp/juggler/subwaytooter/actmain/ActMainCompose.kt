@@ -135,10 +135,7 @@ fun ActMainColumns(
             contentPadding = PaddingValues(horizontal = 0.dp)
         ) {
             itemsIndexed(columnList) { index, column ->
-                // Use columnWidth from state (calculated in pixels, convert to dp)
-                val density = activity.resources.displayMetrics.density
-                val widthDp = (composeState.columnWidth / density).dp
-                Box(modifier = Modifier.width(widthDp).fillMaxHeight()) {
+                Box(modifier = Modifier.width(activity.nColumnWidth.dp).fillMaxHeight()) {
                     TimelineView(activity, column)
                 }
             }
