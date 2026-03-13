@@ -1,38 +1,32 @@
 package jp.juggler.subwaytooter.actmain
 
+import android.view.View
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardOptions
+
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import jp.juggler.subwaytooter.ActMain
-import jp.juggler.subwaytooter.App1
 import jp.juggler.subwaytooter.R
-import com.google.android.material.R as MR
 import jp.juggler.subwaytooter.column.Column
+import jp.juggler.subwaytooter.column.ColumnLoadReason
+import jp.juggler.subwaytooter.column.startLoading
 import jp.juggler.subwaytooter.column.getColumnName
 import jp.juggler.subwaytooter.column.getIconId
-import jp.juggler.subwaytooter.column.getContentColor
 import jp.juggler.subwaytooter.column.getHeaderBackgroundColor
 import jp.juggler.subwaytooter.column.getHeaderNameColor
 import jp.juggler.subwaytooter.compose.TimelineColumn
@@ -40,38 +34,75 @@ import jp.juggler.subwaytooter.compose.buildTimelineCallbacks
 import jp.juggler.subwaytooter.compose.TimelineState
 import jp.juggler.subwaytooter.table.daoAcctColor
 import jp.juggler.util.ui.attrColor
-import kotlinx.coroutines.launch
+import com.google.android.material.R as MR
+
 
 @Composable
-fun ActMainScreen(activity: ActMain) {
-    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
-    val appState = activity.appState
-    val columnList = appState.columnList // This might need to be a State to trigger recomposition
-    
-    // For now, let's assume we can recompose when needed.
-    // In a real app, you'd use a State or Flow.
+fun ActMainScreen(
+    activity: ActMain,
+    composeState: ActMainComposeState
+) {
+    val columnList = composeState.columnList
+    val pagerState = composeState.pagerState
+    val isTablet = composeState.isTablet
+    val stripScrollState = composeState.stripScrollState
+
+    // Sync strip scroll with pager page
+    LaunchedEffect(pagerState) {
+        if (!isTablet) {
+            snapshotFlow { pagerState.currentPage }.collect { page ->
+                // Calculate position: page * 40.dp
+                val density = activity.resources.displayMetrics.density
+                val iconWidthPx = (40 * density).toInt()
+                stripScrollState.animateScrollTo(page * iconWidthPx)
+            }
+        }
+    }
+
+    // Handle page selection effects (load column data)
+    LaunchedEffect(pagerState, isTablet) {
+        if (!isTablet) {
+            snapshotFlow { pagerState.currentPage }.collect { page ->
+                activity.appState.column(page)?.let { column ->
+                     column.startLoading(ColumnLoadReason.PageSelect)
+                     activity.completionHelper.setInstance(column.accessInfo.takeIf { !it.isNA })
+                }
+            }
+        } else {
+             // For tablet, maybe track visible items?
+             // composeState.tabletListState.layoutInfo.visibleItemsInfo ...
+             // But existing logic was onPageSelected which is for Pager.
+             // Tablet usually loads all visible columns.
+        }
+    }
+
+    // Handle drawer state change effects
+    LaunchedEffect(composeState.drawerState) {
+        snapshotFlow { composeState.drawerState.currentValue }.collect {
+             activity.completionHelper.closeAcctPopup()
+        }
+    }
     
     ModalNavigationDrawer(
-        drawerState = drawerState,
+        drawerState = composeState.drawerState,
         drawerContent = {
-            ModalDrawerSheet {
-                AndroidView(
-                    factory = { context: android.content.Context ->
-                        activity.views.root.also { root ->
-                            (root.parent as? android.view.ViewGroup)?.removeView(root)
-                        }
-                    },
-                    modifier = Modifier.fillMaxHeight().width(300.dp)
+            ModalDrawerSheet(
+                modifier = Modifier.width(300.dp)
+            ) {
+                // Use the refactored SideMenuAdapter content
+                activity.sideMenuAdapter.SideMenuContent(
+                    closeDrawer = { composeState.closeDrawer() }
                 )
             }
         }
     ) {
         Scaffold(
             bottomBar = {
-                ActMainBottomAppBar(activity, onMenuClick = {
-                    scope.launch { drawerState.open() }
-                })
+                ActMainBottomAppBar(
+                    activity = activity,
+                    composeState = composeState,
+                    onMenuClick = { composeState.openDrawer() }
+                )
             }
         ) { innerPadding ->
             Box(modifier = Modifier.padding(innerPadding).fillMaxSize()) {
@@ -82,7 +113,7 @@ fun ActMainScreen(activity: ActMain) {
                         color = Color(activity.attrColor(MR.attr.colorOnSurface))
                     )
                 } else {
-                    ActMainColumns(activity)
+                    ActMainColumns(activity, composeState)
                 }
             }
         }
@@ -90,17 +121,16 @@ fun ActMainScreen(activity: ActMain) {
 }
 
 @Composable
-fun ActMainColumns(activity: ActMain) {
-    val columnList = activity.appState.columnList
-    val pagerState = rememberPagerState(pageCount = { columnList.size })
-    
-    // Check if tablet mode
-    val isTablet = activity.tabletViews != null
+fun ActMainColumns(
+    activity: ActMain,
+    composeState: ActMainComposeState
+) {
+    val columnList = composeState.columnList
+    val isTablet = composeState.isTablet
 
     if (isTablet) {
-        val lazyListState = rememberLazyListState()
         LazyRow(
-            state = lazyListState,
+            state = composeState.tabletListState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(horizontal = 0.dp)
         ) {
@@ -112,18 +142,18 @@ fun ActMainColumns(activity: ActMain) {
         }
     } else {
         HorizontalPager(
-            state = pagerState,
+            state = composeState.pagerState,
             modifier = Modifier.fillMaxSize()
         ) { page ->
-            TimelineView(activity, columnList[page])
+            if (page < columnList.size) {
+                TimelineView(activity, columnList[page])
+            }
         }
     }
 }
 
 @Composable
 fun TimelineView(activity: ActMain, column: Column) {
-    // This should ideally use the already existing TimelineColumn and TimelineState
-    // For the mechanical translation, we'll try to bridge it.
     val timelineState = remember { TimelineState() }
     val callbacks = remember { buildTimelineCallbacks(activity) }
 
@@ -138,8 +168,12 @@ fun TimelineView(activity: ActMain, column: Column) {
 }
 
 @Composable
-fun ActMainBottomAppBar(activity: ActMain, onMenuClick: () -> Unit) {
-    val columnList = activity.appState.columnList
+fun ActMainBottomAppBar(
+    activity: ActMain,
+    composeState: ActMainComposeState,
+    onMenuClick: () -> Unit
+) {
+    val columnList = composeState.columnList
     
     BottomAppBar(
         modifier = Modifier.height(48.dp),
@@ -147,7 +181,7 @@ fun ActMainBottomAppBar(activity: ActMain, onMenuClick: () -> Unit) {
     ) {
         IconButton(onClick = onMenuClick) {
             Icon(
-                painter = painterResource(R.drawable.ic_hamburger),
+                imageVector = Icons.Outlined.Menu,
                 contentDescription = stringResource(R.string.menu)
             )
         }
@@ -158,20 +192,29 @@ fun ActMainBottomAppBar(activity: ActMain, onMenuClick: () -> Unit) {
         Row(
             modifier = Modifier
                 .weight(1f)
-                .horizontalScroll(rememberScrollState())
+                .horizontalScroll(composeState.stripScrollState)
                 .fillMaxHeight(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             columnList.forEachIndexed { index, column ->
-                ColumnIcon(activity, column, index)
+                ColumnIcon(
+                    activity = activity,
+                    composeState = composeState,
+                    column = column,
+                    index = index
+                )
             }
         }
         
         VerticalDivider(modifier = Modifier.width(1.dp).fillMaxHeight())
         
-        IconButton(onClick = { activity.onClick(activity.views.btnToot) }) {
+        IconButton(onClick = { 
+            // Workaround to trigger existing toot action
+            val v = View(activity).apply { id = R.id.btnToot }
+            activity.onClick(v)
+        }) {
             Icon(
-                painter = painterResource(R.drawable.ic_edit),
+                imageVector = Icons.Outlined.Edit,
                 contentDescription = stringResource(R.string.toot)
             )
         }
@@ -179,7 +222,12 @@ fun ActMainBottomAppBar(activity: ActMain, onMenuClick: () -> Unit) {
 }
 
 @Composable
-fun ColumnIcon(activity: ActMain, column: Column, index: Int) {
+fun ColumnIcon(
+    activity: ActMain,
+    composeState: ActMainComposeState,
+    column: Column,
+    index: Int
+) {
     val iconSize = 32.dp
     val headerColor = Color(column.getHeaderBackgroundColor())
     val nameColor = Color(column.getHeaderNameColor())
@@ -189,7 +237,7 @@ fun ColumnIcon(activity: ActMain, column: Column, index: Int) {
             .width(40.dp)
             .fillMaxHeight()
             .background(headerColor)
-            .clickable { activity.scrollToColumn(index) },
+            .clickable { composeState.scrollToColumn(index) },
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -200,7 +248,6 @@ fun ColumnIcon(activity: ActMain, column: Column, index: Int) {
             modifier = Modifier.size(iconSize)
         )
         
-        // Acct color bar
         val ac = daoAcctColor.load(column.accessInfo)
         if (daoAcctColor.hasColorForeground(ac)) {
             Box(

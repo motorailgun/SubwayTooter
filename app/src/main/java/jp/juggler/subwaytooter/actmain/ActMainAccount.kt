@@ -14,37 +14,23 @@ val ActMain.currentPostTarget: SavedAccount?
             val a = daoSavedAccount.loadAccount(dbId)
             if (a != null && !a.isPseudo) return a
         }
-        phoneTab(
-            { env ->
-                val c = env.pagerAdapter.getColumn(env.pager.currentItem)
-                return when {
-                    c == null || c.accessInfo.isPseudo -> null
-                    else -> c.accessInfo
-                }
-            },
-            { env ->
-                val accounts = ArrayList<SavedAccount>()
-                for (c in env.visibleColumns) {
-                    try {
-                        val a = c.accessInfo
-                        // 画面内に疑似アカウントがあれば常にアカウント選択が必要
-                        if (a.isPseudo) {
-                            accounts.clear()
-                            break
-                        }
-                        // 既出でなければ追加する
-                        if (accounts.none { it == a }) accounts.add(a)
-                    } catch (ignored: Throwable) {
-                    }
-                }
 
-                return when (accounts.size) {
-                    // 候補が1つだけならアカウント選択は不要
-                    1 -> accounts.first()
-                    // 候補が2つ以上ならアカウント選択は必要
-                    else -> null
+        if (!isComposeStateInitialized()) return null
+        
+        if (composeState.isTablet) {
+            val visibleIndices = composeState.tabletListState.layoutInfo.visibleItemsInfo.map { it.index }
+            val accounts = ArrayList<SavedAccount>()
+            for (i in visibleIndices) {
+                appState.column(i)?.accessInfo?.let { a ->
+                    if (a.isPseudo) return null // Force selection if pseudo account is visible
+                    if (accounts.none { it == a }) accounts.add(a)
                 }
-            })
+            }
+            return if (accounts.size == 1) accounts.first() else null
+        } else {
+            val c = appState.column(composeState.pagerState.currentPage)
+            return c?.accessInfo?.takeIf { !it.isPseudo }
+        }
     }
 
 fun ActMain.reloadAccountSetting(

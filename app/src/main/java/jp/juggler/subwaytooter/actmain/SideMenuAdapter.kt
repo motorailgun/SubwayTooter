@@ -20,6 +20,36 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Announcement
+import androidx.compose.material.icons.outlined.Block
+import androidx.compose.material.icons.outlined.Bookmark
+import androidx.compose.material.icons.outlined.CloudOff
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.ContentPaste
+import androidx.compose.material.icons.outlined.DeliveryDining
+import androidx.compose.material.icons.outlined.DirectionsBike
+import androidx.compose.material.icons.outlined.DirectionsRun
+import androidx.compose.material.icons.outlined.Face
+import androidx.compose.material.icons.outlined.AccountBox
+import androidx.compose.material.icons.outlined.FormatListNumbered
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.HotTub
+import androidx.compose.material.icons.outlined.HourglassEmpty
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.List
+import androidx.compose.material.icons.outlined.Mail
+import androidx.compose.material.icons.outlined.PersonAdd
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material.icons.outlined.SatelliteAlt
+import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Share
+import androidx.compose.material.icons.outlined.StarOutline
+import androidx.compose.material.icons.outlined.Tag
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.TrendingUp
+import androidx.compose.material.icons.outlined.VolumeOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,9 +61,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.ViewCompositionStrategy
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -93,8 +123,6 @@ import kotlin.math.abs
 class SideMenuAdapter(
     private val actMain: ActMain,
     @Suppress("unused") val handler: Handler,
-    navigationView: ViewGroup,
-    private val drawer: DrawerLayout,
 ) {
 
     companion object {
@@ -147,7 +175,7 @@ class SideMenuAdapter(
     private class Item(
         // 項目の文字列リソース or 0: divider, 1: バージョン表記, 2: タイムゾーン
         val title: Int = 0,
-        val icon: Int = 0,
+        val icon: ImageVector? = null,
         val action: ActMain.() -> Unit = {},
     ) {
 
@@ -157,7 +185,7 @@ class SideMenuAdapter(
                 title == 1 -> ItemType.IT_VERSION
                 title == 2 -> ItemType.IT_TIMEZONE
                 title == 3 -> ItemType.IT_NOTIFICATION_PERMISSION
-                icon == 0 -> ItemType.IT_GROUP_HEADER
+                icon == null -> ItemType.IT_GROUP_HEADER
                 else -> ItemType.IT_NORMAL
             }
     }
@@ -169,97 +197,97 @@ class SideMenuAdapter(
     */
     private val originalList = listOf(
 
-        Item(icon = R.drawable.ic_info_outline, title = 1),
-        Item(icon = R.drawable.ic_info_outline, title = 2),
-        Item(icon = R.drawable.ic_info_outline, title = 3),
+        Item(icon = Icons.Outlined.Info, title = 1),
+        Item(icon = Icons.Outlined.Info, title = 2),
+        Item(icon = Icons.Outlined.Info, title = 3),
 
         Item(),
         Item(title = R.string.account),
 
-        Item(title = R.string.account_add, icon = R.drawable.ic_person_add) {
+        Item(title = R.string.account_add, icon = Icons.Outlined.PersonAdd) {
             accountAdd()
         },
 
-        Item(icon = R.drawable.ic_settings, title = R.string.account_setting) {
+        Item(icon = Icons.Outlined.Settings, title = R.string.account_setting) {
             accountOpenSetting()
         },
 
-        Item(icon = R.drawable.outline_delivery_dining_24, title = R.string.push_message_history) {
+        Item(icon = Icons.Outlined.DeliveryDining, title = R.string.push_message_history) {
             startActivity(Intent(this, ActPushMessageList::class.java))
         },
 
         Item(),
         Item(title = R.string.column),
 
-        Item(icon = R.drawable.ic_list_numbered, title = R.string.column_list) {
+        Item(icon = Icons.Outlined.FormatListNumbered, title = R.string.column_list) {
             openColumnList()
         },
 
-        Item(icon = R.drawable.ic_close, title = R.string.close_all_columns) {
+        Item(icon = Icons.Outlined.Close, title = R.string.close_all_columns) {
             closeColumnAll()
         },
 
-        Item(icon = R.drawable.ic_paste, title = R.string.open_column_from_url) {
+        Item(icon = Icons.Outlined.ContentPaste, title = R.string.open_column_from_url) {
             openColumnFromUrl()
         },
 
-        Item(icon = R.drawable.ic_home, title = R.string.home) {
+        Item(icon = Icons.Outlined.Home, title = R.string.home) {
             timeline(defaultInsertPosition, ColumnType.HOME)
         },
 
-        Item(icon = R.drawable.ic_announcement, title = R.string.notifications) {
+        Item(icon = Icons.Outlined.Announcement, title = R.string.notifications) {
             timeline(defaultInsertPosition, ColumnType.NOTIFICATIONS)
         },
 
-        Item(icon = R.drawable.ic_mail, title = R.string.direct_messages) {
+        Item(icon = Icons.Outlined.Mail, title = R.string.direct_messages) {
             timeline(defaultInsertPosition, ColumnType.DIRECT_MESSAGES)
         },
 
-        Item(icon = R.drawable.ic_share, title = R.string.misskey_hybrid_timeline_long) {
+        Item(icon = Icons.Outlined.Share, title = R.string.misskey_hybrid_timeline_long) {
             timeline(defaultInsertPosition, ColumnType.MISSKEY_HYBRID)
         },
 
-        Item(icon = R.drawable.ic_run, title = R.string.local_timeline) {
+        Item(icon = Icons.Outlined.DirectionsRun, title = R.string.local_timeline) {
             timeline(defaultInsertPosition, ColumnType.LOCAL)
         },
 
-        Item(icon = R.drawable.ic_bike, title = R.string.federate_timeline) {
+        Item(icon = Icons.Outlined.DirectionsBike, title = R.string.federate_timeline) {
             timeline(defaultInsertPosition, ColumnType.FEDERATE)
         },
 
-        Item(icon = R.drawable.ic_list_list, title = R.string.lists) {
+        Item(icon = Icons.Outlined.List, title = R.string.lists) {
             timeline(defaultInsertPosition, ColumnType.LIST_LIST)
         },
 
-        Item(icon = R.drawable.ic_satellite, title = R.string.antenna_list_misskey) {
+        Item(icon = Icons.Outlined.SatelliteAlt, title = R.string.antenna_list_misskey) {
             timeline(defaultInsertPosition, ColumnType.MISSKEY_ANTENNA_LIST)
         },
 
-        Item(icon = R.drawable.ic_hashtag, title = R.string.followed_tags) {
+        Item(icon = Icons.Outlined.Tag, title = R.string.followed_tags) {
             timeline(defaultInsertPosition, ColumnType.FOLLOWED_HASHTAGS)
         },
 
-        Item(icon = R.drawable.ic_search, title = R.string.search) {
+        Item(icon = Icons.Outlined.Search, title = R.string.search) {
             timeline(defaultInsertPosition, ColumnType.SEARCH, args = anyArrayOf("", false))
         },
 
-        Item(icon = R.drawable.ic_trend, title = R.string.trend_tag) {
+        Item(icon = Icons.Outlined.TrendingUp, title = R.string.trend_tag) {
             timeline(defaultInsertPosition, ColumnType.TREND_TAG)
         },
-        Item(icon = R.drawable.ic_trend, title = R.string.trend_link) {
+        Item(icon = Icons.Outlined.TrendingUp, title = R.string.trend_link) {
             timeline(defaultInsertPosition, ColumnType.TREND_LINK)
         },
-        Item(icon = R.drawable.ic_trend, title = R.string.trend_post) {
+        Item(icon = Icons.Outlined.TrendingUp, title = R.string.trend_post) {
             timeline(defaultInsertPosition, ColumnType.TREND_POST)
         },
-        Item(icon = R.drawable.ic_star_outline, title = R.string.favourites) {
+        Item(icon = Icons.Outlined.StarOutline, title = R.string.favourites) {
             timeline(defaultInsertPosition, ColumnType.FAVOURITES)
         },
 
-        Item(icon = R.drawable.ic_bookmark, title = R.string.bookmarks) {
+        Item(icon = Icons.Outlined.Bookmark, title = R.string.bookmarks) {
             timeline(defaultInsertPosition, ColumnType.BOOKMARKS)
         },
-        Item(icon = R.drawable.ic_face, title = R.string.reactioned_posts) {
+        Item(icon = Icons.Outlined.Face, title = R.string.reactioned_posts) {
             launchAndShowError {
                 accountListCanSeeMyReactions()?.let { list ->
                     if (list.isEmpty()) {
@@ -279,61 +307,61 @@ class SideMenuAdapter(
             }
         },
 
-        Item(icon = R.drawable.ic_account_box, title = R.string.profile) {
+        Item(icon = Icons.Outlined.AccountBox, title = R.string.profile) {
             timeline(defaultInsertPosition, ColumnType.PROFILE)
         },
 
-        Item(icon = R.drawable.ic_follow_wait, title = R.string.follow_requests) {
+        Item(icon = Icons.Outlined.HourglassEmpty, title = R.string.follow_requests) {
             timeline(defaultInsertPosition, ColumnType.FOLLOW_REQUESTS)
         },
 
-        Item(icon = R.drawable.ic_person_add, title = R.string.follow_suggestion) {
+        Item(icon = Icons.Outlined.PersonAdd, title = R.string.follow_suggestion) {
             timeline(defaultInsertPosition, ColumnType.FOLLOW_SUGGESTION)
         },
 
-        Item(icon = R.drawable.ic_person_add, title = R.string.endorse_set) {
+        Item(icon = Icons.Outlined.PersonAdd, title = R.string.endorse_set) {
             timeline(defaultInsertPosition, ColumnType.ENDORSEMENT)
         },
 
-        Item(icon = R.drawable.ic_person_add, title = R.string.profile_directory) {
+        Item(icon = Icons.Outlined.PersonAdd, title = R.string.profile_directory) {
             serverProfileDirectoryFromSideMenu()
         },
 
-        Item(icon = R.drawable.ic_volume_off, title = R.string.muted_users) {
+        Item(icon = Icons.Outlined.VolumeOff, title = R.string.muted_users) {
             timeline(defaultInsertPosition, ColumnType.MUTES)
         },
 
-        Item(icon = R.drawable.ic_block, title = R.string.blocked_users) {
+        Item(icon = Icons.Outlined.Block, title = R.string.blocked_users) {
             timeline(defaultInsertPosition, ColumnType.BLOCKS)
         },
 
-        Item(icon = R.drawable.ic_volume_off, title = R.string.keyword_filters) {
+        Item(icon = Icons.Outlined.VolumeOff, title = R.string.keyword_filters) {
             timeline(defaultInsertPosition, ColumnType.KEYWORD_FILTER)
         },
 
-        Item(icon = R.drawable.ic_cloud_off, title = R.string.blocked_domains) {
+        Item(icon = Icons.Outlined.CloudOff, title = R.string.blocked_domains) {
             timeline(defaultInsertPosition, ColumnType.DOMAIN_BLOCKS)
         },
 
-        Item(icon = R.drawable.ic_timer, title = R.string.scheduled_status_list) {
+        Item(icon = Icons.Outlined.Timer, title = R.string.scheduled_status_list) {
             timeline(defaultInsertPosition, ColumnType.SCHEDULED_STATUS)
         },
 
-        Item(icon = R.drawable.ic_repeat, title = R.string.agg_boosts) {
+        Item(icon = Icons.Outlined.Repeat, title = R.string.agg_boosts) {
             timeline(defaultInsertPosition, ColumnType.AGG_BOOSTS)
         },
 
         Item(),
         Item(title = R.string.toot_search),
 
-//        Item(icon = R.drawable.ic_search, title = R.string.mastodon_search_portal) {
+//        Item(icon = Icons.Outlined.Search, title = R.string.mastodon_search_portal) {
 //            addColumn(defaultInsertPosition, SavedAccount.na, ColumnType.SEARCH_MSP, "")
 //        },
-//        Item(icon = R.drawable.ic_search, title = R.string.tootsearch) {
+//        Item(icon = Icons.Outlined.Search, title = R.string.tootsearch) {
 //            addColumn(defaultInsertPosition, SavedAccount.na, ColumnType.SEARCH_TS, "")
 //        },
 
-        Item(icon = R.drawable.ic_search, title = R.string.notestock) {
+        Item(icon = Icons.Outlined.Search, title = R.string.notestock) {
             addColumn(
                 defaultInsertPosition,
                 SavedAccount.na,
@@ -345,45 +373,45 @@ class SideMenuAdapter(
         Item(),
         Item(title = R.string.setting),
 
-        Item(icon = R.drawable.ic_settings, title = R.string.app_setting) {
+        Item(icon = Icons.Outlined.Settings, title = R.string.app_setting) {
             arAppSetting.launchAppSetting()
         },
 
-        Item(icon = R.drawable.ic_settings, title = R.string.highlight_word) {
+        Item(icon = Icons.Outlined.Settings, title = R.string.highlight_word) {
             startActivity(Intent(this, ActHighlightWordList::class.java))
         },
 
-        Item(icon = R.drawable.ic_volume_off, title = R.string.muted_app) {
+        Item(icon = Icons.Outlined.VolumeOff, title = R.string.muted_app) {
             startActivity(Intent(this, ActMutedApp::class.java))
         },
 
-        Item(icon = R.drawable.ic_volume_off, title = R.string.muted_word) {
+        Item(icon = Icons.Outlined.VolumeOff, title = R.string.muted_word) {
             startActivity(Intent(this, ActMutedWord::class.java))
         },
 
-        Item(icon = R.drawable.ic_volume_off, title = R.string.fav_muted_user) {
+        Item(icon = Icons.Outlined.VolumeOff, title = R.string.fav_muted_user) {
             startActivity(Intent(this, ActFavMute::class.java))
         },
 
         Item(
-            icon = R.drawable.ic_volume_off,
+            icon = Icons.Outlined.VolumeOff,
             title = R.string.muted_users_from_pseudo_account
         ) {
             startActivity(Intent(this, ActMutedPseudoAccount::class.java))
         },
 
-        Item(icon = R.drawable.ic_info_outline, title = R.string.app_about) {
+        Item(icon = Icons.Outlined.Info, title = R.string.app_about) {
 
             arAbout.launch(
                 Intent(this, ActAbout::class.java)
             )
         },
 
-        Item(icon = R.drawable.ic_info_outline, title = R.string.oss_license) {
+        Item(icon = Icons.Outlined.Info, title = R.string.oss_license) {
             startActivity(Intent(this, ActOSSLicense::class.java))
         },
 
-        Item(icon = R.drawable.ic_hot_tub, title = R.string.app_exit) {
+        Item(icon = Icons.Outlined.HotTub, title = R.string.app_exit) {
             finish()
         }
     )
@@ -464,7 +492,7 @@ class SideMenuAdapter(
     }
 
     @Composable
-    private fun SideMenuContent() {
+    fun SideMenuContent(closeDrawer: () -> Unit) {
         LazyColumn(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -472,10 +500,10 @@ class SideMenuAdapter(
                 when (item.itemType) {
                     ItemType.IT_DIVIDER -> DividerItem()
                     ItemType.IT_GROUP_HEADER -> GroupHeaderItem(item)
-                    ItemType.IT_NORMAL -> NormalItem(item)
+                    ItemType.IT_NORMAL -> NormalItem(item, closeDrawer)
                     ItemType.IT_VERSION -> VersionItem()
                     ItemType.IT_TIMEZONE -> TimezoneItem()
-                    ItemType.IT_NOTIFICATION_PERMISSION -> NotificationPermissionItem(item)
+                    ItemType.IT_NOTIFICATION_PERMISSION -> NotificationPermissionItem(item, closeDrawer)
                 }
             }
         }
@@ -505,21 +533,21 @@ class SideMenuAdapter(
     }
 
     @Composable
-    private fun NormalItem(item: Item) {
+    private fun NormalItem(item: Item, closeDrawer: () -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(6.dp))
                 .clickable {
                     item.action(actMain)
-                    drawer.closeDrawer(GravityCompat.START)
+                    closeDrawer()
                 }
                 .padding(horizontal = 12.dp, vertical = 6.dp)
                 .heightIn(min = 44.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                painter = painterResource(item.icon),
+                imageVector = item.icon!!,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(24.dp),
@@ -633,14 +661,14 @@ class SideMenuAdapter(
     }
 
     @Composable
-    private fun NotificationPermissionItem(item: Item) {
+    private fun NotificationPermissionItem(item: Item, closeDrawer: () -> Unit) {
         val action = notificationActionRecommend() ?: return
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(6.dp))
                 .clickable {
-                    drawer.closeDrawer(GravityCompat.START)
+                    closeDrawer()
                     notificationActionRecommend()?.second?.invoke()
                     filterListItems()
                 }
@@ -649,7 +677,7 @@ class SideMenuAdapter(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
-                painter = painterResource(item.icon),
+                imageVector = item.icon!!,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(24.dp),
@@ -665,21 +693,5 @@ class SideMenuAdapter(
     init {
         actMain.applicationContext.checkVersion()
         filterListItems()
-
-        ComposeView(actMain).apply {
-            setViewTreeLifecycleOwner(actMain)
-            setViewTreeSavedStateRegistryOwner(actMain)
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT,
-            )
-            setContent {
-                StThemedContent {
-                    SideMenuContent()
-                }
-            }
-            navigationView.addView(this)
-        }
     }
 }

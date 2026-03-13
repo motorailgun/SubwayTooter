@@ -4,7 +4,6 @@ import android.app.AlertDialog
 import android.text.Spannable
 import android.view.View
 import android.widget.TextView
-import androidx.core.view.GravityCompat
 import androidx.work.WorkManager
 import jp.juggler.subwaytooter.ActMain
 import jp.juggler.subwaytooter.R
@@ -40,9 +39,11 @@ fun ActMain.onBackPressedImpl() {
     launchAndShowError {
 
         // メニューが開いていたら閉じる
-        if (views.drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            views.drawerLayout.closeDrawer(GravityCompat.START)
-            return@launchAndShowError
+        if (isComposeStateInitialized()) {
+            if (composeState.drawerState.isOpen) {
+                composeState.closeDrawer()
+                return@launchAndShowError
+            }
         }
 
         // カラムが0個ならアプリを終了する
@@ -57,16 +58,30 @@ fun ActMain.onBackPressedImpl() {
         }
 
         fun getClosableColumnList(): List<Column> {
+            if (!isComposeStateInitialized()) {
+                return emptyList()
+            }
+            
             val visibleColumnList = ArrayList<Column>()
-            phoneTab({ env ->
+            
+            if (composeState.isTablet) {
+                // Tablet mode: use tabletListState.layoutInfo
                 try {
-                    appState.column(env.pager.currentItem)?.addTo(visibleColumnList)
+                    val layoutInfo = composeState.tabletListState.layoutInfo
+                    for (itemInfo in layoutInfo.visibleItemsInfo) {
+                        appState.column(itemInfo.index)?.addTo(visibleColumnList)
+                    }
                 } catch (ex: Throwable) {
-                    log.e(ex, "getClosableColumnList failed.")
+                    log.e(ex, "getClosableColumnList failed for tablet.")
                 }
-            }, { env ->
-                visibleColumnList.addAll(env.visibleColumns)
-            })
+            } else {
+                // Phone mode: use pagerState.currentPage
+                try {
+                    appState.column(composeState.pagerState.currentPage)?.addTo(visibleColumnList)
+                } catch (ex: Throwable) {
+                    log.e(ex, "getClosableColumnList failed for phone.")
+                }
+            }
 
             return visibleColumnList.filter { !it.dontClose }
         }
@@ -112,8 +127,12 @@ fun ActMain.onBackPressedImpl() {
 fun ActMain.onClickImpl(v: View) {
     when (v.id) {
         R.id.btnToot -> openPost()
-        R.id.btnMenu -> if (!views.drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            views.drawerLayout.openDrawer(GravityCompat.START)
+        R.id.btnMenu -> {
+            if (isComposeStateInitialized()) {
+                if (!composeState.drawerState.isOpen) {
+                    composeState.openDrawer()
+                }
+            }
         }
     }
 }
