@@ -91,6 +91,7 @@ import jp.juggler.subwaytooter.util.requester
 import jp.juggler.util.backPressed
 import androidx.activity.compose.setContent
 import jp.juggler.subwaytooter.actmain.afterNotificationGranted
+import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchIO
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.anyArrayOf
@@ -109,6 +110,7 @@ import jp.juggler.util.ui.setContentViewAndInsets
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.lang.ref.WeakReference
 import java.util.LinkedList
 import com.google.android.material.R as MR
@@ -491,7 +493,8 @@ class ActMain : ComponentActivity(),
                             daoSavedAccount.loadAccountList()
                         }
 
-                        benchmark("removeColumnByAccount") {
+                        withContext(AppDispatchers.MainImmediate) {
+                            benchmark("removeColumnByAccount") {
                             val setDbId = newAccounts.map { it.db_id }.toSet()
                             // アカウント設定から戻ってきたら、カラムを消す必要があるかもしれない
                             appState.columnList
@@ -544,6 +547,7 @@ class ActMain : ComponentActivity(),
                         benchmark("enableSpeech") {
                             // スピーチの開始
                             appState.enableSpeech()
+                        }
                         }
                     }
                 } catch (ex: Throwable) {
