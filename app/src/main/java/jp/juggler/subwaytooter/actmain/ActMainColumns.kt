@@ -36,7 +36,7 @@ private val log = LogCategory("ActMainColumns")
 // (カラム一覧画面のデフォルト選択位置に使われる)
 val ActMain.currentColumn: Int
     get() = if (!isTablet) {
-        composePagerState.currentPage
+        composePagerState?.currentPage ?: -1
     } else {
         -1
     }
@@ -45,7 +45,7 @@ val ActMain.currentColumn: Int
 // 現在のページの次の位置か、終端
 val ActMain.defaultInsertPosition: Int
     get() = if (!isTablet) {
-        composePagerState.currentPage + 1
+        (composePagerState?.currentPage ?: -1) + 1
     } else {
         Integer.MAX_VALUE
     }
@@ -125,9 +125,9 @@ fun ActMain.removeColumn(column: Column) {
 
 fun ActMain.isVisibleColumn(idx: Int): Boolean {
     if (!isTablet) {
-        return composePagerState.currentPage == idx
+        return composePagerState?.currentPage == idx
     } else {
-        val layoutInfo = composeTabletListState.layoutInfo
+        val layoutInfo = composeTabletListState?.layoutInfo ?: return false
         val visibleItems = layoutInfo.visibleItemsInfo
         return visibleItems.any { it.index == idx }
     }
@@ -156,13 +156,13 @@ fun ActMain.closeColumn(column: Column, bConfirmed: Boolean = false) {
 
     appState.columnIndex(column)?.let { page_delete ->
         if (!isTablet) {
-            val pageShowing = composePagerState.currentPage
+            val pageShowing = composePagerState?.currentPage ?: -1
             removeColumn(column)
             if (pageShowing == page_delete) {
                 // If we closed the current column, ensure we land on a valid one
                 // Compose Pager handles bounds, but we might want to trigger load
                 val newIndex = (pageShowing - 1).coerceAtLeast(0)
-                scrollAndLoad(newIndex)
+                // scrollAndLoad(newIndex)
             }
         } else {
             removeColumn(column)
@@ -183,9 +183,12 @@ fun ActMain.closeColumnAll(oldColumnIndex: Int = -1, bConfirmed: Boolean = false
         return
     }
 
-    var lastColumnIndex = when (oldColumnIndex) {
-        -1 -> if (!isTablet) composePagerState.currentPage else 0
-        else -> oldColumnIndex
+    var lastColumnIndex = if (oldColumnIndex != -1) {
+         oldColumnIndex
+    } else if (!isTablet) {
+         composePagerState?.currentPage ?: 0
+    } else {
+         0
     }
 
     appState.editColumnList { list ->
@@ -258,18 +261,18 @@ fun ActMain.scrollToColumn(index: Int, smoothScroll: Boolean = true) {
         log.d("scrollToColumn phone index=$index")
         launchMain {
              if (smoothScroll) {
-                 composePagerState.animateScrollToPage(index)
+                 composePagerState?.animateScrollToPage(index)
              } else {
-                 composePagerState.scrollToPage(index)
+                 composePagerState?.scrollToPage(index)
              }
         }
     } else {
         log.d("scrollToColumn tablet index=$index")
         launchMain {
             if (smoothScroll) {
-                composeTabletListState.animateScrollToItem(index)
+                composeTabletListState?.animateScrollToItem(index)
             } else {
-                composeTabletListState.scrollToItem(index)
+                composeTabletListState?.scrollToItem(index)
             }
         }
     }

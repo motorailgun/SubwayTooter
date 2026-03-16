@@ -185,60 +185,60 @@ private val originalList = listOf(
     },
 
     Item(icon = R.drawable.ic_home, title = R.string.home) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.HOME)
+        timeline(defaultInsertPosition, ColumnType.HOME)
     },
 
     Item(icon = R.drawable.ic_announcement, title = R.string.notifications) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.NOTIFICATIONS)
+        timeline(defaultInsertPosition, ColumnType.NOTIFICATIONS)
     },
 
     Item(icon = R.drawable.ic_mail, title = R.string.direct_messages) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.DIRECT_MESSAGES)
+        timeline(defaultInsertPosition, ColumnType.DIRECT_MESSAGES)
     },
 
     Item(icon = R.drawable.ic_share, title = R.string.misskey_hybrid_timeline_long) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.MISSKEY_HYBRID)
+        timeline(defaultInsertPosition, ColumnType.MISSKEY_HYBRID)
     },
 
     Item(icon = R.drawable.ic_run, title = R.string.local_timeline) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.LOCAL)
+        timeline(defaultInsertPosition, ColumnType.LOCAL)
     },
 
     Item(icon = R.drawable.ic_bike, title = R.string.federate_timeline) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.FEDERATE)
+        timeline(defaultInsertPosition, ColumnType.FEDERATE)
     },
 
     Item(icon = R.drawable.ic_list_list, title = R.string.lists) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.LIST_LIST)
+        timeline(defaultInsertPosition, ColumnType.LIST_LIST)
     },
 
     Item(icon = R.drawable.ic_satellite, title = R.string.antenna_list_misskey) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.MISSKEY_ANTENNA_LIST)
+        timeline(defaultInsertPosition, ColumnType.MISSKEY_ANTENNA_LIST)
     },
 
     Item(icon = R.drawable.ic_hashtag, title = R.string.followed_tags) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.FOLLOWED_HASHTAGS)
+        timeline(defaultInsertPosition, ColumnType.FOLLOWED_HASHTAGS)
     },
 
     Item(icon = R.drawable.ic_search, title = R.string.search) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.SEARCH, args = anyArrayOf("", false))
+        timeline(defaultInsertPosition, ColumnType.SEARCH, args = anyArrayOf("", false))
     },
 
     Item(icon = R.drawable.ic_trend, title = R.string.trend_tag) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.TREND_TAG)
+        timeline(defaultInsertPosition, ColumnType.TREND_TAG)
     },
     Item(icon = R.drawable.ic_trend, title = R.string.trend_link) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.TREND_LINK)
+        timeline(defaultInsertPosition, ColumnType.TREND_LINK)
     },
     Item(icon = R.drawable.ic_trend, title = R.string.trend_post) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.TREND_POST)
+        timeline(defaultInsertPosition, ColumnType.TREND_POST)
     },
     Item(icon = R.drawable.ic_star_outline, title = R.string.favourites) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.FAVOURITES)
+        timeline(defaultInsertPosition, ColumnType.FAVOURITES)
     },
 
     Item(icon = R.drawable.ic_bookmark, title = R.string.bookmarks) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.BOOKMARKS)
+        timeline(defaultInsertPosition, ColumnType.BOOKMARKS)
     },
     Item(icon = R.drawable.ic_face, title = R.string.reactioned_posts) {
         launchAndShowError {
@@ -254,26 +254,26 @@ private val originalList = listOf(
                             R.string.account_picker_add_timeline_of,
                             columnType.name1(applicationContext)
                         )
-                    )?.let { addColumn(ActMain.defaultInsertPosition, it, columnType) }
+                    )?.let { addColumn(defaultInsertPosition, it, columnType) }
                 }
             }
         }
     },
 
     Item(icon = R.drawable.ic_account_box, title = R.string.profile) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.PROFILE)
+        timeline(defaultInsertPosition, ColumnType.PROFILE)
     },
 
     Item(icon = R.drawable.ic_follow_wait, title = R.string.follow_requests) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.FOLLOW_REQUESTS)
+        timeline(defaultInsertPosition, ColumnType.FOLLOW_REQUESTS)
     },
 
     Item(icon = R.drawable.ic_person_add, title = R.string.follow_suggestion) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.FOLLOW_SUGGESTION)
+        timeline(defaultInsertPosition, ColumnType.FOLLOW_SUGGESTION)
     },
 
     Item(icon = R.drawable.ic_person_add, title = R.string.endorse_set) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.ENDORSEMENT)
+        timeline(defaultInsertPosition, ColumnType.ENDORSEMENT)
     },
 
     Item(icon = R.drawable.ic_person_add, title = R.string.profile_directory) {
@@ -281,27 +281,27 @@ private val originalList = listOf(
     },
 
     Item(icon = R.drawable.ic_volume_off, title = R.string.muted_users) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.MUTES)
+        timeline(defaultInsertPosition, ColumnType.MUTES)
     },
 
     Item(icon = R.drawable.ic_block, title = R.string.blocked_users) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.BLOCKS)
+        timeline(defaultInsertPosition, ColumnType.BLOCKS)
     },
 
     Item(icon = R.drawable.ic_volume_off, title = R.string.keyword_filters) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.KEYWORD_FILTER)
+        timeline(defaultInsertPosition, ColumnType.KEYWORD_FILTER)
     },
 
     Item(icon = R.drawable.ic_cloud_off, title = R.string.blocked_domains) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.DOMAIN_BLOCKS)
+        timeline(defaultInsertPosition, ColumnType.DOMAIN_BLOCKS)
     },
 
     Item(icon = R.drawable.ic_timer, title = R.string.scheduled_status_list) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.SCHEDULED_STATUS)
+        timeline(defaultInsertPosition, ColumnType.SCHEDULED_STATUS)
     },
 
     Item(icon = R.drawable.ic_repeat, title = R.string.agg_boosts) {
-        timeline(ActMain.defaultInsertPosition, ColumnType.AGG_BOOSTS)
+        timeline(defaultInsertPosition, ColumnType.AGG_BOOSTS)
     },
 
     Item(),
@@ -309,7 +309,7 @@ private val originalList = listOf(
 
     Item(icon = R.drawable.ic_search, title = R.string.notestock) {
         addColumn(
-            ActMain.defaultInsertPosition,
+            defaultInsertPosition,
             SavedAccount.na,
             ColumnType.SEARCH_NOTESTOCK,
             params = arrayOf("")

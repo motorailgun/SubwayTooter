@@ -26,6 +26,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.ActPost
+import jp.juggler.subwaytooter.AttachmentSlotUi
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.compose.NetworkImage
 
@@ -70,7 +71,7 @@ fun ActPostScreen(
             // Reply / Quote Info
             if (activity.showReplySection) {
                  Text(
-                     text = stringResource(R.string.reply_to_x, activity.replyToText),
+                     text = stringResource(R.string.reply_to) + ": " + activity.replyToText,
                      style = MaterialTheme.typography.bodySmall,
                      color = MaterialTheme.colorScheme.onSurfaceVariant
                  )
@@ -139,7 +140,7 @@ fun AccountSelector(activity: ActPost) {
             val avatarUrl = activity.accountAvatarStaticUrl
             if (avatarUrl != null) {
                 NetworkImage(
-                    url = avatarUrl,
+                    staticUrl = avatarUrl,
                     contentDescription = "Avatar",
                     modifier = Modifier
                         .size(32.dp)
@@ -207,19 +208,13 @@ fun AttachmentSlot(
     ) {
         if (slot.previewUrl != null) {
             NetworkImage(
-                url = slot.previewUrl,
+                staticUrl = slot.previewUrl,
                 contentDescription = "Attachment",
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop
+                scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
             )
         } else {
              // Fallback icon
-             // Note: In a real app we'd load the resource ID, but Compose resources 
-             // handling for generic IDs can be tricky without a wrapper.
-             // Assuming slot.fallbackIconRes is valid
-             // Using a placeholder Icon for now as we might not have easy access to arbitrary drawable resources in Compose 
-             // without Context or similar if not using painterResource(id)
-             // We can use painterResource with the ID.
              Icon(
                  painter = androidx.compose.ui.res.painterResource(id = slot.fallbackIconRes),
                  contentDescription = null,
@@ -232,13 +227,13 @@ fun AttachmentSlot(
 @Composable
 fun PollSection(activity: ActPost) {
     Column {
-        Text(stringResource(R.string.vote), style = MaterialTheme.typography.titleSmall)
+        Text(stringResource(R.string.vote_button), style = MaterialTheme.typography.titleSmall)
         Spacer(modifier = Modifier.height(8.dp))
         
         activity.etChoices.forEachIndexed { index, state ->
             PostTextField(
                 state = state,
-                label = stringResource(R.string.choice_n, index + 1),
+                label = "Choice ${index + 1}",
                 onFocusChanged = { if (it.isFocused) activity.focusedEditField = 2 + index },
                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
             )
@@ -247,12 +242,12 @@ fun PollSection(activity: ActPost) {
         Spacer(modifier = Modifier.height(8.dp))
         // Expiration
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.expire_after))
+            Text(stringResource(R.string.filter_expires_at))
             Spacer(modifier = Modifier.width(8.dp))
             OutlinedTextField(
                 value = activity.etExpireDays.fieldValue,
                 onValueChange = { activity.etExpireDays.fieldValue = it },
-                label = { Text(stringResource(R.string.days)) },
+                label = { Text(stringResource(R.string.poll_expire_days)) },
                 modifier = Modifier.width(80.dp),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
@@ -260,7 +255,7 @@ fun PollSection(activity: ActPost) {
             OutlinedTextField(
                  value = activity.etExpireHours.fieldValue,
                  onValueChange = { activity.etExpireHours.fieldValue = it },
-                 label = { Text(stringResource(R.string.hours)) },
+                 label = { Text(stringResource(R.string.poll_expire_hours)) },
                  modifier = Modifier.width(80.dp),
                  keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
@@ -268,7 +263,7 @@ fun PollSection(activity: ActPost) {
             OutlinedTextField(
                  value = activity.etExpireMinutes.fieldValue,
                  onValueChange = { activity.etExpireMinutes.fieldValue = it },
-                 label = { Text(stringResource(R.string.minutes)) },
+                 label = { Text(stringResource(R.string.poll_expire_minutes)) },
                  modifier = Modifier.width(80.dp),
                  keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )

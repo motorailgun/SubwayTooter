@@ -51,15 +51,19 @@ fun ActMain.onBackPressedImpl() {
 
         fun getClosableColumnList(): List<Column> {
             val visibleColumnList = ArrayList<Column>()
-            phoneTab({ env ->
-                try {
-                    appState.column(env.pager.currentItem)?.addTo(visibleColumnList)
-                } catch (ex: Throwable) {
-                    log.e(ex, "getClosableColumnList failed.")
+            val statePhone = composePagerState
+            val stateTablet = composeTabletListState
+
+            if (nScreenColumn > 1 && stateTablet != null) {
+                // Tablet mode
+                val visibleIndices = stateTablet.layoutInfo.visibleItemsInfo.map { it.index }
+                visibleIndices.forEach { idx ->
+                     appState.columnList.getOrNull(idx)?.addTo(visibleColumnList)
                 }
-            }, { env ->
-                visibleColumnList.addAll(env.visibleColumns)
-            })
+            } else if (statePhone != null) {
+                // Phone mode
+                appState.columnList.getOrNull(statePhone.currentPage)?.addTo(visibleColumnList)
+            }
 
             return visibleColumnList.filter { !it.dontClose }
         }
@@ -187,7 +191,7 @@ fun ActMain.launchDialogs() {
 }
 
 suspend fun ActMain.afterNotificationGranted() {
-    sideMenuAdapter.filterListItems()
+    // sideMenuAdapter.filterListItems() removed
 
     // Workの掃除
     WorkManager.getInstance(applicationContext).pruneWork()
