@@ -84,9 +84,9 @@ private suspend fun checkExist(url: String?): Boolean {
 }
 
 fun ActPost.saveDraft() {
-    val content = views.etContent.text.toString()
+    val content = etContent.text.toString()
     val contentWarning =
-        if (contentWarningChecked) views.etContentWarning.text.toString() else ""
+        if (contentWarningChecked) etContentWarning.text.toString() else ""
 
     val isEnquete = pollTypeIndex > 0
 
@@ -128,9 +128,9 @@ fun ActPost.saveDraft() {
         json[DRAFT_POLL_TYPE] = pollTypeIndex.toPollTypeString()
         json[DRAFT_POLL_MULTIPLE] = pollMultipleChoiceChecked
         json[DRAFT_POLL_HIDE_TOTALS] = pollHideTotalsChecked
-        json[DRAFT_POLL_EXPIRE_DAY] = views.etExpireDays.text.toString()
-        json[DRAFT_POLL_EXPIRE_HOUR] = views.etExpireHours.text.toString()
-        json[DRAFT_POLL_EXPIRE_MINUTE] = views.etExpireMinutes.text.toString()
+        json[DRAFT_POLL_EXPIRE_DAY] = etExpireDays.text.toString()
+        json[DRAFT_POLL_EXPIRE_HOUR] = etExpireHours.text.toString()
+        json[DRAFT_POLL_EXPIRE_MINUTE] = etExpireMinutes.text.toString()
         json[DRAFT_ENQUETE_ITEMS] = strChoice.toJsonArray()
 
         states.visibility?.id?.toString()?.let { json.put(DRAFT_VISIBILITY, it) }
@@ -255,10 +255,10 @@ fun ActPost.restoreDraft(draft: JsonObject) {
             val evEmoji = DecodeOptions(this@restoreDraft, decodeEmoji = true)
                 .decodeEmoji(content)
 
-            views.etContent.setText(evEmoji)
-            views.etContent.setSelection(evEmoji.length)
-            views.etContentWarning.setText(contentWarning)
-            views.etContentWarning.setSelection(contentWarning.length)
+            etContent.setText(evEmoji)
+            etContent.setSelection(evEmoji.length)
+            etContentWarning.setText(contentWarning)
+            etContentWarning.setSelection(contentWarning.length)
             this@restoreDraft.contentWarningChecked = contentWarningChecked
             this@restoreDraft.nsfwChecked = nsfwChecked
             if (draftVisibility != null) states.visibility = draftVisibility
@@ -276,9 +276,9 @@ fun ActPost.restoreDraft(draft: JsonObject) {
 
             pollMultipleChoiceChecked = draft.optBoolean(DRAFT_POLL_MULTIPLE)
             pollHideTotalsChecked = draft.optBoolean(DRAFT_POLL_HIDE_TOTALS)
-            views.etExpireDays.setText(draft.optString(DRAFT_POLL_EXPIRE_DAY, "1"))
-            views.etExpireHours.setText(draft.optString(DRAFT_POLL_EXPIRE_HOUR, ""))
-            views.etExpireMinutes.setText(draft.optString(DRAFT_POLL_EXPIRE_MINUTE, ""))
+            etExpireDays.setText(draft.optString(DRAFT_POLL_EXPIRE_DAY, "1"))
+            etExpireHours.setText(draft.optString(DRAFT_POLL_EXPIRE_HOUR, ""))
+            etExpireMinutes.setText(draft.optString(DRAFT_POLL_EXPIRE_MINUTE, ""))
 
             val array = draft.jsonArray(DRAFT_ENQUETE_ITEMS)
             if (array != null) {
@@ -378,12 +378,12 @@ fun ActPost.initializeFromRedraftStatus(account: SavedAccount, jsonText: String)
         } else {
             decodeOptions.decodeHTML(baseStatus.content)
         }
-        views.etContent.setText(text)
-        views.etContent.setSelection(text.length)
+        etContent.setText(text)
+        etContent.setSelection(text.length)
 
         text = decodeOptions.decodeEmoji(baseStatus.spoiler_text)
-        views.etContentWarning.setText(text)
-        views.etContentWarning.setSelection(text.length)
+        etContentWarning.setText(text)
+        etContentWarning.setSelection(text.length)
         contentWarningChecked = text.isNotEmpty()
 
         val srcEnquete = baseStatus.enquete
@@ -401,8 +401,8 @@ fun ActPost.initializeFromRedraftStatus(account: SavedAccount, jsonText: String)
             else -> {
                 pollTypeIndex = 1
                 text = decodeOptions.decodeHTML(srcEnquete.question)
-                    views.etContent.setText(text)
-                    views.etContent.setSelection(text.length)
+                    etContent.setText(text)
+                    etContent.setSelection(text.length)
 
                 var srcIndex = 0
                 for (et in etChoices) {
@@ -473,12 +473,12 @@ fun ActPost.initializeFromEditStatus(account: SavedAccount, jsonText: String) {
         } else {
             decodeOptions.decodeHTML(baseStatus.content)
         }
-        views.etContent.setText(text)
-        views.etContent.setSelection(text.length)
+        etContent.setText(text)
+        etContent.setSelection(text.length)
 
         text = decodeOptions.decodeEmoji(baseStatus.spoiler_text)
-        views.etContentWarning.setText(text)
-        views.etContentWarning.setSelection(text.length)
+        etContentWarning.setText(text)
+        etContentWarning.setSelection(text.length)
         contentWarningChecked = text.isNotEmpty()
 
         val srcEnquete = baseStatus.enquete
@@ -496,8 +496,8 @@ fun ActPost.initializeFromEditStatus(account: SavedAccount, jsonText: String) {
             else -> {
                 pollTypeIndex = 1
                 text = decodeOptions.decodeHTML(srcEnquete.question)
-                    views.etContent.setText(text)
-                views.etContent.setSelection(text.length)
+                    etContent.setText(text)
+                etContent.setSelection(text.length)
 
                 var srcIndex = 0
                 for (et in etChoices) {

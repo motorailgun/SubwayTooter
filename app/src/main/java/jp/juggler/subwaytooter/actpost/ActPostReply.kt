@@ -72,7 +72,7 @@ suspend fun ActPost.initializeFromReplyStatus(account: SavedAccount, jsonText: S
             // CW をリプライ元に合わせる
             if (replyStatus.spoiler_text.isNotEmpty()) {
                 contentWarningChecked = true
-                views.etContentWarning.setText(replyStatus.spoiler_text)
+                etContentWarning.setText(replyStatus.spoiler_text)
             }
 
             // 新しいメンションリスト

@@ -18,7 +18,7 @@ fun ActPost.openEmojiPickerForContent() {
         account,
         closeOnSelected = PrefB.bpEmojiPickerCloseOnSelected.value,
     ) { emoji, bInstanceHasCustomEmoji ->
-        val et = views.etContent
+        val et = etContent
         val src = et.text.toString()
         val srcLen = src.length
         val start = min(srcLen, et.selectionStart)
@@ -57,7 +57,7 @@ fun ActPost.openFeaturedTagList(list: List<TootTag>?) {
                 }
             }
             action(getString(R.string.input_sharp_itself)) {
-                val et = views.etContent
+                val et = etContent
                 val src = et.text.toString()
                 val srcLen = src.length
                 val start = min(srcLen, et.selectionStart)
@@ -76,7 +76,7 @@ fun ActPost.openFeaturedTagList(list: List<TootTag>?) {
 }
 
 private fun ActPost.insertHashTagIntoContent(tagWithoutSharp: String) {
-    val et = views.etContent
+    val et = etContent
     val src = et.text.toString()
     val srcLen = src.length
     val start = min(srcLen, et.selectionStart)

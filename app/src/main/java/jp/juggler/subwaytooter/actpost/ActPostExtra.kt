@@ -39,7 +39,7 @@ fun ActPost.appendContentText(
     ).decodeEmoji(src)
     if (svEmoji.isEmpty()) return
 
-    val currentText = views.etContent.text.toString()
+    val currentText = etContent.text.toString()
     val emojiStr = svEmoji.toString()
     val needsSpace = currentText.isNotEmpty() &&
         !CharacterGroup.isWhitespace(currentText.last().code)
@@ -48,12 +48,12 @@ fun ActPost.appendContentText(
     if (selectBefore) {
         val selStart = currentText.length + prefix.length
         val newText = "$currentText$prefix $emojiStr"
-        views.etContent.setText(newText)
-        views.etContent.setSelection(selStart)
+        etContent.setText(newText)
+        etContent.setSelection(selStart)
     } else {
         val newText = "$currentText$prefix$emojiStr"
-        views.etContent.setText(newText)
-        views.etContent.setSelection(newText.length)
+        etContent.setText(newText)
+        etContent.setSelection(newText.length)
     }
 }
 
@@ -73,9 +73,9 @@ fun ActPost.appendContentText(src: Intent) {
 
 // returns true if has content
 fun ActPost.hasContent(): Boolean {
-    val content = views.etContent.text.toString()
+    val content = etContent.text.toString()
     val contentWarning =
-        if (contentWarningChecked) views.etContentWarning.text.toString() else ""
+        if (contentWarningChecked) etContentWarning.text.toString() else ""
 
     return when {
         content.isNotBlank() -> true
@@ -98,7 +98,7 @@ fun ActPost.resetText() {
     scheduledStatus = null
     attachmentList.clear()
     quoteChecked = false
-    views.etContent.setText("")
+    etContent.setText("")
     pollTypeIndex = 0
     pollMultipleChoiceChecked = false
     pollHideTotalsChecked = false
@@ -250,13 +250,13 @@ fun ActPost.performMore() {
             }
 
             action(getString(R.string.clear_text)) {
-                views.etContent.setText("")
-                views.etContentWarning.setText("")
+                etContent.setText("")
+                etContentWarning.setText("")
             }
 
             action(getString(R.string.clear_text_and_media)) {
-                views.etContent.setText("")
-                views.etContentWarning.setText("")
+                etContent.setText("")
+                etContentWarning.setText("")
                 attachmentList.clear()
                 saveAttachmentList()
                 showMediaAttachment()
@@ -302,10 +302,10 @@ fun ActPost.performPost() {
         val postResult = PostImpl(
             activity = activity,
             account = account,
-            content = views.etContent.text.toString().trim { it <= ' ' },
+            content = etContent.text.toString().trim { it <= ' ' },
             spoilerText = when {
                 !contentWarningChecked -> null
-                else -> views.etContentWarning.text.toString().trim { it <= ' ' }
+                else -> etContentWarning.text.toString().trim { it <= ' ' }
             },
             visibilityArg = states.visibility ?: TootVisibility.Public,
             bNSFW = nsfwChecked,

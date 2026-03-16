@@ -38,13 +38,6 @@ private val log = LogCategory("ActMainActions")
 
 fun ActMain.onBackPressedImpl() {
     launchAndShowError {
-
-        // メニューが開いていたら閉じる
-        if (views.drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            views.drawerLayout.closeDrawer(GravityCompat.START)
-            return@launchAndShowError
-        }
-
         // カラムが0個ならアプリを終了する
         if (appState.columnCount == 0) {
             finish()
@@ -110,12 +103,7 @@ fun ActMain.onBackPressedImpl() {
 }
 
 fun ActMain.onClickImpl(v: View) {
-    when (v.id) {
-        R.id.btnToot -> openPost()
-        R.id.btnMenu -> if (!views.drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            views.drawerLayout.openDrawer(GravityCompat.START)
-        }
-    }
+    // Legacy click handler removed
 }
 
 fun ActMain.onMyClickableSpanClickedImpl(viewClicked: View, span: MyClickableSpan) {

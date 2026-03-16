@@ -22,8 +22,8 @@ fun ActPost.pollChoiceList() = ArrayList<String>().apply {
 }
 
 fun ActPost.pollExpireSeconds(): Int {
-    val d = views.etExpireDays.text.toString().trim().toDoubleOrNull().finiteOrZero()
-    val h = views.etExpireHours.text.toString().trim().toDoubleOrNull().finiteOrZero()
-    val m = views.etExpireMinutes.text.toString().trim().toDoubleOrNull().finiteOrZero()
+    val d = etExpireDays.text.toString().trim().toDoubleOrNull().finiteOrZero()
+    val h = etExpireHours.text.toString().trim().toDoubleOrNull().finiteOrZero()
+    val m = etExpireMinutes.text.toString().trim().toDoubleOrNull().finiteOrZero()
     return (d * 86400.0 + h * 3600.0 + m * 60.0).toInt()
 }
