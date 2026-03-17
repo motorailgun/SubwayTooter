@@ -17,7 +17,6 @@ import jp.juggler.subwaytooter.pref.PrefS
 import jp.juggler.subwaytooter.pref.impl.StringPref
 import jp.juggler.subwaytooter.span.MyClickableSpan
 import jp.juggler.subwaytooter.util.CustomShare
-import jp.juggler.subwaytooter.view.ListDivider
 import jp.juggler.util.data.clip
 import jp.juggler.util.data.notEmpty
 import jp.juggler.util.log.LogCategory
@@ -160,7 +159,6 @@ fun reloadTimeZone() {
 // onStart時に呼ばれる
 // カラーカスタマイズを読み直す
 fun ActMain.reloadColors() {
-    ListDivider.color = 0
     TabletColumnDivider.color = 0
     TootColorConfig.toot_color_unlisted = 0
     TootColorConfig.toot_color_follower = 0
