@@ -3,7 +3,6 @@ package jp.juggler.subwaytooter.columnviewholder
 import android.os.SystemClock
 import android.text.Spannable
 import android.text.SpannableStringBuilder
-import androidx.lifecycle.lifecycleScope
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootAnnouncement
 import jp.juggler.subwaytooter.api.entity.TootReaction
@@ -28,7 +27,6 @@ import jp.juggler.util.data.notEmpty
 import jp.juggler.util.log.showToast
 import jp.juggler.util.network.toDeleteRequestBuilder
 import jp.juggler.util.network.toPutRequestBuilder
-import kotlinx.coroutines.launch
 
 fun ColumnViewHolder.hideAnnouncements() {
     val column = column ?: return

@@ -4,7 +4,6 @@ import android.view.View
 import android.widget.ImageView
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.core.net.toUri
-import androidx.lifecycle.lifecycleScope
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.actmain.closePopup
 import jp.juggler.subwaytooter.column.*
@@ -17,7 +16,6 @@ import jp.juggler.util.log.LogCategory
 import jp.juggler.util.media.createResizedBitmap
 import jp.juggler.util.ui.createRoundDrawable
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private val log = LogCategory("ColumnViewHolderLifeCycle")

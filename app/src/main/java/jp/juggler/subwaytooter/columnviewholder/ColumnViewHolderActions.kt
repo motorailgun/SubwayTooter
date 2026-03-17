@@ -1,6 +1,5 @@
 package jp.juggler.subwaytooter.columnviewholder
 
-import androidx.lifecycle.lifecycleScope
 import jp.juggler.subwaytooter.ActColumnCustomize
 import jp.juggler.subwaytooter.App1
 import jp.juggler.subwaytooter.R
@@ -24,7 +23,6 @@ import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
 import jp.juggler.util.log.withCaption
-import kotlinx.coroutines.launch
 import java.util.regex.Pattern
 
 private val log = LogCategory("ColumnViewHolderActions")
