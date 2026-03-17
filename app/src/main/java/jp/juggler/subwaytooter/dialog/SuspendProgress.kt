@@ -14,7 +14,6 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.dismissSafe
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,37 +35,35 @@ class SuspendProgress(val activity: ComponentActivity) {
 
             val composeView = ComposeView(activity).apply {
                 setContent {
-                    StThemedContent {
-                        val currentTitle by reporter.flowTitle.collectAsState()
-                        val currentMessage by reporter.flowMessage.collectAsState()
+                    val currentTitle by reporter.flowTitle.collectAsState()
+                    val currentMessage by reporter.flowMessage.collectAsState()
 
-                        Surface {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                    Surface {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.padding(end = 16.dp)
+                            )
+                            Column(
+                                modifier = Modifier.weight(1f)
                             ) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.padding(end = 16.dp)
-                                )
-                                Column(
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    if (currentTitle.isNotEmpty()) {
-                                        Text(
-                                            text = currentTitle.toString(),
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 18.sp,
-                                            modifier = Modifier.padding(bottom = 8.dp)
-                                        )
-                                    }
-                                    if (currentMessage.isNotEmpty()) {
-                                        Text(
-                                            text = currentMessage.toString(),
-                                            minLines = 2
-                                        )
-                                    }
+                                if (currentTitle.isNotEmpty()) {
+                                    Text(
+                                        text = currentTitle.toString(),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 18.sp,
+                                        modifier = Modifier.padding(bottom = 8.dp)
+                                    )
+                                }
+                                if (currentMessage.isNotEmpty()) {
+                                    Text(
+                                        text = currentMessage.toString(),
+                                        minLines = 2
+                                    )
                                 }
                             }
                         }

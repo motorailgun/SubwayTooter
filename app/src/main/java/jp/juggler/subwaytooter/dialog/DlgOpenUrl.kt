@@ -35,7 +35,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.R
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
 import jp.juggler.util.systemService
@@ -53,20 +52,18 @@ object DlgOpenUrl {
 
         val composeView = ComposeView(activity).apply {
             setContent {
-                StThemedContent {
-                    Surface {
-                        DlgOpenUrlContent(
-                            activity = activity,
-                            onCancel = { dialog.cancel() },
-                            onOk = { token ->
-                                if (token.isEmpty()) {
-                                    onEmptyError()
-                                } else {
-                                    onOK(dialog, token)
-                                }
+                Surface {
+                    DlgOpenUrlContent(
+                        activity = activity,
+                        onCancel = { dialog.cancel() },
+                        onOk = { token ->
+                            if (token.isEmpty()) {
+                                onEmptyError()
+                            } else {
+                                onOK(dialog, token)
                             }
-                        )
-                    }
+                        }
+                    )
                 }
             }
         }

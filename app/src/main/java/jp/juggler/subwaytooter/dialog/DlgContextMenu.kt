@@ -47,7 +47,6 @@ import jp.juggler.subwaytooter.api.entity.*
 import jp.juggler.subwaytooter.column.Column
 import jp.juggler.subwaytooter.column.ColumnType
 import jp.juggler.subwaytooter.compose.StExtendedColors
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.compose.StThemeEx
 import jp.juggler.subwaytooter.pref.PrefB
 import jp.juggler.subwaytooter.span.MyClickableSpan
@@ -148,9 +147,7 @@ internal class DlgContextMenu(
         }
         val composeView = ComposeView(activity).apply {
             setContent {
-                StThemedContent {
-                    ContextMenuContent()
-                }
+                ContextMenuContent()
             }
         }
         dialog.setContentView(composeView)

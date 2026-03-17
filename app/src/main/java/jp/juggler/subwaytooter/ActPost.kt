@@ -76,7 +76,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import jp.juggler.subwaytooter.compose.NetworkImage
-import jp.juggler.subwaytooter.compose.StThemedContent
 import com.google.android.flexbox.FlexboxLayout
 import jp.juggler.subwaytooter.action.saveWindowSize
 import jp.juggler.subwaytooter.actpost.ActPostStates

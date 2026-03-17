@@ -40,7 +40,6 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import jp.juggler.subwaytooter.compose.StThemedContent
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.math.roundToInt
@@ -98,17 +97,15 @@ suspend fun Activity.dialogColorPicker(
 
     val composeView = ComposeView(activity).apply {
         setContent {
-            StThemedContent {
-                ColorPickerContent(
-                    colorInitial = colorInitial ?: android.graphics.Color.BLACK,
-                    alphaEnabled = alphaEnabled,
-                    onOk = { color ->
-                        dialog.dismiss()
-                        if (cont.isActive) cont.resume(color)
-                    },
-                    onCancel = { dialog.cancel() },
-                )
-            }
+            ColorPickerContent(
+                colorInitial = colorInitial ?: android.graphics.Color.BLACK,
+                alphaEnabled = alphaEnabled,
+                onOk = { color ->
+                    dialog.dismiss()
+                    if (cont.isActive) cont.resume(color)
+                },
+                onCancel = { dialog.cancel() },
+            )
         }
     }
     dialog.setContentView(composeView)

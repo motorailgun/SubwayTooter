@@ -18,7 +18,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import jp.juggler.subwaytooter.R
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.util.ui.dismissSafe
 import java.util.*
 
@@ -45,72 +44,70 @@ class DlgDateTime(val activity: Activity) {
 
         val composeView = ComposeView(activity).apply {
             setContent {
-                StThemedContent {
-                    var year by remember { mutableStateOf(c.get(Calendar.YEAR)) }
-                    var month by remember { mutableStateOf(c.get(Calendar.MONTH)) }
-                    var dayOfMonth by remember { mutableStateOf(c.get(Calendar.DAY_OF_MONTH)) }
-                    var hour by remember { mutableStateOf(c.get(Calendar.HOUR_OF_DAY)) }
-                    var minute by remember { mutableStateOf(c.get(Calendar.MINUTE)) }
+                var year by remember { mutableStateOf(c.get(Calendar.YEAR)) }
+                var month by remember { mutableStateOf(c.get(Calendar.MONTH)) }
+                var dayOfMonth by remember { mutableStateOf(c.get(Calendar.DAY_OF_MONTH)) }
+                var hour by remember { mutableStateOf(c.get(Calendar.HOUR_OF_DAY)) }
+                var minute by remember { mutableStateOf(c.get(Calendar.MINUTE)) }
 
-                    Surface {
+                Surface {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp)
+                    ) {
                         Column(
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(12.dp)
+                                .weight(1f, fill = false)
+                                .verticalScroll(rememberScrollState()),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f, fill = false)
-                                    .verticalScroll(rememberScrollState()),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                AndroidView(
-                                    factory = { context ->
-                                        android.widget.DatePicker(context).apply {
-                                            calendarViewShown = false
-                                            firstDayOfWeek = Calendar.MONDAY
-                                            init(year, month, dayOfMonth) { _, y, m, d ->
-                                                year = y
-                                                month = m
-                                                dayOfMonth = d
-                                            }
+                            AndroidView(
+                                factory = { context ->
+                                    android.widget.DatePicker(context).apply {
+                                        calendarViewShown = false
+                                        firstDayOfWeek = Calendar.MONDAY
+                                        init(year, month, dayOfMonth) { _, y, m, d ->
+                                            year = y
+                                            month = m
+                                            dayOfMonth = d
                                         }
                                     }
-                                )
-                                AndroidView(
-                                    factory = { context ->
-                                        android.widget.TimePicker(context).apply {
-                                            setIs24HourView(is24Hour)
-                                            this.hour = hour
-                                            this.minute = minute
-                                            setOnTimeChangedListener { _, h, m ->
-                                                hour = h
-                                                minute = m
-                                            }
+                                }
+                            )
+                            AndroidView(
+                                factory = { context ->
+                                    android.widget.TimePicker(context).apply {
+                                        setIs24HourView(is24Hour)
+                                        this.hour = hour
+                                        this.minute = minute
+                                        setOnTimeChangedListener { _, h, m ->
+                                            hour = h
+                                            minute = m
                                         }
                                     }
-                                )
-                            }
+                                }
+                            )
+                        }
 
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 16.dp),
-                                horizontalArrangement = Arrangement.End
-                            ) {
-                                TextButton(onClick = { dialog.cancel() }) {
-                                    Text(stringResource(R.string.cancel))
-                                }
-                                Spacer(modifier = Modifier.width(8.dp))
-                                TextButton(onClick = {
-                                    dialog.dismissSafe()
-                                    val resultCal = GregorianCalendar.getInstance(TimeZone.getDefault())
-                                    resultCal.set(year, month, dayOfMonth, hour, minute, 0)
-                                    resultCal.set(Calendar.MILLISECOND, 0)
-                                    this@DlgDateTime.callback(resultCal.timeInMillis)
-                                }) {
-                                    Text(stringResource(R.string.ok))
-                                }
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 16.dp),
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            TextButton(onClick = { dialog.cancel() }) {
+                                Text(stringResource(R.string.cancel))
+                            }
+                            Spacer(modifier = Modifier.width(8.dp))
+                            TextButton(onClick = {
+                                dialog.dismissSafe()
+                                val resultCal = GregorianCalendar.getInstance(TimeZone.getDefault())
+                                resultCal.set(year, month, dayOfMonth, hour, minute, 0)
+                                resultCal.set(Calendar.MILLISECOND, 0)
+                                this@DlgDateTime.callback(resultCal.timeInMillis)
+                            }) {
+                                Text(stringResource(R.string.ok))
                             }
                         }
                     }

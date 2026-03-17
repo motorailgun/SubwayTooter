@@ -47,7 +47,6 @@ import jp.juggler.subwaytooter.api.entity.Host
 import jp.juggler.subwaytooter.api.entity.TootInstance
 import jp.juggler.subwaytooter.api.getApiHostFromWebFinger
 import jp.juggler.subwaytooter.api.runApiTask2
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.util.DecodeOptions
 import jp.juggler.subwaytooter.util.LinkHelper
 import jp.juggler.util.coroutine.AppDispatchers
@@ -120,9 +119,7 @@ class LoginForm(
             setViewTreeLifecycleOwner(activity)
             setViewTreeSavedStateRegistryOwner(activity)
             setContent {
-                StThemedContent {
-                    LoginFormContent()
-                }
+                LoginFormContent()
             }
         }
         dialog.setContentView(composeView)

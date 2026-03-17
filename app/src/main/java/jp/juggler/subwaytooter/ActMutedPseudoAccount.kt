@@ -9,7 +9,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Modifier
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.subwaytooter.table.UserRelation
 import jp.juggler.subwaytooter.table.daoUserRelation
@@ -35,21 +34,12 @@ class ActMutedPseudoAccount : ComponentActivity() {
         }
         App1.setActivityTheme(this)
         setContent {
-            StScreen(
-                title = getString(R.string.muted_users_from_pseudo_account),
-                onBack = {
-                    setResult(RESULT_OK)
-                    finish()
-                },
-            ) { innerPadding ->
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                ) {
-                    items(items, key = { it.id }) { item ->
-                        MuteItemRow(item.whoId) { delete(item) }
-                    }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize(),
+            ) {
+                items(items, key = { it.id }) { item ->
+                    MuteItemRow(item.whoId) { delete(item) }
                 }
             }
         }

@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.sp
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootAccount
 import jp.juggler.subwaytooter.api.entity.TootStatus
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.util.log.showToast
 
@@ -41,99 +40,97 @@ fun Activity.showReportDialog(
     val dialog = Dialog(this)
     val composeView = ComposeView(this).apply {
         setContent {
-            StThemedContent {
-                var comment by remember { mutableStateOf("") }
-                var forward by remember { mutableStateOf(true) }
-                val buttonBgCw = MaterialTheme.colorScheme.surfaceVariant
+            var comment by remember { mutableStateOf("") }
+            var forward by remember { mutableStateOf(true) }
+            val buttonBgCw = MaterialTheme.colorScheme.surfaceVariant
 
-                Surface {
+            Surface {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp)
+                ) {
                     Column(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 12.dp)
+                            .weight(1f, fill = false)
+                            .verticalScroll(rememberScrollState())
+                            .padding(horizontal = 12.dp)
                     ) {
-                        Column(
-                            modifier = Modifier
-                                .weight(1f, fill = false)
-                                .verticalScroll(rememberScrollState())
-                                .padding(horizontal = 12.dp)
-                        ) {
-                            Text(text = stringResource(R.string.user))
-                            Text(
-                                text = who.acct.pretty,
-                                fontSize = 20.sp,
-                                modifier = Modifier.padding(top = 3.dp)
-                            )
+                        Text(text = stringResource(R.string.user))
+                        Text(
+                            text = who.acct.pretty,
+                            fontSize = 20.sp,
+                            modifier = Modifier.padding(top = 3.dp)
+                        )
 
-                            if (status != null) {
-                                Text(
-                                    text = stringResource(R.string.status),
-                                    modifier = Modifier.padding(top = 12.dp)
-                                )
-                                Text(
-                                    text = status.decoded_content.toString(),
-                                    modifier = Modifier
-                                        .padding(top = 3.dp)
-                                        .background(buttonBgCw)
-                                        .padding(6.dp)
-                                )
-                            }
-
+                        if (status != null) {
                             Text(
-                                text = stringResource(R.string.report_reason),
-                                modifier = Modifier.padding(top = 24.dp)
+                                text = stringResource(R.string.status),
+                                modifier = Modifier.padding(top = 12.dp)
                             )
-                            
-                            OutlinedTextField(
-                                value = comment,
-                                onValueChange = { comment = it },
+                            Text(
+                                text = status.decoded_content.toString(),
                                 modifier = Modifier
-                                    .fillMaxWidth()
                                     .padding(top = 3.dp)
-                                    .heightIn(min = 100.dp),
-                                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
-                                maxLines = Int.MAX_VALUE
+                                    .background(buttonBgCw)
+                                    .padding(6.dp)
                             )
-
-                            if (canForward) {
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 12.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Checkbox(
-                                        checked = forward,
-                                        onCheckedChange = { forward = it }
-                                    )
-                                    Text(
-                                        text = getString(R.string.report_forward_to, who.apDomain.pretty),
-                                        modifier = Modifier.padding(start = 8.dp)
-                                    )
-                                }
-                            }
                         }
 
-                        Row(
+                        Text(
+                            text = stringResource(R.string.report_reason),
+                            modifier = Modifier.padding(top = 24.dp)
+                        )
+
+                        OutlinedTextField(
+                            value = comment,
+                            onValueChange = { comment = it },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(8.dp),
-                            horizontalArrangement = Arrangement.End
-                        ) {
-                            TextButton(onClick = { dialog.cancel() }) {
-                                Text(stringResource(R.string.cancel))
+                                .padding(top = 3.dp)
+                                .heightIn(min = 100.dp),
+                            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
+                            maxLines = Int.MAX_VALUE
+                        )
+
+                        if (canForward) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = forward,
+                                    onCheckedChange = { forward = it }
+                                )
+                                Text(
+                                    text = getString(R.string.report_forward_to, who.apDomain.pretty),
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
                             }
-                            Spacer(modifier = Modifier.width(8.dp))
-                            TextButton(onClick = {
-                                val trimmed = comment.trim()
-                                if (trimmed.isEmpty()) {
-                                    showToast(true, R.string.comment_empty)
-                                } else {
-                                    onClickOk(dialog, trimmed, canForward && forward)
-                                }
-                            }) {
-                                Text(stringResource(R.string.ok))
+                        }
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = { dialog.cancel() }) {
+                            Text(stringResource(R.string.cancel))
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        TextButton(onClick = {
+                            val trimmed = comment.trim()
+                            if (trimmed.isEmpty()) {
+                                showToast(true, R.string.comment_empty)
+                            } else {
+                                onClickOk(dialog, trimmed, canForward && forward)
                             }
+                        }) {
+                            Text(stringResource(R.string.ok))
                         }
                     }
                 }

@@ -65,16 +65,14 @@ fun ComposeView.setTimelineContent(
     val callbacks = buildTimelineCallbacks(activity)
 
     setContent {
-        StThemedContent {
-            TimelineColumn(
-                activity = activity,
-                column = column,
-                timelineState = timelineState,
-                bSimpleList = bSimpleList,
-                callbacks = callbacks,
-                lazyListState = lazyListState,
-            )
-        }
+        TimelineColumn(
+            activity = activity,
+            column = column,
+            timelineState = timelineState,
+            bSimpleList = bSimpleList,
+            callbacks = callbacks,
+            lazyListState = lazyListState,
+        )
     }
 }
 

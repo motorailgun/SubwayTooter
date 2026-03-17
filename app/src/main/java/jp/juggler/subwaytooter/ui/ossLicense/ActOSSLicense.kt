@@ -38,7 +38,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.App1
 import jp.juggler.subwaytooter.R
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.util.collectOnLifeCycle
 import android.content.res.Configuration
 import androidx.compose.material3.darkColorScheme
@@ -124,44 +123,43 @@ class ActOSSLicense : ComponentActivity() {
     ) {
         val isProgressShown = isProgressShownFlow.collectAsState(false)
         val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
-        StThemedContent {
-            Scaffold(
-                modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-                topBar = {
-                    TopAppBar(
-                        title = {
-                            Text(stringResource(R.string.oss_license))
-                        },
-                        navigationIcon = {
-                            IconButton(
-                                onClick = { finish() }
-                            ) {
-                                Icon(
-                                    // imageVector = AutoMirrored.Outlined.ArrowBack,
-                                    imageVector = Icons.Outlined.Close,
-                                    contentDescription = stringResource(R.string.close)
-                                )
-                            }
-                        },
-                        scrollBehavior = scrollBehavior,
-                        colors = TopAppBarDefaults.topAppBarColors(),
-                    )
-                },
-            ) { innerPadding ->
-                when (isProgressShown.value) {
-                    true -> Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.width(64.dp),
-                            color = MaterialTheme.colorScheme.secondary,
-                            trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                        )
-                    }
 
-                    else -> ScrollContent(innerPadding, librariesFlow)
+        Scaffold(
+            modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(stringResource(R.string.oss_license))
+                    },
+                    navigationIcon = {
+                        IconButton(
+                            onClick = { finish() }
+                        ) {
+                            Icon(
+                                // imageVector = AutoMirrored.Outlined.ArrowBack,
+                                imageVector = Icons.Outlined.Close,
+                                contentDescription = stringResource(R.string.close)
+                            )
+                        }
+                    },
+                    scrollBehavior = scrollBehavior,
+                    colors = TopAppBarDefaults.topAppBarColors(),
+                )
+            },
+        ) { innerPadding ->
+            when (isProgressShown.value) {
+                true -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.width(64.dp),
+                        color = MaterialTheme.colorScheme.secondary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
                 }
+
+                else -> ScrollContent(innerPadding, librariesFlow)
             }
         }
     }

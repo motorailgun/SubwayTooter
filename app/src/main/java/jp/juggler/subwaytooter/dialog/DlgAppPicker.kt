@@ -29,7 +29,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import jp.juggler.subwaytooter.R
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.util.CustomShare
 import jp.juggler.subwaytooter.util.cn
 import jp.juggler.util.data.notEmpty
@@ -97,16 +96,14 @@ class DlgAppPicker(
             val dialog = Dialog(activity)
             val composeView = ComposeView(activity).apply {
                 setContent {
-                    StThemedContent {
-                        AppPickerContent(
-                            items = list,
-                            onSelect = { item ->
-                                dialog.dismissSafe()
-                                callback(item.componentName)
-                            },
-                            onCancel = { dialog.dismissSafe() },
-                        )
-                    }
+                    AppPickerContent(
+                        items = list,
+                        onSelect = { item ->
+                            dialog.dismissSafe()
+                            callback(item.componentName)
+                        },
+                        onCancel = { dialog.dismissSafe() },
+                    )
                 }
             }
             dialog.setContentView(composeView)

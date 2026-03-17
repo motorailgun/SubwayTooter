@@ -30,7 +30,6 @@ import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.actpost.DRAFT_CONTENT
 import jp.juggler.subwaytooter.actpost.DRAFT_CONTENT_WARNING
 import jp.juggler.subwaytooter.api.entity.TootStatus
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.table.PostDraft
 import jp.juggler.subwaytooter.table.daoPostDraft
 import jp.juggler.util.coroutine.AppDispatchers
@@ -88,26 +87,24 @@ class DlgDraftPicker {
 
         val composeView = ComposeView(activity).apply {
             setContent {
-                StThemedContent {
-                    DraftPickerContent(
-                        drafts = drafts,
-                        onSelect = { draft ->
-                            val json = draft.json
-                            if (json != null) {
-                                callback(json)
-                                dialog.dismissSafe()
-                            }
-                        },
-                        onDelete = { draft ->
-                            activity.launchAndShowError {
-                                daoPostDraft.delete(draft)
-                                reload()
-                                activity.showToast(false, R.string.draft_deleted)
-                            }
-                        },
-                        onCancel = { dialog.dismissSafe() },
-                    )
-                }
+                DraftPickerContent(
+                    drafts = drafts,
+                    onSelect = { draft ->
+                        val json = draft.json
+                        if (json != null) {
+                            callback(json)
+                            dialog.dismissSafe()
+                        }
+                    },
+                    onDelete = { draft ->
+                        activity.launchAndShowError {
+                            daoPostDraft.delete(draft)
+                            reload()
+                            activity.showToast(false, R.string.draft_deleted)
+                        }
+                    },
+                    onCancel = { dialog.dismissSafe() },
+                )
             }
         }
         dialog.setContentView(composeView)

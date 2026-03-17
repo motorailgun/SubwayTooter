@@ -21,7 +21,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.subwaytooter.table.HighlightWord
 import jp.juggler.subwaytooter.table.daoHighlightWord
@@ -103,36 +102,31 @@ class ActHighlightWordList : ComponentActivity() {
         App1.setActivityTheme(this)
         loadData()
         setContent {
-            StScreen(
-                title = stringResource(R.string.highlight_word),
-                onBack = { finish() },
-            ) { contentPadding ->
-                Column(modifier = Modifier.padding(contentPadding)) {
-                    LazyColumn(
-                        modifier = Modifier.weight(1f),
-                    ) {
-                        items(items.value, key = { it.id }) { item ->
-                            HighlightWordRow(item)
-                        }
+            Column(modifier = Modifier) {
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                ) {
+                    items(items.value, key = { it.id }) { item ->
+                        HighlightWordRow(item)
                     }
-                    // Footer
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.highlight_desc),
-                            fontSize = 12.sp,
-                            modifier = Modifier.weight(1f),
+                }
+                // Footer
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = stringResource(R.string.highlight_desc),
+                        fontSize = 12.sp,
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(onClick = { create() }) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_add),
+                            contentDescription = stringResource(R.string.new_item),
                         )
-                        IconButton(onClick = { create() }) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_add),
-                                contentDescription = stringResource(R.string.new_item),
-                            )
-                        }
                     }
                 }
             }

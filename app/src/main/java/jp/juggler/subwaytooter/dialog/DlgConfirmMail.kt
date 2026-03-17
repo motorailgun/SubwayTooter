@@ -26,7 +26,6 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.R
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.table.SavedAccount
 
 class DlgConfirmMail(
@@ -39,17 +38,15 @@ class DlgConfirmMail(
     init {
         val composeView = ComposeView(activity).apply {
             setContent {
-                StThemedContent {
-                    Surface {
-                        DlgConfirmMailContent(
-                            accessInfo = accessInfo,
-                            onCancel = { dialog.cancel() },
-                            onOk = { email -> 
-                                onClickOk(email)
-                                dialog.dismiss()
-                            }
-                        )
-                    }
+                Surface {
+                    DlgConfirmMailContent(
+                        accessInfo = accessInfo,
+                        onCancel = { dialog.cancel() },
+                        onOk = { email ->
+                            onClickOk(email)
+                            dialog.dismiss()
+                        }
+                    )
                 }
             }
         }

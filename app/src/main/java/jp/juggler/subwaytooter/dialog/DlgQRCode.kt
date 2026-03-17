@@ -35,7 +35,6 @@ import com.github.alexzhirkevich.customqrgenerator.vector.style.QrVectorLogoPadd
 import com.github.alexzhirkevich.customqrgenerator.vector.style.QrVectorLogoShape
 import com.github.alexzhirkevich.customqrgenerator.vector.style.QrVectorPixelShape
 import jp.juggler.subwaytooter.R
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.withProgress
@@ -64,47 +63,45 @@ fun ComponentActivity.dialogQrCode(
 
     val composeView = ComposeView(this@dialogQrCode).apply {
         setContent {
-            StThemedContent {
-                Surface {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+            Surface {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+                ) {
+                    Text(
+                        text = message.toString(),
+                        fontSize = 16.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+
+                    Text(
+                        text = "[ $url ]",
+                        fontSize = 10.sp,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 12.dp)
+                    )
+
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier
+                            .padding(10.dp)
+                            .size(280.dp)
+                    )
+
+                    HorizontalDivider(
+                        modifier = Modifier.fillMaxWidth(),
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+
+                    TextButton(
+                        onClick = { dialog.cancel() },
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            text = message.toString(),
-                            fontSize = 16.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 12.dp)
-                        )
-                        
-                        Text(
-                            text = "[ $url ]",
-                            fontSize = 10.sp,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(horizontal = 12.dp)
-                        )
-
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = null,
-                            contentScale = ContentScale.Fit,
-                            modifier = Modifier
-                                .padding(10.dp)
-                                .size(280.dp)
-                        )
-
-                        HorizontalDivider(
-                            modifier = Modifier.fillMaxWidth(),
-                            thickness = 1.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant
-                        )
-
-                        TextButton(
-                            onClick = { dialog.cancel() },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(stringResource(id = R.string.close))
-                        }
+                        Text(stringResource(id = R.string.close))
                     }
                 }
             }

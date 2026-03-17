@@ -37,7 +37,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootStatus
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.dialog.actionsDialog
 import jp.juggler.util.coroutine.cancellationException
 import jp.juggler.util.ui.dismissSafe
@@ -191,41 +190,39 @@ suspend fun ComponentActivity.dialogLanguageFilterEdit(
     val composeView = ComposeView(this).apply {
         setContent {
             val scope = rememberCoroutineScope()
-            StThemedContent {
-                LanguageFilterEditContent(
-                    item = item,
-                    nameMap = nameMap,
-                    onOk = { code, allow ->
+            LanguageFilterEditContent(
+                item = item,
+                nameMap = nameMap,
+                onOk = { code, allow ->
+                    if (cont.isActive) cont.resume(
+                        LanguageFilterEditResult.Update(code, allow)
+                    ) { _, _, _ -> }
+                    dialog.dismissSafe()
+                },
+                onDelete = if (item != null && item.code != TootStatus.LANGUAGE_CODE_DEFAULT) {
+                    { code ->
                         if (cont.isActive) cont.resume(
-                            LanguageFilterEditResult.Update(code, allow)
+                            LanguageFilterEditResult.Delete(code)
                         ) { _, _, _ -> }
                         dialog.dismissSafe()
-                    },
-                    onDelete = if (item != null && item.code != TootStatus.LANGUAGE_CODE_DEFAULT) {
-                        { code ->
-                            if (cont.isActive) cont.resume(
-                                LanguageFilterEditResult.Delete(code)
-                            ) { _, _, _ -> }
-                            dialog.dismissSafe()
-                        }
-                    } else null,
-                    onCancel = { dialog.cancel() },
-                    onPresetsClick = { onSelect ->
-                        scope.launch {
-                            actionsDialog(getString(R.string.presets)) {
-                                val languageList = nameMap.map {
-                                    LanguageFilterItem(it.key, true)
-                                }.sortedWith(languageFilterItemComparator)
-                                for (a in languageList) {
-                                    action("${a.code} ${langDesc(a.code, nameMap)}") {
-                                        onSelect(a.code)
-                                    }
+                    }
+                } else null,
+                onCancel = { dialog.cancel() },
+                onPresetsClick = { onSelect ->
+                    scope.launch {
+                        actionsDialog(getString(R.string.presets)) {
+                            val languageList = nameMap.map {
+                                LanguageFilterItem(it.key, true)
+                            }.sortedWith(languageFilterItemComparator)
+                            for (a in languageList) {
+                                action("${a.code} ${langDesc(a.code, nameMap)}") {
+                                    onSelect(a.code)
                                 }
                             }
                         }
-                    },
-                )
-            }
+                    }
+                },
+            )
         }
     }
     dialog.setContentView(composeView)

@@ -20,7 +20,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import jp.juggler.subwaytooter.dialog.dialogColorPicker
 import jp.juggler.subwaytooter.api.entity.Acct
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.table.AcctColor
 import jp.juggler.subwaytooter.table.daoAcctColor
 import jp.juggler.util.backPressed
@@ -93,15 +92,7 @@ class ActNickname : ComponentActivity() {
                     else -> R.string.nickname_and_color
                 }
             )
-            StScreen(
-                title = subtitle,
-                onBack = {
-                    setResult(RESULT_OK)
-                    finish()
-                },
-            ) { contentPadding ->
-                NicknameContent(Modifier.padding(contentPadding))
-            }
+            NicknameContent(Modifier)
         }
     }
 

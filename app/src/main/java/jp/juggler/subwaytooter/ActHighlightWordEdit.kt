@@ -20,7 +20,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.dialog.dialogColorPicker
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.table.HighlightWord
 import jp.juggler.subwaytooter.table.daoHighlightWord
 import jp.juggler.util.backPressed
@@ -134,12 +133,7 @@ class ActHighlightWordEdit : ComponentActivity() {
             syncFromItem()
 
             setContent {
-                StScreen(
-                    title = stringResource(R.string.highlight_word),
-                    onBack = { finish() },
-                ) { contentPadding ->
-                    HighlightEditContent(Modifier.padding(contentPadding))
-                }
+                HighlightEditContent(Modifier)
             }
         }
     }

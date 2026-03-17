@@ -41,7 +41,6 @@ import jp.juggler.subwaytooter.api.*
 import jp.juggler.subwaytooter.api.entity.*
 import jp.juggler.subwaytooter.compose.NetworkImage
 import jp.juggler.subwaytooter.compose.SpannableTextView
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.table.accountListNonPseudo
 import jp.juggler.subwaytooter.table.daoAcctColor
@@ -284,30 +283,28 @@ class DlgListMember(
         val actHandler = act.handler
         val composeView = ComposeView(act).apply {
             setContent {
-                StThemedContent {
-                    DlgListMemberContent(
-                        who = who,
-                        whoAcct = whoAcct,
-                        displayName = displayName,
-                        items = itemsState.value,
-                        listOwner = listOwnerState.value,
-                        handler = actHandler,
-                        onPickOwner = {
-                            launchMain {
-                                act.pickAccount(
-                                    bAllowPseudo = false,
-                                    bAuto = false,
-                                    accountListArg = accountList
-                                )?.let { setListOwner(it) }
-                            }
-                        },
-                        onCheckChange = { data ->
-                            handleCheckChange(data)
-                        },
-                        onCreate = ::openListCreator,
-                        onClose = { dialog.dismissSafe() },
-                    )
-                }
+                DlgListMemberContent(
+                    who = who,
+                    whoAcct = whoAcct,
+                    displayName = displayName,
+                    items = itemsState.value,
+                    listOwner = listOwnerState.value,
+                    handler = actHandler,
+                    onPickOwner = {
+                        launchMain {
+                            act.pickAccount(
+                                bAllowPseudo = false,
+                                bAuto = false,
+                                accountListArg = accountList
+                            )?.let { setListOwner(it) }
+                        }
+                    },
+                    onCheckChange = { data ->
+                        handleCheckChange(data)
+                    },
+                    onCreate = ::openListCreator,
+                    onClose = { dialog.dismissSafe() },
+                )
             }
         }
         dialog.setContentView(composeView)

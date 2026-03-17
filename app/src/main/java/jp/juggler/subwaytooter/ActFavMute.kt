@@ -13,7 +13,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.api.entity.Acct
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.subwaytooter.table.daoFavMute
 import jp.juggler.util.backPressed
@@ -40,28 +39,19 @@ class ActFavMute : ComponentActivity() {
         }
         App1.setActivityTheme(this)
         setContent {
-            StScreen(
-                title = getString(R.string.fav_muted_user),
-                onBack = {
-                    setResult(RESULT_OK)
-                    finish()
-                },
-            ) { innerPadding ->
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                ) {
-                    items(items, key = { it.id }) { item ->
-                        MuteItemRow(item.acct.pretty) { delete(item) }
-                    }
-                    item {
-                        Text(
-                            text = stringResource(R.string.fav_muted_user_desc),
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                            fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp),
-                        )
-                    }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+            ) {
+                items(items, key = { it.id }) { item ->
+                    MuteItemRow(item.acct.pretty) { delete(item) }
+                }
+                item {
+                    Text(
+                        text = stringResource(R.string.fav_muted_user_desc),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                        fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp),
+                    )
                 }
             }
         }

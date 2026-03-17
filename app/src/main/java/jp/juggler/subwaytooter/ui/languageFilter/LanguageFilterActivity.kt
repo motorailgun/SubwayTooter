@@ -56,7 +56,6 @@ import androidx.core.content.FileProvider
 import jp.juggler.subwaytooter.App1
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootStatus
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.subwaytooter.dialog.actionsDialog
 import jp.juggler.subwaytooter.pref.FILE_PROVIDER_AUTHORITY
@@ -238,106 +237,105 @@ class LanguageFilterActivity : ComponentActivity() {
         val scope = rememberCoroutineScope()
         val snackbarHostState = remember { SnackbarHostState() }
         val progressMessageState = progressMessageFlow.collectAsState()
-        StThemedContent {
-            CompositionLocalProvider(
-                LocalLayoutDirection provides LayoutDirection.Ltr,
-            ) {
-                Scaffold(
-                    snackbarHost = {
-                        SnackbarHost(hostState = snackbarHostState)
-                    },
-                    topBar = {
-                        TopAppBar(
-                            colors = TopAppBarDefaults.topAppBarColors(),
-                            title = {
-                                Text(stringResource(R.string.language_filter))
-                            },
-                            navigationIcon = {
-                                IconButton(
-                                    onClick = {
-                                        fireBackPressed()
-                                    }
-                                ) {
-                                    Icon(
-                                        // imageVector = AutoMirrored.Outlined.ArrowBack,
-                                        imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                                        contentDescription = stringResource(R.string.close)
-                                    )
+
+        CompositionLocalProvider(
+            LocalLayoutDirection provides LayoutDirection.Ltr,
+        ) {
+            Scaffold(
+                snackbarHost = {
+                    SnackbarHost(hostState = snackbarHostState)
+                },
+                topBar = {
+                    TopAppBar(
+                        colors = TopAppBarDefaults.topAppBarColors(),
+                        title = {
+                            Text(stringResource(R.string.language_filter))
+                        },
+                        navigationIcon = {
+                            IconButton(
+                                onClick = {
+                                    fireBackPressed()
                                 }
-                            },
-                            actions = {
-                                IconButton(
-                                    onClick = {
-                                        scope.launch {
-                                            try {
-                                                edit(null)
-                                            } catch (ex: Throwable) {
-                                                showError(ex)
-                                            }
+                            ) {
+                                Icon(
+                                    // imageVector = AutoMirrored.Outlined.ArrowBack,
+                                    imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                                    contentDescription = stringResource(R.string.close)
+                                )
+                            }
+                        },
+                        actions = {
+                            IconButton(
+                                onClick = {
+                                    scope.launch {
+                                        try {
+                                            edit(null)
+                                        } catch (ex: Throwable) {
+                                            showError(ex)
                                         }
-                                    },
-                                ) {
-                                    Icon(
-                                        Icons.Outlined.Add,
-                                        contentDescription = stringResource(R.string.add),
-                                    )
-                                }
-                                IconButton(
-                                    onClick = { saveAction() }
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.Save,
-                                        contentDescription = stringResource(R.string.close)
-                                    )
-                                }
-                                IconButton(
-                                    onClick = {
-                                        scope.launch {
-                                            try {
-                                                actionsDialog {
-                                                    action(getString(R.string.clear_all)) {
-                                                        viewModel.clearAllLanguage()
-                                                    }
-                                                    action(getString(R.string.export)) {
-                                                        scope.launch {
-                                                            try {
-                                                                export()
-                                                            } catch (ex: Throwable) {
-                                                                showError(ex)
-                                                            }
+                                    }
+                                },
+                            ) {
+                                Icon(
+                                    Icons.Outlined.Add,
+                                    contentDescription = stringResource(R.string.add),
+                                )
+                            }
+                            IconButton(
+                                onClick = { saveAction() }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Outlined.Save,
+                                    contentDescription = stringResource(R.string.close)
+                                )
+                            }
+                            IconButton(
+                                onClick = {
+                                    scope.launch {
+                                        try {
+                                            actionsDialog {
+                                                action(getString(R.string.clear_all)) {
+                                                    viewModel.clearAllLanguage()
+                                                }
+                                                action(getString(R.string.export)) {
+                                                    scope.launch {
+                                                        try {
+                                                            export()
+                                                        } catch (ex: Throwable) {
+                                                            showError(ex)
                                                         }
                                                     }
-                                                    action(getString(R.string.import_)) {
-                                                        arImport.launch(intentOpenDocument("*/*"))
-                                                    }
                                                 }
-                                            } catch (ex: Throwable) {
-                                                showError(ex)
+                                                action(getString(R.string.import_)) {
+                                                    arImport.launch(intentOpenDocument("*/*"))
+                                                }
                                             }
+                                        } catch (ex: Throwable) {
+                                            showError(ex)
                                         }
-                                    },
-                                ) {
-                                    Icon(
-                                        Icons.Outlined.MoreVert,
-                                        contentDescription = stringResource(R.string.more),
-                                    )
-                                }
+                                    }
+                                },
+                            ) {
+                                Icon(
+                                    Icons.Outlined.MoreVert,
+                                    contentDescription = stringResource(R.string.more),
+                                )
                             }
-                        )
-                    },
-                ) { innerPadding ->
-                    ScrollContent(
-                        scope = scope,
-                        innerPadding = innerPadding,
-                        languageListFlow = languageListFlow,
-                        getDisplayName = getDisplayName,
+                        }
                     )
-                    val progressMessage = progressMessageState.value?.let {
-                        stringResource(it.stringId, *it.args)
-                    }
-                    if (progressMessage != null) {
-                        ProgressCircleAndText(progressMessage)
-                    }
+                },
+            ) { innerPadding ->
+                ScrollContent(
+                    scope = scope,
+                    innerPadding = innerPadding,
+                    languageListFlow = languageListFlow,
+                    getDisplayName = getDisplayName,
+                )
+                val progressMessage = progressMessageState.value?.let {
+                    stringResource(it.stringId, *it.args)
+                }
+                if (progressMessage != null) {
+                    ProgressCircleAndText(progressMessage)
                 }
             }
         }

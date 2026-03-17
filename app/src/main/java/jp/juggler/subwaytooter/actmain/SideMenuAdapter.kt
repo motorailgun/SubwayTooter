@@ -62,7 +62,6 @@ import jp.juggler.subwaytooter.action.serverProfileDirectoryFromSideMenu
 import jp.juggler.subwaytooter.action.timeline
 import jp.juggler.subwaytooter.api.entity.TootStatus
 import jp.juggler.subwaytooter.column.ColumnType
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.dialog.pickAccount
 import jp.juggler.subwaytooter.pref.PrefB
 import jp.juggler.subwaytooter.pref.PrefDevice.Companion.PUSH_DISTRIBUTOR_NONE
@@ -675,9 +674,7 @@ class SideMenuAdapter(
                 FrameLayout.LayoutParams.MATCH_PARENT,
             )
             setContent {
-                StThemedContent {
-                    SideMenuContent()
-                }
+                SideMenuContent()
             }
             navigationView.addView(this)
         }

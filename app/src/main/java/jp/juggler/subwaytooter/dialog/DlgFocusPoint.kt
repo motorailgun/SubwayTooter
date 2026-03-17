@@ -44,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.*
 import jp.juggler.subwaytooter.api.entity.TootAttachment
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.util.*
 import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.data.*
@@ -120,25 +119,23 @@ suspend fun ComponentActivity.focusPointDialog(
         val activity = this
         val composeView = ComposeView(this).apply {
             setContent {
-                StThemedContent {
-                    FocusPointContent(
-                        bitmap = bmp,
-                        initialFocusX = attachment.focusX,
-                        initialFocusY = attachment.focusY,
-                        onOk = { fx, fy ->
-                            launchMain {
-                                try {
-                                    if (callback(fx, fy)) {
-                                        dialog.dismissSafe()
-                                    }
-                                } catch (ex: Throwable) {
-                                    activity.showToast(ex, "can't set focus point.")
+                FocusPointContent(
+                    bitmap = bmp,
+                    initialFocusX = attachment.focusX,
+                    initialFocusY = attachment.focusY,
+                    onOk = { fx, fy ->
+                        launchMain {
+                            try {
+                                if (callback(fx, fy)) {
+                                    dialog.dismissSafe()
                                 }
+                            } catch (ex: Throwable) {
+                                activity.showToast(ex, "can't set focus point.")
                             }
-                        },
-                        onCancel = { dialog.dismissSafe() },
-                    )
-                }
+                        }
+                    },
+                    onCancel = { dialog.dismissSafe() },
+                )
             }
         }
         dialog.setContentView(composeView)

@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.dp
 import jp.juggler.subwaytooter.ActMain
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootVisibility
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.getVisibilityCaption
 import jp.juggler.subwaytooter.pref.PrefS
 import jp.juggler.util.data.notEmpty
@@ -82,31 +81,29 @@ class DlgQuickTootMenu(
 
         val composeView = ComposeView(activity).apply {
             setContent {
-                StThemedContent {
-                    QuickTootMenuContent(
-                        visibilityState = visibilityState.value,
-                        visibilityCaption = getVisibilityCaption(
-                            activity,
-                            false,
-                            visibilityState.value,
-                        ),
-                        macroValues = macroStates.map { it.value },
-                        onMacroChange = { index, value ->
-                            macroStates[index].value = value
-                        },
-                        onVisibilityPick = { newVisibility ->
-                            callback.visibility = newVisibility
-                            visibilityState.value = newVisibility
-                        },
-                        onUseMacro = { text ->
-                            text.notEmpty()?.let {
-                                dialog.dismissSafe()
-                                callback.onMacro(it)
-                            }
-                        },
-                        onClose = { dialog.dismissSafe() },
-                    )
-                }
+                QuickTootMenuContent(
+                    visibilityState = visibilityState.value,
+                    visibilityCaption = getVisibilityCaption(
+                        activity,
+                        false,
+                        visibilityState.value,
+                    ),
+                    macroValues = macroStates.map { it.value },
+                    onMacroChange = { index, value ->
+                        macroStates[index].value = value
+                    },
+                    onVisibilityPick = { newVisibility ->
+                        callback.visibility = newVisibility
+                        visibilityState.value = newVisibility
+                    },
+                    onUseMacro = { text ->
+                        text.notEmpty()?.let {
+                            dialog.dismissSafe()
+                            callback.onMacro(it)
+                        }
+                    },
+                    onClose = { dialog.dismissSafe() },
+                )
             }
         }
 

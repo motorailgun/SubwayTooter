@@ -40,7 +40,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.R
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.util.coroutine.cancellationException
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.ui.dismissSafe
@@ -180,25 +179,23 @@ suspend fun ComponentActivity.showTextInputDialog(
             setViewTreeLifecycleOwner(this@showTextInputDialog)
             setViewTreeSavedStateRegistryOwner(this@showTextInputDialog)
             setContent {
-                StThemedContent {
-                    TextInputDialogContent(
-                        title = title,
-                        initialText = initialText,
-                        inputType = inputType,
-                        onCancel = { dialog.cancel() },
-                        onOk = { text ->
-                            launchAndShowError {
-                                val trimmedText = text.trim { it <= ' ' }
-                                if (trimmedText.isEmpty() && !allowEmpty) {
-                                    onEmptyText()
-                                } else if (onOk(trimmedText)) {
-                                    if (cont.isActive) cont.resume(Unit) { _, _, _ -> }
-                                    dialog.dismissSafe()
-                                }
+                TextInputDialogContent(
+                    title = title,
+                    initialText = initialText,
+                    inputType = inputType,
+                    onCancel = { dialog.cancel() },
+                    onOk = { text ->
+                        launchAndShowError {
+                            val trimmedText = text.trim { it <= ' ' }
+                            if (trimmedText.isEmpty() && !allowEmpty) {
+                                onEmptyText()
+                            } else if (onOk(trimmedText)) {
+                                if (cont.isActive) cont.resume(Unit) { _, _, _ -> }
+                                dialog.dismissSafe()
                             }
                         }
-                    )
-                }
+                    }
+                )
             }
         }
         dialog.setContentView(composeView)
@@ -235,26 +232,24 @@ suspend fun ComponentActivity.showMediaDescEditDialog(
             setViewTreeLifecycleOwner(this@showMediaDescEditDialog)
             setViewTreeSavedStateRegistryOwner(this@showMediaDescEditDialog)
             setContent {
-                StThemedContent {
-                    TextInputDialogContent(
-                        title = title,
-                        initialText = initialText,
-                        inputType = actualInputType,
-                        bitmap = bitmap,
-                        onCancel = { dialog.cancel() },
-                        onOk = { text ->
-                            launchAndShowError {
-                                val trimmedText = text.trim { it <= ' ' }
-                                if (trimmedText.isEmpty() && !allowEmpty) {
-                                    onEmptyText()
-                                } else if (onOk(trimmedText)) {
-                                    if (cont.isActive) cont.resume(Unit) { _, _, _ -> }
-                                    dialog.dismissSafe()
-                                }
+                TextInputDialogContent(
+                    title = title,
+                    initialText = initialText,
+                    inputType = actualInputType,
+                    bitmap = bitmap,
+                    onCancel = { dialog.cancel() },
+                    onOk = { text ->
+                        launchAndShowError {
+                            val trimmedText = text.trim { it <= ' ' }
+                            if (trimmedText.isEmpty() && !allowEmpty) {
+                                onEmptyText()
+                            } else if (onOk(trimmedText)) {
+                                if (cont.isActive) cont.resume(Unit) { _, _, _ -> }
+                                dialog.dismissSafe()
                             }
                         }
-                    )
-                }
+                    }
+                )
             }
         }
         dialog.setContentView(composeView)

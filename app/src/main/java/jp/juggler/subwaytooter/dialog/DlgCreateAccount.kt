@@ -31,7 +31,6 @@ import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.auth.CreateUserParams
 import jp.juggler.subwaytooter.api.entity.Host
 import jp.juggler.subwaytooter.api.entity.TootInstance
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.util.DecodeOptions
 import jp.juggler.subwaytooter.util.LinkHelper
 import jp.juggler.subwaytooter.util.openCustomTab
@@ -71,42 +70,40 @@ class DlgCreateAccount(
         val dialog = Dialog(activity)
         val composeView = ComposeView(activity).apply {
             setContent {
-                StThemedContent {
-                    CreateAccountContent(
-                        apiHostPretty = apiHost.pretty,
-                        description = descriptionText,
-                        showReason = showReason,
-                        onOk = { username, email, password, agreement, reason ->
-                            when {
-                                username.isEmpty() ->
-                                    activity.showToast(true, R.string.username_empty)
+                CreateAccountContent(
+                    apiHostPretty = apiHost.pretty,
+                    description = descriptionText,
+                    showReason = showReason,
+                    onOk = { username, email, password, agreement, reason ->
+                        when {
+                            username.isEmpty() ->
+                                activity.showToast(true, R.string.username_empty)
 
-                                email.isEmpty() ->
-                                    activity.showToast(true, R.string.email_empty)
+                            email.isEmpty() ->
+                                activity.showToast(true, R.string.email_empty)
 
-                                password.isEmpty() ->
-                                    activity.showToast(true, R.string.password_empty)
+                            password.isEmpty() ->
+                                activity.showToast(true, R.string.password_empty)
 
-                                username.contains("/") || username.contains("@") ->
-                                    activity.showToast(true, R.string.username_not_need_atmark)
+                            username.contains("/") || username.contains("@") ->
+                                activity.showToast(true, R.string.username_not_need_atmark)
 
-                                else -> onClickOk(
-                                    dialog,
-                                    CreateUserParams(
-                                        username = username,
-                                        email = email,
-                                        password = password,
-                                        agreement = agreement,
-                                        reason = reason,
-                                    )
+                            else -> onClickOk(
+                                dialog,
+                                CreateUserParams(
+                                    username = username,
+                                    email = email,
+                                    password = password,
+                                    agreement = agreement,
+                                    reason = reason,
                                 )
-                            }
-                        },
-                        onCancel = { dialog.cancel() },
-                        onShowRules = { activity.openCustomTab("https://$apiHost/about/more") },
-                        onShowTerms = { activity.openCustomTab("https://$apiHost/terms") },
-                    )
-                }
+                            )
+                        }
+                    },
+                    onCancel = { dialog.cancel() },
+                    onShowRules = { activity.openCustomTab("https://$apiHost/about/more") },
+                    onShowTerms = { activity.openCustomTab("https://$apiHost/terms") },
+                )
             }
         }
         dialog.setContentView(composeView)

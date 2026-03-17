@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.bumptech.glide.Glide
 import jp.juggler.subwaytooter.R
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.view.NetworkEmojiView
 import jp.juggler.util.ui.dismissSafe
 
@@ -62,13 +61,11 @@ fun ComponentActivity.showEmojiDetailDialog(
     val dialog = Dialog(this)
     val composeView = ComposeView(this).apply {
         setContent {
-            StThemedContent {
-                EmojiDetailContent(
-                    detail = detail,
-                    preview = preview,
-                    onDismiss = { dialog.dismissSafe() },
-                )
-            }
+            EmojiDetailContent(
+                detail = detail,
+                preview = preview,
+                onDismiss = { dialog.dismissSafe() },
+            )
         }
     }
     dialog.setTitle(R.string.emoji_detail)

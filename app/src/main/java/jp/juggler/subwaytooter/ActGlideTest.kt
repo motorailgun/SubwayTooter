@@ -19,7 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.span.NetworkEmojiSpan
 import jp.juggler.subwaytooter.util.EmojiSizeMode
 import jp.juggler.subwaytooter.util.NetworkEmojiInvalidator
@@ -40,18 +39,13 @@ class ActGlideTest : ComponentActivity() {
         App1.setActivityTheme(this)
 
         setContent {
-            StScreen(
-                title = "Glide Test",
-                onBack = { finish() },
-            ) { contentPadding ->
-                val list by items
-                LazyColumn(
-                    modifier = Modifier.padding(contentPadding),
-                ) {
-                    items(list.size) { index ->
-                        val item = list[index]
-                        GlideTestRow(item)
-                    }
+            val list by items
+            LazyColumn(
+                modifier = Modifier,
+            ) {
+                items(list.size) { index ->
+                    val item = list[index]
+                    GlideTestRow(item)
                 }
             }
         }

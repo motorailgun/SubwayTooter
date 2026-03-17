@@ -22,7 +22,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.util.coroutine.cancellationException
 import jp.juggler.util.data.notEmpty
 import jp.juggler.util.ui.dismissSafe
@@ -54,19 +53,17 @@ class ActionsDialogInitializer(
                     setViewTreeSavedStateRegistryOwner(context as androidx.savedstate.SavedStateRegistryOwner)
                 }
                 setContent {
-                    StThemedContent {
-                        ActionsDialogContent(
-                            title = title,
-                            items = list,
-                            onSelect = { action ->
-                                if (cont.isActive) cont.resume(action) { _, _, _ -> }
-                                dialog.dismissSafe()
-                            },
-                            onCancel = {
-                                dialog.dismissSafe()
-                            },
-                        )
-                    }
+                    ActionsDialogContent(
+                        title = title,
+                        items = list,
+                        onSelect = { action ->
+                            if (cont.isActive) cont.resume(action) { _, _, _ -> }
+                            dialog.dismissSafe()
+                        },
+                        onCancel = {
+                            dialog.dismissSafe()
+                        },
+                    )
                 }
             }
             dialog.setContentView(composeView)

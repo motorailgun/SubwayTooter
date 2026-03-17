@@ -27,7 +27,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.bumptech.glide.Glide
 import jp.juggler.subwaytooter.api.entity.NotificationType.Companion.toNotificationType
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.actionsDialog
 import jp.juggler.subwaytooter.dialog.runInProgress
 import jp.juggler.subwaytooter.push.PushMessageIconColor
@@ -77,25 +76,19 @@ class ActPushMessageList : ComponentActivity() {
         App1.setActivityTheme(this)
         backPressed { finish() }
         setContent {
-            StScreen(
-                title = getString(R.string.push_message_history),
-                onBack = { finish() },
-            ) { innerPadding ->
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                ) {
-                    items(messages, key = { it.id }) { pm ->
-                        val type = pm.notificationType?.toNotificationType()
-                        val iconColor = type.pushMessageIconAndColor()
-                        PushMessageRow(
-                            pm = pm,
-                            errorDrawable = tintIcon(pm, iconColor),
-                            onClick = { itemActions(pm) },
-                        )
-                        HorizontalDivider()
-                    }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize(),
+            ) {
+                items(messages, key = { it.id }) { pm ->
+                    val type = pm.notificationType?.toNotificationType()
+                    val iconColor = type.pushMessageIconAndColor()
+                    PushMessageRow(
+                        pm = pm,
+                        errorDrawable = tintIcon(pm, iconColor),
+                        onClick = { itemActions(pm) },
+                    )
+                    HorizontalDivider()
                 }
             }
         }

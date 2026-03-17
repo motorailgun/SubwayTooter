@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.R
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.util.ui.dismissSafe
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -175,19 +174,17 @@ object DlgConfirm {
                 setViewTreeSavedStateRegistryOwner(this@showComposeDialog)
             }
             setContent {
-                StThemedContent {
-                    ConfirmContent(
-                        message = message,
-                        title = title,
-                        showSkipNext = showSkipNext,
-                        showOkOnly = showOkOnly,
-                        onOk = onOk,
-                        onCancel = {
-                            dialog.dismissSafe()
-                            onCancel()
-                        },
-                    )
-                }
+                ConfirmContent(
+                    message = message,
+                    title = title,
+                    showSkipNext = showSkipNext,
+                    showOkOnly = showOkOnly,
+                    onOk = onOk,
+                    onCancel = {
+                        dialog.dismissSafe()
+                        onCancel()
+                    },
+                )
             }
         }
         dialog.setContentView(composeView)

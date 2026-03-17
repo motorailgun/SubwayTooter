@@ -30,7 +30,6 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.R
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.table.*
 import jp.juggler.util.data.notEmpty
 import jp.juggler.util.log.LogCategory
@@ -126,91 +125,89 @@ suspend fun Activity.pickAccount(
                 setViewTreeSavedStateRegistryOwner(activity)
             }
             setContent {
-                StThemedContent {
-                    Surface {
-                        Column(
+                Surface {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (!message.isNullOrEmpty()) {
+                            Text(
+                                text = message,
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(12.dp, 6.dp, 12.dp, 6.dp)
+                            )
+                        }
+
+                        LazyColumn(
+                            modifier = Modifier
+                                .weight(1f, fill = false)
+                                .fillMaxWidth()
+                        ) {
+                            if (extraContent != null) {
+                                item {
+                                    extraContent()
+                                }
+                            }
+
+                            items(accountList) { a ->
+                                val ac = daoAcctColor.load(a)
+                                val hasBg = daoAcctColor.hasColorBackground(ac)
+                                val hasFg = daoAcctColor.hasColorForeground(ac)
+
+                                val bgColor = if (hasBg) Color(ac.colorBg) else Color.Transparent
+                                val fgColor = if (hasFg) Color(ac.colorFg) else Color.Unspecified
+
+                                val errorMsg = try {
+                                    val status = daoAccountNotificationStatus.load(a.acct)
+                                    val lastNotificationError = status?.lastNotificationError?.notEmpty()
+                                    val lastSubscriptionError = status?.lastSubscriptionError?.notEmpty()
+                                    lastNotificationError ?: lastSubscriptionError
+                                } catch (ex: Throwable) {
+                                    log.e(ex, "can't get notification status for ${a.acct}")
+                                    null
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                        .background(color = bgColor, shape = RoundedCornerShape(6.dp))
+                                        .clickable {
+                                            if (isResumed.compareAndSet(false, true)) {
+                                                continuation.resume(a)
+                                            }
+                                            dialog.dismissSafe()
+                                        }
+                                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                                    contentAlignment = Alignment.CenterStart
+                                ) {
+                                    Text(
+                                        text = buildAnnotatedString {
+                                            append(ac.nickname)
+                                            if (errorMsg != null) {
+                                                append("\n")
+                                                withStyle(style = SpanStyle(fontSize = 11.sp)) {
+                                                    append(errorMsg)
+                                                }
+                                            }
+                                        },
+                                        color = fgColor,
+                                        lineHeight = 20.sp
+                                    )
+                                }
+                            }
+                        }
+
+                        HorizontalDivider(
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                            thickness = 1.dp
+                        )
+
+                        TextButton(
+                            onClick = { dialog.cancel() },
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            if (!message.isNullOrEmpty()) {
-                                Text(
-                                    text = message,
-                                    fontSize = 16.sp,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.padding(12.dp, 6.dp, 12.dp, 6.dp)
-                                )
-                            }
-                            
-                            LazyColumn(
-                                modifier = Modifier
-                                    .weight(1f, fill = false)
-                                    .fillMaxWidth()
-                            ) {
-                                if (extraContent != null) {
-                                    item {
-                                        extraContent()
-                                    }
-                                }
-
-                                items(accountList) { a ->
-                                    val ac = daoAcctColor.load(a)
-                                    val hasBg = daoAcctColor.hasColorBackground(ac)
-                                    val hasFg = daoAcctColor.hasColorForeground(ac)
-
-                                    val bgColor = if (hasBg) Color(ac.colorBg) else Color.Transparent
-                                    val fgColor = if (hasFg) Color(ac.colorFg) else Color.Unspecified
-                                    
-                                    val errorMsg = try {
-                                        val status = daoAccountNotificationStatus.load(a.acct)
-                                        val lastNotificationError = status?.lastNotificationError?.notEmpty()
-                                        val lastSubscriptionError = status?.lastSubscriptionError?.notEmpty()
-                                        lastNotificationError ?: lastSubscriptionError
-                                    } catch (ex: Throwable) {
-                                        log.e(ex, "can't get notification status for ${a.acct}")
-                                        null
-                                    }
-
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 12.dp, vertical = 6.dp)
-                                            .background(color = bgColor, shape = RoundedCornerShape(6.dp))
-                                            .clickable {
-                                                if (isResumed.compareAndSet(false, true)) {
-                                                    continuation.resume(a)
-                                                }
-                                                dialog.dismissSafe()
-                                            }
-                                            .padding(horizontal = 12.dp, vertical = 6.dp),
-                                        contentAlignment = Alignment.CenterStart
-                                    ) {
-                                        Text(
-                                            text = buildAnnotatedString {
-                                                append(ac.nickname)
-                                                if (errorMsg != null) {
-                                                    append("\n")
-                                                    withStyle(style = SpanStyle(fontSize = 11.sp)) {
-                                                        append(errorMsg)
-                                                    }
-                                                }
-                                            },
-                                            color = fgColor,
-                                            lineHeight = 20.sp
-                                        )
-                                    }
-                                }
-                            }
-                            
-                            HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant,
-                                thickness = 1.dp
-                            )
-                            
-                            TextButton(
-                                onClick = { dialog.cancel() },
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(stringResource(R.string.cancel))
-                            }
+                            Text(stringResource(R.string.cancel))
                         }
                     }
                 }

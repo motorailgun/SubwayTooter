@@ -58,7 +58,6 @@ import jp.juggler.subwaytooter.api.entity.TootInstance
 import jp.juggler.subwaytooter.api.entity.TootStatus
 import jp.juggler.subwaytooter.api.runApiTask
 import jp.juggler.subwaytooter.column.ColumnType
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.table.daoAcctColor
 import jp.juggler.subwaytooter.table.daoSavedAccount
@@ -156,15 +155,7 @@ class ActKeywordFilter : ComponentActivity() {
         filterId = EntityId.entityId(intent, EXTRA_FILTER_ID)
 
         setContent {
-            StScreen(
-                title = stringResource(
-                    if (filterId == null) R.string.keyword_filter_new
-                    else R.string.keyword_filter_edit
-                ),
-                onBack = { showBackDialog.value = true },
-            ) { innerPadding ->
-                FilterContent(modifier = Modifier.padding(innerPadding))
-            }
+            FilterContent(modifier = Modifier)
             if (showBackDialog.value) {
                 ConfirmBackDialog()
             }

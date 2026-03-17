@@ -35,73 +35,71 @@ fun ColumnScreen(
     lazyListState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
-    StThemedContent {
-        Column(modifier = modifier.fillMaxSize()) {
-            // 1. Column header
-            ColumnHeaderBar(
+    Column(modifier = modifier.fillMaxSize()) {
+        // 1. Column header
+        ColumnHeaderBar(
+            uiState = uiState,
+            callbacks = columnCallbacks,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // 2. Column settings panel
+        ColumnSettingsPanel(
+            uiState = uiState,
+            callbacks = columnCallbacks,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // 3. Announcements box
+        ColumnAnnouncementsBox(
+            uiState = uiState,
+            callbacks = columnCallbacks,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // 4. Search bar
+        ColumnSearchBar(
+            uiState = uiState,
+            callbacks = columnCallbacks,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // 5. Agg boost bar
+        ColumnAggBoostBar(
+            uiState = uiState,
+            callbacks = columnCallbacks,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // 6. List bar
+        ColumnListBar(
+            uiState = uiState,
+            callbacks = columnCallbacks,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        // 7. Quick filter bar (only if NOT inside settings)
+        if (!uiState.quickFilterInsideSetting) {
+            ColumnQuickFilterBar(
                 uiState = uiState,
                 callbacks = columnCallbacks,
                 modifier = Modifier.fillMaxWidth(),
-            )
-
-            // 2. Column settings panel
-            ColumnSettingsPanel(
-                uiState = uiState,
-                callbacks = columnCallbacks,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            // 3. Announcements box
-            ColumnAnnouncementsBox(
-                uiState = uiState,
-                callbacks = columnCallbacks,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            // 4. Search bar
-            ColumnSearchBar(
-                uiState = uiState,
-                callbacks = columnCallbacks,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            // 5. Agg boost bar
-            ColumnAggBoostBar(
-                uiState = uiState,
-                callbacks = columnCallbacks,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            // 6. List bar
-            ColumnListBar(
-                uiState = uiState,
-                callbacks = columnCallbacks,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            // 7. Quick filter bar (only if NOT inside settings)
-            if (!uiState.quickFilterInsideSetting) {
-                ColumnQuickFilterBar(
-                    uiState = uiState,
-                    callbacks = columnCallbacks,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            // 8. Column body (takes remaining space)
-            ColumnBody(
-                activity = activity,
-                column = column,
-                uiState = uiState,
-                timelineState = timelineState,
-                timelineCallbacks = timelineCallbacks,
-                columnCallbacks = columnCallbacks,
-                bSimpleList = bSimpleList,
-                lazyListState = lazyListState,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
             )
         }
+
+        // 8. Column body (takes remaining space)
+        ColumnBody(
+            activity = activity,
+            column = column,
+            uiState = uiState,
+            timelineState = timelineState,
+            timelineCallbacks = timelineCallbacks,
+            columnCallbacks = columnCallbacks,
+            bSimpleList = bSimpleList,
+            lazyListState = lazyListState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
+        )
     }
 }

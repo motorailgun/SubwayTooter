@@ -12,7 +12,6 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import jp.juggler.subwaytooter.compose.StScreen
 import jp.juggler.subwaytooter.dialog.DlgConfirm.confirm
 import jp.juggler.subwaytooter.table.MutedApp
 import jp.juggler.subwaytooter.table.appDatabase
@@ -39,21 +38,12 @@ class ActMutedApp : ComponentActivity() {
         }
         App1.setActivityTheme(this)
         setContent {
-            StScreen(
-                title = getString(R.string.muted_app),
-                onBack = {
-                    setResult(RESULT_OK)
-                    finish()
-                },
-            ) { innerPadding ->
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(innerPadding),
-                ) {
-                    items(items, key = { it.name }) { item ->
-                        MuteItemRow(item.name) { delete(item) }
-                    }
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize(),
+            ) {
+                items(items, key = { it.name }) { item ->
+                    MuteItemRow(item.name) { delete(item) }
                 }
             }
         }

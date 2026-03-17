@@ -43,7 +43,6 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import com.bumptech.glide.Glide
 import jp.juggler.subwaytooter.R
-import jp.juggler.subwaytooter.compose.StThemedContent
 import jp.juggler.subwaytooter.defaultColorIcon
 import jp.juggler.subwaytooter.util.PostAttachment
 import jp.juggler.util.coroutine.cancellationException
@@ -63,16 +62,14 @@ suspend fun ComponentActivity.dialogAttachmentRearrange(
     val dialog = Dialog(this)
     val composeView = ComposeView(this).apply {
         setContent {
-            StThemedContent {
-                AttachmentRearrangeContent(
-                    initialList = initialList,
-                    onOk = { reorderedList ->
-                        if (cont.isActive) cont.resume(reorderedList) { _, _, _ -> }
-                        dialog.dismissSafe()
-                    },
-                    onCancel = { dialog.dismissSafe() },
-                )
-            }
+            AttachmentRearrangeContent(
+                initialList = initialList,
+                onOk = { reorderedList ->
+                    if (cont.isActive) cont.resume(reorderedList) { _, _, _ -> }
+                    dialog.dismissSafe()
+                },
+                onCancel = { dialog.dismissSafe() },
+            )
         }
     }
     dialog.setContentView(composeView)
