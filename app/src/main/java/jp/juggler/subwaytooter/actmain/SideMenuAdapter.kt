@@ -4,13 +4,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Handler
-import android.view.ViewGroup
-import android.widget.FrameLayout
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -31,19 +28,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-// import androidx.compose.ui.platform.ComposeView
-// import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-// import androidx.core.view.GravityCompat
-// import androidx.drawerlayout.widget.DrawerLayout
-import androidx.lifecycle.setViewTreeLifecycleOwner
-import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.ActAbout
-import jp.juggler.subwaytooter.ActAppSetting
 import jp.juggler.subwaytooter.ActAppSetting.Companion.launchAppSetting
 import jp.juggler.subwaytooter.ActFavMute
 import jp.juggler.subwaytooter.ActHighlightWordList

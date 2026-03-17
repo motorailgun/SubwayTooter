@@ -391,7 +391,6 @@ class ActMain : ComponentActivity(),
             root = composeView,
             viewPager = viewPager,
             rvPager = rvPager,
-            // drawerLayout = drawerLayout, // removed
             llFormRoot = llFormRoot,
             tvEmpty = tvEmpty,
             btnMenu = btnMenu,
@@ -840,22 +839,6 @@ class ActMain : ComponentActivity(),
     override fun onMyClickableSpanClicked(viewClicked: View, span: MyClickableSpan) =
         onMyClickableSpanClickedImpl(viewClicked, span)
 
-    // override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
-    //     completionHelper.closeAcctPopup()
-    // }
-    //
-    // override fun onDrawerOpened(drawerView: View) {
-    //     completionHelper.closeAcctPopup()
-    // }
-    //
-    // override fun onDrawerClosed(drawerView: View) {
-    //     completionHelper.closeAcctPopup()
-    // }
-    //
-    // override fun onDrawerStateChanged(newState: Int) {
-    //     completionHelper.closeAcctPopup()
-    // }
-
     override fun onKeyShortcut(keyCode: Int, event: KeyEvent?): Boolean {
         return when {
             super.onKeyShortcut(keyCode, event) -> true
@@ -886,11 +869,6 @@ class ActMain : ComponentActivity(),
         reloadIconSize()
 
         findViews()
-
-        // views.drawerLayout.addDrawerListener(this)
-        // views.drawerLayout.setExclusionSize(stripIconSize)
-
-        // sideMenuAdapter = SideMenuAdapter(this, handler, findViewById(R.id.nav_view), views.drawerLayout)
 
         views.vBottomPadding.layoutParams?.height = screenBottomPadding
 
