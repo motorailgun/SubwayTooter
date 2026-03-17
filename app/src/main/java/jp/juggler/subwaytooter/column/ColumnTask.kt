@@ -24,7 +24,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
-import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 
 enum class ColumnTaskType(val marker: Char) {
@@ -146,9 +146,9 @@ abstract class ColumnTask(
             handleResult(result)
         }
 
-        val activity = column.context as? AppCompatActivity
-        if (activity != null) {
-            job = activity.lifecycleScope.launch(block = block)
+        val lifecycleOwner = column.context as? LifecycleOwner
+        if (lifecycleOwner != null) {
+            job = lifecycleOwner.lifecycleScope.launch(block = block)
         } else {
             job = launchMain(block)
         }

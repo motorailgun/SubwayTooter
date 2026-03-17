@@ -137,6 +137,10 @@ fun TimelineView(activity: ActMain, column: Column) {
 
     DisposableEffect(column, timelineState) {
         column.timelineState = timelineState
+        timelineState.syncFromColumn(column)
+        timelineState.isLoading = column.bInitialLoading || column.bRefreshLoading
+        timelineState.errorMessage = column.mInitialLoadingError.takeIf { it.isNotEmpty() }
+            ?: column.mRefreshLoadingError.takeIf { it.isNotEmpty() }
         onDispose {
             column.timelineState = null
         }
