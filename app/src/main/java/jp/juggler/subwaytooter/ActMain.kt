@@ -386,6 +386,13 @@ class ActMain : ComponentActivity(),
         reloadEmojiScale()
         reloadColors()
 
+        // Restore initialization logic that was previously in initUI()
+        // Without this, default colors are 0 (transparent) and sizes are incorrect
+        jp.juggler.subwaytooter.column.Column.reloadDefaultColor(this)
+        reloadFonts()
+        reloadIconSize()
+        reloadMediaHeight()
+
         // initUI() // Legacy View Init Removed
 
         // updateColumnStrip() // Compose observes state
