@@ -9,48 +9,43 @@ import jp.juggler.subwaytooter.table.daoSavedAccount
 // デフォルトの投稿先アカウントを探す。アカウント選択が必要な状況ならnull
 val ActMain.currentPostTarget: SavedAccount?
     get() {
-        // 1. Check default account preference
         val dbId = PrefL.lpDefaultPostAccount.value
         if (dbId != -1L) {
             val a = daoSavedAccount.loadAccount(dbId)
             if (a != null && !a.isPseudo) return a
         }
+        phoneTab(
+            { env ->
+                val c = env.pagerAdapter.getColumn(env.pager.currentItem)
+                return when {
+                    c == null || c.accessInfo.isPseudo -> null
+                    else -> c.accessInfo
+                }
+            },
+            { env ->
+                val accounts = ArrayList<SavedAccount>()
+                for (c in env.visibleColumns) {
+                    try {
+                        val a = c.accessInfo
+                        // 画面内に疑似アカウントがあれば常にアカウント選択が必要
+                        if (a.isPseudo) {
+                            accounts.clear()
+                            break
+                        }
+                        // 既出でなければ追加する
+                        if (accounts.none { it == a }) accounts.add(a)
+                    } catch (ignored: Throwable) {
+                    }
+                }
 
-        // 2. Check current column(s)
-        val statePhone = composePagerState
-        val stateTablet = composeTabletListState
-        
-        // Tablet mode
-        if (nScreenColumn > 1 && stateTablet != null) {
-             val visibleIndices = stateTablet.layoutInfo.visibleItemsInfo.map { it.index }
-             val accounts = ArrayList<SavedAccount>()
-             for (idx in visibleIndices) {
-                 val c = appState.columnList.getOrNull(idx) ?: continue
-                 val a = c.accessInfo
-                 if (a.isPseudo) {
-                     // If any visible column is pseudo (e.g. settings), force selection
-                     return null 
-                 }
-                 if (accounts.none { it.acct == a.acct }) accounts.add(a)
-             }
-             
-             return if (accounts.size == 1) accounts.first() else null
-        }
-        
-        // Phone mode
-        if (statePhone != null) {
-            val idx = statePhone.currentPage
-            val c = appState.columnList.getOrNull(idx)
-            return if (c != null && !c.accessInfo.isPseudo) {
-                c.accessInfo
-            } else {
-                null
-            }
-        }
-
-        return null
+                return when (accounts.size) {
+                    // 候補が1つだけならアカウント選択は不要
+                    1 -> accounts.first()
+                    // 候補が2つ以上ならアカウント選択は必要
+                    else -> null
+                }
+            })
     }
-
 
 fun ActMain.reloadAccountSetting(
     newAccounts: List<SavedAccount>,

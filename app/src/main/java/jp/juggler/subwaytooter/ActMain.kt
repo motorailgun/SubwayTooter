@@ -19,9 +19,6 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.pager.PagerState
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.GravityCompat
 import androidx.drawerlayout.widget.DrawerLayout
@@ -89,9 +86,6 @@ import jp.juggler.subwaytooter.util.openBrowser
 import jp.juggler.subwaytooter.util.permissionSpecNotification
 import jp.juggler.subwaytooter.util.requester
 import jp.juggler.util.backPressed
-import androidx.activity.compose.setContent
-import jp.juggler.subwaytooter.actmain.afterNotificationGranted
-import jp.juggler.util.coroutine.launchIO
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.anyArrayOf
 import jp.juggler.util.data.notEmpty
@@ -371,7 +365,7 @@ class ActMain : ComponentActivity(),
         }
 
         // Set Compose Content
-        setContent {
+        androidx.activity.compose.setContent {
             jp.juggler.subwaytooter.compose.StThemedContent {
                 jp.juggler.subwaytooter.actmain.ActMainScreen(this, initialColumnIndex)
             }
@@ -474,9 +468,7 @@ class ActMain : ComponentActivity(),
             benchmark("reload color") { reloadColors() }
             benchmark("reload timezone") { reloadTimeZone() }
 
-            launchIO {
-                try {
-                    benchmark("onStartAfter total") {
+            benchmark("onStartAfter total") {
 
                         benchmark("sweepBuggieData") {
                             // バグいアカウントデータを消す
@@ -562,6 +554,8 @@ class ActMain : ComponentActivity(),
 
         completionHelper.closeAcctPopup()
 
+        closePopup()
+
         appState.streamManager.onScreenStop()
 
         appState.columnList.forEach { it.saveScrollPosition() }
@@ -603,9 +597,9 @@ class ActMain : ComponentActivity(),
         isResumed = false
 
         // 最後に表示していたカラムの位置
-        val lastPos = composePagerState?.currentPage
-            ?: composeTabletListState?.firstVisibleItemIndex
-            ?: PrefI.ipLastColumnPos.value
+        val lastPos = phoneTab(
+            { env -> env.pager.currentItem },
+            { env -> env.visibleColumnsIndices.first })
         log.d("ipLastColumnPos save $lastPos")
         PrefI.ipLastColumnPos.value = lastPos
 
@@ -618,6 +612,10 @@ class ActMain : ComponentActivity(),
 
     //////////////////////////////////////////////////////////////////
     // UIイベント
+
+    override fun onClick(v: View) {
+        // Legacy click handler removed
+    }
 
     override fun onMyClickableSpanClicked(viewClicked: View, span: MyClickableSpan) =
         onMyClickableSpanClickedImpl(viewClicked, span)
