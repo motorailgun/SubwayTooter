@@ -28,6 +28,8 @@ import jp.juggler.util.ui.vg
 import android.view.Gravity
 import kotlin.math.abs
 import kotlin.math.min
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 
 private val log = LogCategory("ActMainColumns")
 
@@ -252,9 +254,6 @@ fun ActMain.searchFromActivityResult(data: Intent?, columnType: ColumnType) =
             params = arrayOf(it)
         )
     }
-
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
 
 fun ActMain.scrollToColumn(index: Int, smoothScroll: Boolean = true) {
     if (index < 0 || index >= appState.columnCount) return
