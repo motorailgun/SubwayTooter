@@ -71,9 +71,9 @@ fun ActPost.showRecommendedPlugin(@StringRes titleId: Int) {
 fun ActPost.openMushroom() {
     try {
         val (mushroomInput: Int, et: TextEditState) = when (focusedEditField) {
-            1 -> 1 to etContentWarning
+            1 -> 1 to views.etContentWarning
             in 2..5 -> focusedEditField to etChoices[focusedEditField - 2]
-            else -> 0 to etContent
+            else -> 0 to views.etContent
         }
         states.mushroomInput = mushroomInput
         val text = prepareMushroomText(et)

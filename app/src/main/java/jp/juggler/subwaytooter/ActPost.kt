@@ -152,7 +152,17 @@ data class AttachmentSlotUi(
     val fallbackIconRes: Int = R.drawable.ic_clip,
 )
 
-
+class ActPostViews(val activity: ActPost) {
+    val etContentWarning get() = activity.etContentWarning
+    val etContent get() = activity.etContent
+    val etChoice1 get() = activity.etChoice1
+    val etChoice2 get() = activity.etChoice2
+    val etChoice3 get() = activity.etChoice3
+    val etChoice4 get() = activity.etChoice4
+    val etExpireDays get() = activity.etExpireDays
+    val etExpireHours get() = activity.etExpireHours
+    val etExpireMinutes get() = activity.etExpireMinutes
+}
 
 class ActPost : ComponentActivity(),
     PostAttachment.Callback,
@@ -226,7 +236,7 @@ class ActPost : ComponentActivity(),
     val etExpireHours = TextEditState()
     val etExpireMinutes = TextEditState()
 
-
+    val views by lazy { ActPostViews(this) }
     val etChoices: List<TextEditState> get() = listOf(etChoice1, etChoice2, etChoice3, etChoice4)
 
     /** Which text field has focus: 0=content, 1=cw, 2-5=choice1-4. Used by Mushroom plugin. */
@@ -300,8 +310,8 @@ class ActPost : ComponentActivity(),
         if (r.isNotOk) return@ActivityResultHandler
         r.data?.string("replace_key")?.let { text ->
             when (states.mushroomInput) {
-                0 -> applyMushroomText(etContent, text)
-                1 -> applyMushroomText(etContentWarning, text)
+                0 -> applyMushroomText(views.etContent, text)
+                1 -> applyMushroomText(views.etContentWarning, text)
                 else -> for (i in 0..3) {
                     if (states.mushroomInput == i + 2) {
                         applyMushroomText(etChoices[i], text)
@@ -592,11 +602,11 @@ class ActPost : ComponentActivity(),
 
         // Observe all text fields to update the character count
         launchMain {
-            androidx.compose.runtime.snapshotFlow { etContent.fieldValue.text }
+            androidx.compose.runtime.snapshotFlow { views.etContent.fieldValue.text }
                 .collectLatest { updateTextCount() }
         }
         launchMain {
-            androidx.compose.runtime.snapshotFlow { etContentWarning.fieldValue.text }
+            androidx.compose.runtime.snapshotFlow { views.etContentWarning.fieldValue.text }
                 .collectLatest { updateTextCount() }
         }
         for (et in etChoices) {

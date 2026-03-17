@@ -67,12 +67,12 @@ fun ActPost.updateTextCount() {
     var length = 0
 
     length += TootAccount.countText(
-        EmojiDecoder.decodeShortCode(etContent.text.toString())
+        EmojiDecoder.decodeShortCode(views.etContent.text.toString())
     )
 
     if (contentWarningChecked) {
         length += TootAccount.countText(
-            EmojiDecoder.decodeShortCode(etContentWarning.text.toString())
+            EmojiDecoder.decodeShortCode(views.etContentWarning.text.toString())
         )
     }
 

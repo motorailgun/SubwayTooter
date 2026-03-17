@@ -213,12 +213,9 @@ class Column(
 
     //////////////////////////////////////////////////////////////////////////////////////
 
-    // Compose state holder
-    var timelineState: jp.juggler.subwaytooter.compose.TimelineState? = null
-
     // カラムを閉じた後のnotifyDataSetChangedのタイミングで、add/removeされる順序が期待通りにならないので
     // 参照を１つだけ持つのではなく、リストを保持して先頭の要素を使うことにする
-    // View-based ViewHolder (to be removed later)
+
     val listViewHolder = LinkedList<ColumnViewHolder>()
 
     //////////////////////////////////////////////////////////////////////////////////////
@@ -239,11 +236,6 @@ class Column(
     internal var taskProgress: String? = null
 
     internal val listData = BucketList<TimelineItem>()
-
-    // View-based ViewHolder convenience (nullable)
-    val viewHolder: ColumnViewHolder?
-        get() = listViewHolder.firstOrNull()
-
     internal val duplicateMap = DuplicateMap()
 
     @Volatile

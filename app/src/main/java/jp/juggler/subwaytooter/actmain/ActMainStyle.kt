@@ -112,9 +112,33 @@ fun ActMain.loadColumnMin() =
             ).dpToPx(this)
 
 fun ActMain.justifyWindowContentPortrait() {
-    // No-op for Compose
-}
+    when (PrefI.ipJustifyWindowContentPortrait.value) {
+        PrefI.JWCP_START -> {
+            val iconW = (ActMain.stripIconSize * 1.5f + 0.5f).toInt()
+            val padding = resources.displayMetrics.widthPixels / 2 - iconW
 
+            fun ViewGroup.addViewBeforeLast(v: View) = addView(v, childCount - 1)
+            (views.svColumnStrip.parent as LinearLayout).addViewBeforeLast(
+                View(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(padding, 0)
+                }
+            )
+        }
+
+        PrefI.JWCP_END -> {
+            val iconW = (ActMain.stripIconSize * 1.5f + 0.5f).toInt()
+            val borderWidth = 1f.dpToPx(this)
+            val padding = resources.displayMetrics.widthPixels / 2 - iconW - borderWidth
+
+            fun ViewGroup.addViewAfterFirst(v: View) = addView(v, 1)
+            (views.svColumnStrip.parent as LinearLayout).addViewAfterFirst(
+                View(this).apply {
+                    layoutParams = LinearLayout.LayoutParams(padding, 0)
+                }
+            )
+        }
+    }
+}
 
 //////////////////////////////////////////////////////
 
@@ -145,15 +169,37 @@ fun ActMain.reloadColors() {
     MyClickableSpan.showLinkUnderline = PrefB.bpShowLinkUnderline.value
     MyClickableSpan.defaultLinkColor = attrColor(androidx.appcompat.R.attr.colorPrimary)
 
-    // views.llFormRoot.setBackgroundColor(attrColor(MR.attr.colorSurface))
+    views.llFormRoot.setBackgroundColor(attrColor(MR.attr.colorSurface))
 
     CustomShare.reloadCache(this)
 }
 
 fun ActMain.showFooterColor() {
-    // Legacy view coloring removed. Compose handles this via Theme.
-}
+    val colorColumnStripBackground = attrColor(MR.attr.colorSurfaceContainer)
+    val colorOnSurface = attrColor(MR.attr.colorOnSurface)
 
+    views.svColumnStrip.setBackgroundColor(colorColumnStripBackground)
+
+    views.vBottomPadding.setBackgroundColor(colorColumnStripBackground)
+
+    val colorButtonBg = colorColumnStripBackground
+
+    views.btnMenu.background =
+        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorOnSurface)
+    views.btnToot.background =
+        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorOnSurface)
+
+    val d = resDrawable(R.drawable.ic_question).wrapAndTint(color = colorOnSurface)
+
+    val csl = ColorStateList.valueOf(colorOnSurface)
+    views.btnToot.imageTintList = csl
+    views.btnMenu.imageTintList = csl
+
+    views.vFooterDivider1.setBackgroundColor(colorColumnStripBackground)
+    views.vFooterDivider2.setBackgroundColor(colorColumnStripBackground)
+
+    views.llColumnStrip.indicatorColor = attrColor(MR.attr.colorOnSurfaceVariant)
+}
 
 fun ActMain.closePopup() {
     // no-op: old StatusButtonsPopup removed

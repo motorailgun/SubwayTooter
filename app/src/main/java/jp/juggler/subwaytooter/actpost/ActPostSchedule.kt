@@ -49,10 +49,10 @@ suspend fun ActPost.initializeFromScheduledStatus(account: SavedAccount, jsonTex
         states.visibility = item.visibility
         nsfwChecked = item.sensitive
 
-        etContent.setText(item.text ?: "")
+        views.etContent.setText(item.text ?: "")
 
         val cw = item.spoilerText
-        etContentWarning.setText(cw ?: "")
+        views.etContentWarning.setText(cw ?: "")
         contentWarningChecked = cw?.isNotEmpty() == true
 
         // 2019/1/7 どうも添付データを古い投稿から引き継げないようだ…。

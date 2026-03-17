@@ -219,16 +219,16 @@ private fun ActPost.appendArrachmentUrl(a: TootAttachment) {
         return
     }
     // 末尾に空白とURLを置く。選択位置は変わらない。
-    val selStart = etContent.selectionStart
-    val selEnd = etContent.selectionEnd
-    val current = etContent.text.toString()
+    val selStart = views.etContent.selectionStart
+    val selEnd = views.etContent.selectionEnd
+    val current = views.etContent.text.toString()
     val newText = if (current.isEmpty() || CharacterGroup.isWhitespace(current.last().code)) {
         current + textUrl
     } else {
         "$current $textUrl"
     }
-    etContent.setText(newText)
-    etContent.setSelection(selStart, selEnd)
+    views.etContent.setText(newText)
+    views.etContent.setSelection(selStart, selEnd)
 }
 
 // 添付した画像をタップ
