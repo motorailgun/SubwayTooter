@@ -35,30 +35,41 @@ fun Column.fireShowContent(
     reset: Boolean = false,
 ) {
     if (!isMainThread) error("fireShowContent: not on main thread.")
+    timelineState?.notifyChange(this, reason, changeList, reset)
     viewHolder?.showContent(reason, changeList, reset)
 }
 
 fun Column.fireShowColumnHeader() {
     if (!isMainThread) error("fireShowColumnHeader: not on main thread.")
+    timelineState?.forceRecompose()
     viewHolder?.showColumnHeader()
 }
 
 fun Column.fireShowColumnStatus() {
     if (!isMainThread) error("fireShowColumnStatus: not on main thread.")
+    timelineState?.let {
+        it.isLoading = bInitialLoading || bRefreshLoading
+        it.errorMessage = mInitialLoadingError.takeIf { it.isNotEmpty() }
+            ?: mRefreshLoadingError.takeIf { it.isNotEmpty() }
+        // forceRecompose is not needed as isLoading/errorMessage are backed by MutableState
+    }
     viewHolder?.showColumnStatus()
 }
 
 fun Column.fireColumnColor() {
     if (!isMainThread) error("fireColumnColor: not on main thread.")
+    timelineState?.forceRecompose()
     viewHolder?.showColumnColor()
 }
 
 fun Column.fireRelativeTime() {
     if (!isMainThread) error("fireRelativeTime: not on main thread.")
+    timelineState?.forceRecompose()
     viewHolder?.updateRelativeTime()
 }
 
 fun Column.fireRebindAdapterItems() {
     if (!isMainThread) error("fireRelativeTime: not on main thread.")
+    timelineState?.forceRecompose()
     viewHolder?.rebindAdapterItems()
 }
