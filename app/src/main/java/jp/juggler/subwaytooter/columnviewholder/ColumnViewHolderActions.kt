@@ -348,7 +348,7 @@ fun ColumnViewHolder.buildColumnCallbacks(): ColumnCallbacks = ColumnCallbacks(
             activity.showToast(true, R.string.list_name_empty)
             return@ColumnCallbacks
         }
-        activity.lifecycleScope.launch { activity.listCreate(column.accessInfo, tv) }
+        launchMain { activity.listCreate(column.accessInfo, tv) }
     },
 
     // Quick filter

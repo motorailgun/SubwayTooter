@@ -150,9 +150,7 @@ abstract class ColumnTask(
         if (lifecycleOwner != null) {
             job = lifecycleOwner.lifecycleScope.launch(block = block)
         } else {
-            // Fallback to ProcessLifecycleOwner to ensure we have a MonotonicFrameClock
-            // launchMain (EmptyScope) lacks it, causing crashes in Compose updates
-            job = androidx.lifecycle.ProcessLifecycleOwner.get().lifecycleScope.launch(block = block)
+            job = launchMain(block)
         }
     }
 }

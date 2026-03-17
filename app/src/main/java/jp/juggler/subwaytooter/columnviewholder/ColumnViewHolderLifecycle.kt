@@ -52,7 +52,7 @@ fun ColumnViewHolder.loadBackgroundImage(url: String?) {
         val screenW = activity.resources.displayMetrics.widthPixels
         val screenH = activity.resources.displayMetrics.heightPixels
 
-        lastImageTask = activity.lifecycleScope.launch {
+        lastImageTask = launchMain {
             val bitmap = try {
                 withContext(AppDispatchers.IO) {
                     try {

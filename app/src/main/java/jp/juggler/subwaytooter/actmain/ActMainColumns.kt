@@ -20,6 +20,7 @@ import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.table.daoAcctColor
 import jp.juggler.subwaytooter.util.AccountCache
 import jp.juggler.util.*
+import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.data.clip
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
@@ -253,15 +254,12 @@ fun ActMain.searchFromActivityResult(data: Intent?, columnType: ColumnType) =
         )
     }
 
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
-
 fun ActMain.scrollToColumn(index: Int, smoothScroll: Boolean = true) {
     if (index < 0 || index >= appState.columnCount) return
 
     if (!isTablet) {
         log.d("scrollToColumn phone index=$index")
-        lifecycleScope.launch {
+        launchMain {
              if (smoothScroll) {
                  composePagerState?.animateScrollToPage(index)
              } else {
@@ -270,11 +268,11 @@ fun ActMain.scrollToColumn(index: Int, smoothScroll: Boolean = true) {
         }
     } else {
         log.d("scrollToColumn tablet index=$index")
-        lifecycleScope.launch {
+        launchMain {
             if (smoothScroll) {
-                 composeTabletListState?.animateScrollToItem(index)
+                composeTabletListState?.animateScrollToItem(index)
             } else {
-                 composeTabletListState?.scrollToItem(index)
+                composeTabletListState?.scrollToItem(index)
             }
         }
     }
