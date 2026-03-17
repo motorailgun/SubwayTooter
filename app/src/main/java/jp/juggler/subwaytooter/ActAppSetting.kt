@@ -23,58 +23,10 @@ import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.WorkerThread
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.TextUnit
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.FileProvider
 import jp.juggler.subwaytooter.appsetting.AppSettingItem
+import jp.juggler.subwaytooter.appsetting.AppSettingScreen
+import jp.juggler.subwaytooter.appsetting.AppSettingViewModel
 import jp.juggler.subwaytooter.appsetting.SettingType
 import jp.juggler.subwaytooter.appsetting.appSettingRoot
 import jp.juggler.subwaytooter.compose.ColorPickerDialog
@@ -92,6 +44,7 @@ import jp.juggler.subwaytooter.table.daoLogData
 import jp.juggler.subwaytooter.util.CustomShare
 import jp.juggler.subwaytooter.util.CustomShareTarget
 import jp.juggler.subwaytooter.util.cn
+import jp.juggler.subwaytooter.util.provideViewModel
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.launchProgress
@@ -137,10 +90,9 @@ class ActAppSetting : ComponentActivity() {
     }
 
     // ---- Compose state ----
-    private val revision = mutableIntStateOf(0)
-    private val currentSection = mutableStateOf<AppSettingItem?>(null)
-    private val activeQuery = mutableStateOf<String?>(null)
-    private val searchInput = mutableStateOf("")
+    private val viewModel by lazy {
+        provideViewModel(this) { AppSettingViewModel(application) }
+    }
 
     // ---- State ----
     private var customShareTarget: CustomShareTarget? = null
@@ -149,14 +101,9 @@ class ActAppSetting : ComponentActivity() {
     val defaultLineSpacingExtra = HashMap<String, Float>()
     val defaultLineSpacingMultiplier = HashMap<String, Float>()
 
-    // Divider sentinel for item list
-    private val divider = Any()
-
-    // Color picker dialog state
-    private val colorPickerItem = mutableStateOf<AppSettingItem?>(null)
 
     fun refreshUi() {
-        revision.intValue++
+        viewModel.refreshUi()
     }
 
     // ---- Activity Result Handlers ----
@@ -232,7 +179,7 @@ class ActAppSetting : ComponentActivity() {
         removeDefaultPref()
 
         setContent {
-            AppSettingContent(modifier = Modifier)
+            AppSettingScreen(viewModel, this)
         }
     }
 
@@ -259,11 +206,10 @@ class ActAppSetting : ComponentActivity() {
 
     private fun handleBack() {
         when {
-            activeQuery.value != null -> {
-                activeQuery.value = null
-                searchInput.value = ""
+            viewModel.searchQuery.value.isNotEmpty() -> {
+                viewModel.setSearchQuery("")
             }
-            currentSection.value != null -> currentSection.value = null
+            viewModel.currentSection.value != null -> viewModel.setSection(null)
             else -> finish()
         }
     }
@@ -272,563 +218,13 @@ class ActAppSetting : ComponentActivity() {
      * Navigate to a section. Called from AppSettingItem lambda.
      */
     fun load(section: AppSettingItem?, @Suppress("UNUSED_PARAMETER") query: String?) {
-        if (section != null) {
-            currentSection.value = section
-            activeQuery.value = null
-            searchInput.value = ""
-        } else {
-            currentSection.value = null
-            activeQuery.value = null
-            searchInput.value = ""
-        }
+        viewModel.setSection(section)
+        viewModel.setSearchQuery("")
     }
 
-    private fun buildItemsList(
-        section: AppSettingItem?,
-        query: String?,
-    ): List<Any> = buildList {
-        var lastPath: String? = null
 
-        fun addParentPath(item: AppSettingItem) {
-            add(divider)
-            val pathList = ArrayList<String>()
-            var parent = item.parent
-            while (parent != null) {
-                if (parent.caption != 0) pathList.add(0, getString(parent.caption))
-                parent = parent.parent
-            }
-            val path = pathList.joinToString("/")
-            if (path != lastPath) {
-                lastPath = path
-                add(path)
-                add(divider)
-            }
-        }
 
-        fun queryRecursive(item: AppSettingItem, q: String) {
-            if (item.caption == 0) return
-            when (item.type) {
-                SettingType.Section ->
-                    item.items.forEach { queryRecursive(it, q) }
 
-                SettingType.Group -> {
-                    if (item.match(this@ActAppSetting, q) ||
-                        item.items.any { it.match(this@ActAppSetting, q) }
-                    ) {
-                        addParentPath(item)
-                        add(item)
-                        addAll(item.items)
-                    }
-                }
-
-                else -> {
-                    if (item.match(this@ActAppSetting, q)) {
-                        addParentPath(item)
-                        add(item)
-                    }
-                    item.items.forEach { queryRecursive(it, q) }
-                }
-            }
-        }
-
-        fun addSectionItems(sec: AppSettingItem?) {
-            sec ?: return
-            for (item in sec.items) {
-                add(divider)
-                add(item)
-                if (item.items.isNotEmpty()) {
-                    when (item.type) {
-                        SettingType.Group -> addAll(item.items)
-                        else -> addSectionItems(item)
-                    }
-                }
-            }
-        }
-
-        when {
-            query?.isNotEmpty() == true -> queryRecursive(appSettingRoot, query)
-            section != null -> addSectionItems(section)
-            else -> {
-                for (child in appSettingRoot.items) {
-                    add(divider)
-                    add(child)
-                }
-            }
-        }
-        if (isNotEmpty()) add(divider)
-    }
-
-    // ---- Main Composable ----
-
-    @Composable
-    private fun AppSettingContent(modifier: Modifier) {
-        val rev = revision.intValue
-        val section = currentSection.value
-        val query = activeQuery.value
-
-        // Debounced search
-        val inputText = searchInput.value
-        LaunchedEffect(inputText) {
-            if (inputText.isEmpty()) {
-                activeQuery.value = null
-            } else {
-                delay(166)
-                activeQuery.value = inputText
-            }
-        }
-
-        val items = remember(section, query, rev) {
-            buildItemsList(section, query)
-        }
-
-        // Color picker dialog
-        colorPickerItem.value?.let { item ->
-            val ip = item.pref.cast<IntPref>() ?: return@let
-            ColorPickerDialog(
-                colorInitial = ip.value.notZero() ?: Color.BLACK,
-                alphaEnabled = item.type == SettingType.ColorAlpha,
-                onDismiss = { colorPickerItem.value = null },
-                onColorSelected = { newColor ->
-                    val c = when (item.type) {
-                        SettingType.ColorAlpha -> newColor.notZero() ?: 1
-                        else -> newColor or Color.BLACK
-                    }
-                    ip.value = c
-                    item.changed(this@ActAppSetting)
-                    colorPickerItem.value = null
-                    refreshUi()
-                },
-            )
-        }
-
-        Column(modifier.fillMaxSize()) {
-            // Search bar
-            SearchBar()
-
-            // Settings list
-            LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
-            ) {
-                itemsIndexed(
-                    items,
-                    contentType = { _, item ->
-                        when (item) {
-                            divider -> "divider"
-                            is String -> "path"
-                            is AppSettingItem -> item.type.id
-                            else -> "unknown"
-                        }
-                    },
-                ) { _, item ->
-                    when (item) {
-                        divider -> HorizontalDivider(
-                            modifier = Modifier.padding(vertical = 6.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                        )
-                        is String -> Text(
-                            text = item,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(vertical = 3.dp),
-                        )
-                        is AppSettingItem -> SettingItemComposable(item)
-                    }
-                }
-            }
-        }
-    }
-
-    @Composable
-    private fun SearchBar() {
-        val keyboardController = LocalSoftwareKeyboardController.current
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TextField(
-                value = searchInput.value,
-                onValueChange = { searchInput.value = it },
-                modifier = Modifier.weight(1f),
-                placeholder = { Text(stringResource(R.string.search)) },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { keyboardController?.hide() }),
-            )
-            if (searchInput.value.isNotEmpty()) {
-                IconButton(onClick = {
-                    searchInput.value = ""
-                    activeQuery.value = null
-                    keyboardController?.hide()
-                }) {
-                    Icon(Icons.Default.Close, contentDescription = stringResource(R.string.reset))
-                }
-            }
-        }
-    }
-
-    // ---- Setting item composables ----
-
-    @Composable
-    private fun SettingItemComposable(item: AppSettingItem) {
-        val name = if (item.caption == 0) "" else stringResource(item.caption)
-
-        Column(modifier = Modifier.fillMaxWidth()) {
-            when (item.type) {
-                SettingType.Section -> SectionItem(item, name)
-                SettingType.Action -> ActionItem(item, name)
-                SettingType.Switch -> SwitchItem(item, name)
-                SettingType.CheckBox -> CheckboxItem(item, name)
-                SettingType.EditText -> EditTextItem(item, name)
-                SettingType.Spinner -> SpinnerItem(item, name)
-                SettingType.ColorOpaque, SettingType.ColorAlpha -> ColorItem(item, name)
-                SettingType.Group -> GroupItem(name)
-                SettingType.TextWithSelector -> TextWithSelectorItem(item, name)
-                SettingType.Sample -> SampleItem(item)
-                else -> {}
-            }
-
-            // Description
-            if (item.desc != 0) {
-                val descText = stringResource(item.desc)
-                Text(
-                    text = descText,
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier
-                        .padding(start = 32.dp, top = 2.dp)
-                        .then(
-                            if (item.descClickSet) {
-                                Modifier.clickable { item.descClick.invoke(this@ActAppSetting) }
-                            } else Modifier
-                        ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-    }
-
-    @Composable
-    private fun CaptionText(
-        name: String,
-        item: AppSettingItem? = null,
-    ) {
-        if (name.isEmpty()) return
-        val fontSize = item?.captionFontSize?.invoke(this@ActAppSetting)
-        val spacing = item?.captionSpacing?.invoke(this@ActAppSetting)
-        val lineHeight = if (spacing != null && spacing.isFinite()) {
-            (14f * spacing).sp
-        } else TextUnit.Unspecified
-
-        Text(
-            text = name,
-            fontSize = fontSize?.sp ?: 14.sp,
-            lineHeight = lineHeight,
-        )
-    }
-
-    @Composable
-    private fun SectionItem(item: AppSettingItem, name: String) {
-        Button(
-            onClick = {
-                currentSection.value = item
-                activeQuery.value = null
-                searchInput.value = ""
-            },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = item.enabled,
-        ) {
-            Text(name)
-        }
-    }
-
-    @Composable
-    private fun ActionItem(item: AppSettingItem, name: String) {
-        Button(
-            onClick = { item.action(this@ActAppSetting) },
-            modifier = Modifier.fillMaxWidth(),
-            enabled = item.enabled,
-        ) {
-            Text(name)
-        }
-    }
-
-    @Composable
-    private fun SwitchItem(item: AppSettingItem, name: String) {
-        val bp = item.pref.cast<BooleanPref>() ?: return
-        CaptionText(name, item)
-        Row(
-            modifier = Modifier.padding(start = 32.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Switch(
-                checked = bp.value,
-                onCheckedChange = {
-                    bp.value = it
-                    item.changed(this@ActAppSetting)
-                    refreshUi()
-                },
-                enabled = item.enabled,
-            )
-        }
-    }
-
-    @Composable
-    private fun CheckboxItem(item: AppSettingItem, name: String) {
-        val bp = item.pref.cast<BooleanPref>() ?: return
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable(enabled = item.enabled) {
-                    bp.value = !bp.value
-                    item.changed(this@ActAppSetting)
-                    refreshUi()
-                }
-                .padding(start = 32.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Checkbox(
-                checked = bp.value,
-                onCheckedChange = null,
-                enabled = item.enabled,
-            )
-            Spacer(Modifier.width(8.dp))
-            Text(name)
-        }
-    }
-
-    @Composable
-    private fun EditTextItem(item: AppSettingItem, name: String) {
-        CaptionText(name, item)
-
-        val pi = item.pref
-        val currentText = when (pi) {
-            is FloatPref -> item.fromFloat.invoke(this@ActAppSetting, pi.value)
-            is StringPref -> pi.value
-            else -> ""
-        }
-
-        var text by remember(revision.intValue, item.id) { mutableStateOf(currentText) }
-        val error = item.getError.invoke(this@ActAppSetting, text)
-
-        TextField(
-            value = text,
-            onValueChange = { newText ->
-                val filtered = item.filter.invoke(newText)
-                text = filtered
-                when (pi) {
-                    is StringPref -> pi.value = filtered
-                    is FloatPref -> {
-                        val fv = item.toFloat.invoke(this@ActAppSetting, filtered)
-                        if (fv.isFinite()) pi.value = fv
-                        else pi.removeValue()
-                    }
-                }
-                item.changed(this@ActAppSetting)
-                refreshUi()
-            },
-            modifier = Modifier.padding(start = 32.dp).fillMaxWidth(),
-            singleLine = true,
-            isError = error != null,
-            supportingText = if (error != null) {
-                { Text(error, color = MaterialTheme.colorScheme.error) }
-            } else null,
-            placeholder = item.hint?.let { { Text(it) } },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = when {
-                    item.inputType and InputType.TYPE_CLASS_NUMBER != 0 -> KeyboardType.Number
-                    item.inputType and InputType.TYPE_NUMBER_FLAG_DECIMAL != 0 -> KeyboardType.Decimal
-                    else -> KeyboardType.Text
-                },
-                imeAction = ImeAction.Next,
-            ),
-        )
-    }
-
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    private fun SpinnerItem(item: AppSettingItem, name: String) {
-        CaptionText(name, item)
-
-        val pi = item.pref
-        if (pi is IntPref) {
-            // Simple spinner with IntPref
-            val options = item.spinnerArgs?.map { stringResource(it) }
-                ?: item.spinnerArgsProc.invoke(this@ActAppSetting)
-
-            if (options.isEmpty()) return
-
-            var expanded by remember { mutableStateOf(false) }
-            val selectedIndex = pi.value.coerceIn(0, options.size - 1)
-
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = it },
-                modifier = Modifier.padding(start = 32.dp).fillMaxWidth(),
-            ) {
-                TextField(
-                    value = options.getOrElse(selectedIndex) { "" },
-                    onValueChange = {},
-                    readOnly = true,
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                    modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable).fillMaxWidth(),
-                )
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false },
-                ) {
-                    options.forEachIndexed { index, text ->
-                        DropdownMenuItem(
-                            text = { Text(text) },
-                            onClick = {
-                                expanded = false
-                                pi.value = index
-                                item.changed(this@ActAppSetting)
-                                refreshUi()
-                            },
-                        )
-                    }
-                }
-            }
-        } else {
-            // Complex spinner with custom initializer — use AndroidView
-            AndroidView(
-                factory = { ctx ->
-                    Spinner(ctx).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            ViewGroup.LayoutParams.MATCH_PARENT,
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
-                        )
-                        item.spinnerInitializer.invoke(this@ActAppSetting, this)
-                        onItemSelectedListener =
-                            object : android.widget.AdapterView.OnItemSelectedListener {
-                                override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
-                                override fun onItemSelected(
-                                    parent: android.widget.AdapterView<*>?,
-                                    view: View?,
-                                    position: Int,
-                                    id: Long,
-                                ) {
-                                    item.spinnerOnSelected.invoke(
-                                        this@ActAppSetting,
-                                        this@apply,
-                                        position,
-                                    )
-                                    item.changed(this@ActAppSetting)
-                                    refreshUi()
-                                }
-                            }
-                    }
-                },
-                modifier = Modifier.padding(start = 32.dp).fillMaxWidth(),
-            )
-        }
-    }
-
-    @Composable
-    private fun ColorItem(item: AppSettingItem, name: String) {
-        val ip = item.pref.cast<IntPref>() ?: return
-        CaptionText(name, item)
-
-        Row(
-            modifier = Modifier.padding(start = 32.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Button(
-                onClick = { colorPickerItem.value = item },
-                enabled = item.enabled,
-            ) {
-                Text(stringResource(R.string.edit))
-            }
-            Spacer(Modifier.width(8.dp))
-            OutlinedButton(
-                onClick = {
-                    ip.removeValue()
-                    item.changed(this@ActAppSetting)
-                    refreshUi()
-                },
-                enabled = item.enabled,
-            ) {
-                Text(stringResource(R.string.reset))
-            }
-            Spacer(Modifier.width(8.dp))
-            // Color swatch
-            Box(
-                modifier = Modifier
-                    .size(32.dp)
-                    .background(androidx.compose.ui.graphics.Color(ip.value)),
-            )
-        }
-    }
-
-    @Composable
-    private fun GroupItem(name: String) {
-        if (name.isNotEmpty()) {
-            Text(
-                text = name,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-        }
-    }
-
-    @Composable
-    private fun TextWithSelectorItem(item: AppSettingItem, name: String) {
-        CaptionText(name, item)
-
-        Row(
-            modifier = Modifier.padding(start = 32.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // Use AndroidView for the text display since showTextView may set
-            // compound drawables and typeface
-            AndroidView(
-                factory = { ctx ->
-                    TextView(ctx).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            0,
-                            ViewGroup.LayoutParams.WRAP_CONTENT,
-                        )
-                    }
-                },
-                update = { tv ->
-                    item.showTextView.invoke(this@ActAppSetting, tv)
-                },
-                modifier = Modifier.weight(1f),
-            )
-            Button(onClick = { item.onClickEdit.invoke(this@ActAppSetting) }) {
-                Text(stringResource(R.string.edit))
-            }
-            Spacer(Modifier.width(4.dp))
-            OutlinedButton(onClick = {
-                item.onClickReset.invoke(this@ActAppSetting)
-                refreshUi()
-            }) {
-                Text(stringResource(R.string.reset))
-            }
-        }
-    }
-
-    @Composable
-    private fun SampleItem(item: AppSettingItem) {
-        AndroidView(
-            factory = { ctx ->
-                LinearLayout(ctx).apply {
-                    orientation = LinearLayout.VERTICAL
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                    )
-                    item.sampleViewCreator?.invoke(this)
-                }
-            },
-            update = { view ->
-                item.sampleUpdate.invoke(this@ActAppSetting, view)
-            },
-            modifier = Modifier.padding(start = 32.dp).fillMaxWidth(),
-        )
-    }
 
     // ---- Pref cleanup ----
 
