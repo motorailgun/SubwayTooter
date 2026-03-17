@@ -262,7 +262,7 @@ fun ColumnViewHolder.reactionAdd(item: TootAnnouncement, sample: TootReaction?) 
 
 fun ColumnViewHolder.reactionRemove(item: TootAnnouncement, name: String) {
     val column = column ?: return
-    launchMain {
+    activity.lifecycleScope.launch {
         activity.runApiTask(column.accessInfo) { client ->
             client.request(
                 "/api/v1/announcements/${item.id}/reactions/${name.encodePercent()}",
