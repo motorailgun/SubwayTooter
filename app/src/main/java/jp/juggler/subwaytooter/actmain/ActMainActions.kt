@@ -37,13 +37,13 @@ import java.util.concurrent.TimeUnit
 private val log = LogCategory("ActMainActions")
 
 fun ActMain.onBackPressedImpl() {
-    launchAndShowError {
+    // メニューが開いていたら閉じる
+    if (isDrawerOpen) {
+        closeDrawer()
+        return
+    }
 
-        // メニューが開いていたら閉じる
-        if (views.drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            views.drawerLayout.closeDrawer(GravityCompat.START)
-            return@launchAndShowError
-        }
+    launchAndShowError {
 
         // カラムが0個ならアプリを終了する
         if (appState.columnCount == 0) {
@@ -112,8 +112,10 @@ fun ActMain.onBackPressedImpl() {
 fun ActMain.onClickImpl(v: View) {
     when (v.id) {
         R.id.btnToot -> openPost()
-        R.id.btnMenu -> if (!views.drawerLayout.isDrawerOpen(GravityCompat.START)) {
-            views.drawerLayout.openDrawer(GravityCompat.START)
+        R.id.btnMenu -> {
+            if (!isDrawerOpen) {
+                openDrawer()
+            }
         }
     }
 }

@@ -28,8 +28,8 @@ inline fun <R : Any?> ActMain.phoneTab(
 fun ActMain.initPhoneTablet() {
     val columnWMin = loadColumnMin()
     val sw = resources.displayMetrics.widthPixels
-    val tmpPhonePager: MyViewPager = findViewById(R.id.viewPager)
-    val tmpTabletPager: RecyclerView = findViewById(R.id.rvPager)
+    val tmpPhonePager: MyViewPager = views.viewPager
+    val tmpTabletPager: RecyclerView = views.rvPager
 
     // スマホモードとタブレットモードの切り替え
     if (PrefB.bpDisableTabletMode.value || sw < columnWMin * 2) {

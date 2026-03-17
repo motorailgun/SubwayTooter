@@ -31,15 +31,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewCompositionStrategy
+// import androidx.compose.ui.platform.ComposeView
+// import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.view.GravityCompat
-import androidx.drawerlayout.widget.DrawerLayout
+// import androidx.core.view.GravityCompat
+// import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.ActAbout
@@ -92,8 +92,6 @@ import kotlin.math.abs
 class SideMenuAdapter(
     private val actMain: ActMain,
     @Suppress("unused") val handler: Handler,
-    navigationView: ViewGroup,
-    private val drawer: DrawerLayout,
 ) {
 
     companion object {
@@ -463,18 +461,18 @@ class SideMenuAdapter(
     }
 
     @Composable
-    private fun SideMenuContent() {
+    fun SideMenuContent(closeDrawer: () -> Unit) {
         LazyColumn(
-            modifier = Modifier.fillMaxSize()
+            // modifier = Modifier.fillMaxSize()
         ) {
             items(list) { item ->
                 when (item.itemType) {
                     ItemType.IT_DIVIDER -> DividerItem()
                     ItemType.IT_GROUP_HEADER -> GroupHeaderItem(item)
-                    ItemType.IT_NORMAL -> NormalItem(item)
+                    ItemType.IT_NORMAL -> NormalItem(item, closeDrawer)
                     ItemType.IT_VERSION -> VersionItem()
                     ItemType.IT_TIMEZONE -> TimezoneItem()
-                    ItemType.IT_NOTIFICATION_PERMISSION -> NotificationPermissionItem(item)
+                    ItemType.IT_NOTIFICATION_PERMISSION -> NotificationPermissionItem(item, closeDrawer)
                 }
             }
         }
@@ -504,14 +502,14 @@ class SideMenuAdapter(
     }
 
     @Composable
-    private fun NormalItem(item: Item) {
+    private fun NormalItem(item: Item, closeDrawer: () -> Unit) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(6.dp))
                 .clickable {
                     item.action(actMain)
-                    drawer.closeDrawer(GravityCompat.START)
+                    closeDrawer()
                 }
                 .padding(horizontal = 12.dp, vertical = 6.dp)
                 .heightIn(min = 44.dp),
@@ -632,14 +630,14 @@ class SideMenuAdapter(
     }
 
     @Composable
-    private fun NotificationPermissionItem(item: Item) {
+    private fun NotificationPermissionItem(item: Item, closeDrawer: () -> Unit) {
         val action = notificationActionRecommend() ?: return
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(6.dp))
                 .clickable {
-                    drawer.closeDrawer(GravityCompat.START)
+                    closeDrawer()
                     notificationActionRecommend()?.second?.invoke()
                     filterListItems()
                 }
@@ -664,19 +662,5 @@ class SideMenuAdapter(
     init {
         actMain.applicationContext.checkVersion()
         filterListItems()
-
-        ComposeView(actMain).apply {
-            setViewTreeLifecycleOwner(actMain)
-            setViewTreeSavedStateRegistryOwner(actMain)
-            setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT,
-            )
-            setContent {
-                SideMenuContent()
-            }
-            navigationView.addView(this)
-        }
     }
 }

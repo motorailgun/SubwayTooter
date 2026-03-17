@@ -21,10 +21,24 @@ import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.GravityCompat
-import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.ViewPager
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
+import kotlinx.coroutines.launch
 import jp.juggler.subwaytooter.action.accessTokenPrompt
 import jp.juggler.subwaytooter.action.timeline
 import jp.juggler.subwaytooter.actmain.ActMainPhoneViews
@@ -120,8 +134,21 @@ import com.google.android.material.R as MR
 class ActMain : ComponentActivity(),
     View.OnClickListener,
     ViewPager.OnPageChangeListener,
-    DrawerLayout.DrawerListener,
     MyClickableSpanHandler {
+
+    var composeDrawerState: androidx.compose.material3.DrawerState? = null
+    var composeScope: kotlinx.coroutines.CoroutineScope? = null
+
+    val isDrawerOpen: Boolean
+        get() = composeDrawerState?.isOpen == true
+
+    fun openDrawer() {
+        composeScope?.launch { composeDrawerState?.open() }
+    }
+
+    fun closeDrawer() {
+        composeScope?.launch { composeDrawerState?.close() }
+    }
 
     companion object {
         private val log = LogCategory("ActMain")
@@ -286,9 +313,9 @@ class ActMain : ComponentActivity(),
 
         val llFormRoot = LinearLayout(ctx).apply {
             id = R.id.llFormRoot
-            layoutParams = DrawerLayout.LayoutParams(
-                DrawerLayout.LayoutParams.MATCH_PARENT,
-                DrawerLayout.LayoutParams.MATCH_PARENT
+            layoutParams = android.view.ViewGroup.LayoutParams(
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                android.view.ViewGroup.LayoutParams.MATCH_PARENT
             )
             setBackgroundColor(colorSurface)
             orientation = LinearLayout.VERTICAL
@@ -321,30 +348,50 @@ class ActMain : ComponentActivity(),
             addView(vBottomPadding)
         }
 
-        val navView = com.google.android.material.navigation.NavigationView(ctx).apply {
-            id = R.id.nav_view
-            layoutParams = DrawerLayout.LayoutParams(
-                DrawerLayout.LayoutParams.WRAP_CONTENT,
-                DrawerLayout.LayoutParams.MATCH_PARENT
-            ).apply {
-                gravity = GravityCompat.START
-            }
-            setBackgroundColor(colorSurface)
-        }
+        // val navView ... removed
 
-        val drawerLayout = jp.juggler.subwaytooter.view.MyDrawerLayout(ctx).apply {
-            id = R.id.drawer_layout
-            layoutParams = android.view.ViewGroup.LayoutParams(
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT
-            )
-            addView(llFormRoot)
-            addView(navView)
+        val composeView = ComposeView(ctx).apply {
+            setContent {
+                val drawerState = rememberDrawerState(DrawerValue.Closed)
+                val scope = rememberCoroutineScope()
+                SideEffect {
+                    composeDrawerState = drawerState
+                    composeScope = scope
+                }
+
+                LaunchedEffect(drawerState.isOpen) {
+                    if (drawerState.isOpen) {
+                        // onDrawerOpened
+                    } else {
+                        // onDrawerClosed
+                        completionHelper.closeAcctPopup()
+                    }
+                }
+
+                ModalNavigationDrawer(
+                    drawerState = drawerState,
+                    drawerContent = {
+                        ModalDrawerSheet {
+                            sideMenuAdapter.SideMenuContent(closeDrawer = {
+                                closeDrawer()
+                            })
+                        }
+                    },
+                    content = {
+                        AndroidView(
+                            factory = { llFormRoot },
+                            modifier = Modifier.fillMaxSize()
+                        )
+                    }
+                )
+            }
         }
 
         ActMainViews(
-            root = drawerLayout,
-            drawerLayout = drawerLayout,
+            root = composeView,
+            viewPager = viewPager,
+            rvPager = rvPager,
+            // drawerLayout = drawerLayout, // removed
             llFormRoot = llFormRoot,
             tvEmpty = tvEmpty,
             btnMenu = btnMenu,
@@ -519,6 +566,8 @@ class ActMain : ComponentActivity(),
         handler = appState.handler
         density = appState.density
         completionHelper = CompletionHelper(this, appState.handler)
+        
+        sideMenuAdapter = SideMenuAdapter(this, handler)
 
         App1.setActivityTheme(this)
         setContentViewAndInsets(views.root)
@@ -791,21 +840,21 @@ class ActMain : ComponentActivity(),
     override fun onMyClickableSpanClicked(viewClicked: View, span: MyClickableSpan) =
         onMyClickableSpanClickedImpl(viewClicked, span)
 
-    override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
-        completionHelper.closeAcctPopup()
-    }
-
-    override fun onDrawerOpened(drawerView: View) {
-        completionHelper.closeAcctPopup()
-    }
-
-    override fun onDrawerClosed(drawerView: View) {
-        completionHelper.closeAcctPopup()
-    }
-
-    override fun onDrawerStateChanged(newState: Int) {
-        completionHelper.closeAcctPopup()
-    }
+    // override fun onDrawerSlide(drawerView: View, slideOffset: Float) {
+    //     completionHelper.closeAcctPopup()
+    // }
+    //
+    // override fun onDrawerOpened(drawerView: View) {
+    //     completionHelper.closeAcctPopup()
+    // }
+    //
+    // override fun onDrawerClosed(drawerView: View) {
+    //     completionHelper.closeAcctPopup()
+    // }
+    //
+    // override fun onDrawerStateChanged(newState: Int) {
+    //     completionHelper.closeAcctPopup()
+    // }
 
     override fun onKeyShortcut(keyCode: Int, event: KeyEvent?): Boolean {
         return when {
@@ -838,10 +887,10 @@ class ActMain : ComponentActivity(),
 
         findViews()
 
-        views.drawerLayout.addDrawerListener(this)
-        views.drawerLayout.setExclusionSize(stripIconSize)
+        // views.drawerLayout.addDrawerListener(this)
+        // views.drawerLayout.setExclusionSize(stripIconSize)
 
-        sideMenuAdapter = SideMenuAdapter(this, handler, findViewById(R.id.nav_view), views.drawerLayout)
+        // sideMenuAdapter = SideMenuAdapter(this, handler, findViewById(R.id.nav_view), views.drawerLayout)
 
         views.vBottomPadding.layoutParams?.height = screenBottomPadding
 
