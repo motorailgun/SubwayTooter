@@ -134,13 +134,6 @@ fun TimelineView(activity: ActMain, column: Column) {
         callbacks = callbacks,
         modifier = Modifier.fillMaxSize()
     )
-
-    DisposableEffect(column, timelineState) {
-        column.timelineState = timelineState
-        onDispose {
-            column.timelineState = null
-        }
-    }
 }
 
 @Composable

@@ -19,13 +19,9 @@ import jp.juggler.util.data.notEmpty
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.withCaption
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.concurrent.atomic.AtomicBoolean
-import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 
 enum class ColumnTaskType(val marker: Char) {
     LOADING('L'),
@@ -134,7 +130,7 @@ abstract class ColumnTask(
     }
 
     fun start() {
-        val block: suspend CoroutineScope.() -> Unit = {
+        job = launchMain {
             val result = try {
                 withContext(AppDispatchers.IO) { background() }
             } catch (ignored: CancellationException) {
@@ -144,13 +140,6 @@ abstract class ColumnTask(
                 TootApiResult(ex.withCaption("error"))
             }
             handleResult(result)
-        }
-
-        val activity = column.context as? AppCompatActivity
-        if (activity != null) {
-            job = activity.lifecycleScope.launch(block = block)
-        } else {
-            job = launchMain(block)
         }
     }
 }
