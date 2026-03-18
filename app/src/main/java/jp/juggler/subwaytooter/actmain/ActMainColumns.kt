@@ -140,77 +140,24 @@ fun ActMain.isVisibleColumn(idx: Int) = phoneTab(
 fun ActMain.updateColumnStrip() {
     views.tvEmpty.vg(appState.columnCount == 0)
 
-    val iconSize = ActMain.stripIconSize
-    val rootW = (iconSize * 1.25f + 0.5f).toInt()
-    val rootH = (iconSize * 1.5f + 0.5f).toInt()
-    val iconTopMargin = (iconSize * 0.125f + 0.5f).toInt()
-    val barHeight = (iconSize * 0.094f + 0.5f).toInt()
-    val barTopMargin = (iconSize * 0.094f + 0.5f).toInt()
-
-    // 両端のメニューと投稿ボタンの大きさ
-    val pad = (rootH - iconSize) shr 1
-    for (btn in arrayOf(
-        views.btnToot,
-        views.btnMenu,
-    )) {
-        btn.layoutParams.width = rootH // not W
-        btn.layoutParams.height = rootH
-        btn.setPaddingRelative(pad, pad, pad, pad)
-    }
-
-    views.llColumnStrip.removeAllViews()
-    appState.columnList.forEachIndexed { index, column ->
-
-        val ivIcon = ImageView(this).apply {
-            scaleType = ImageView.ScaleType.FIT_CENTER
-        }
-        val vAcctColor = View(this)
-        val viewRoot = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER
-            layoutParams = LinearLayout.LayoutParams(rootW, rootH).apply {
-                weight = 1f
-            }
-            addView(ivIcon, LinearLayout.LayoutParams(iconSize, iconSize).apply {
-                topMargin = iconTopMargin
-            })
-            addView(vAcctColor, LinearLayout.LayoutParams(iconSize, barHeight).apply {
-                topMargin = barTopMargin
-            })
-        }
-
-        viewRoot.tag = index
-        viewRoot.setOnClickListener { v ->
-            val idx = v.tag as Int
-            if (PrefB.bpScrollTopFromColumnStrip.value && isVisibleColumn(idx)) {
-                column.viewHolder?.scrollToTop2()
-                return@setOnClickListener
-            }
-            scrollToColumn(idx)
-        }
-        viewRoot.contentDescription = column.getColumnName(true)
-
-        viewRoot.background = getAdaptiveRippleDrawableRound(
-            this,
-            column.getHeaderBackgroundColor(),
-            column.getHeaderNameColor()
-        )
-
-        ivIcon.setImageResource(column.getIconId())
-        ivIcon.imageTintList = ColorStateList.valueOf(column.getHeaderNameColor())
-
-        //
+    // Update ViewModel with column list
+    val uiList = appState.columnList.mapIndexed { index, column ->
         val ac = daoAcctColor.load(column.accessInfo)
-        if (daoAcctColor.hasColorForeground(ac)) {
-            vAcctColor.setBackgroundColor(ac.colorFg)
-        } else {
-            vAcctColor.visibility = View.INVISIBLE
-        }
-
-        //
-        views.llColumnStrip.addView(viewRoot)
+        val acctColor = if (daoAcctColor.hasColorForeground(ac)) ac.colorFg else 0
+        
+        MainViewModel.ColumnUiState(
+            index = index,
+            iconId = column.getIconId(),
+            acctColor = acctColor,
+            headerNameColor = column.getHeaderNameColor(),
+            headerBackgroundColor = column.getHeaderBackgroundColor(),
+            contentDescription = column.getColumnName(true) ?: ""
+        )
     }
-    views.svColumnStrip.requestLayout()
+    viewModel.setColumns(uiList)
+    
+    // Legacy logic removed: view manipulation of llColumnStrip
+    
     updateColumnStripSelection(-1, -1f)
 }
 
@@ -455,24 +402,12 @@ fun ActMain.resizeColumnWidth(views: ActMainTabletViews) {
 }
 
 fun ActMain.scrollColumnStrip(select: Int) {
-    val childCount = views.llColumnStrip.childCount
-    if (select < 0 || select >= childCount) {
+    if (select < 0 || select >= appState.columnCount) {
         return
     }
 
-    val icon = views.llColumnStrip.getChildAt(select)
-
-    val svWidth = (views.llColumnStrip.parent as View).width
-    val llWidth = views.llColumnStrip.width
-    val iconWidth = icon.width
-    val iconLeft = icon.left
-
-    if (svWidth == 0 || llWidth == 0 || iconWidth == 0) {
-        handler.postDelayed({ scrollColumnStrip(select) }, 20L)
-    }
-
-    val sx = iconLeft + iconWidth / 2 - svWidth / 2
-    views.svColumnStrip.smoothScrollTo(sx, 0)
+    // Update ViewModel to scroll the strip
+    viewModel.requestScrollToColumn(select)
 
     launchMain {
         try {
@@ -488,14 +423,14 @@ fun ActMain.updateColumnStripSelection(position: Int, positionOffset: Float) {
         if (isFinishing) return@Runnable
 
         if (appState.columnCount == 0) {
-            views.llColumnStrip.setVisibleRange(-1, -1, 0f)
+            viewModel.setVisibleRange(-1, -1, 0f)
         } else {
             phoneTab({ env ->
                 if (position >= 0) {
-                    views.llColumnStrip.setVisibleRange(position, position, positionOffset)
+                    viewModel.setVisibleRange(position, position, positionOffset)
                 } else {
                     val c = env.pager.currentItem
-                    views.llColumnStrip.setVisibleRange(c, c, 0f)
+                    viewModel.setVisibleRange(c, c, 0f)
                 }
             }, { env ->
                 val vs = env.tabletLayoutManager.findFirstVisibleItemPosition()
@@ -512,7 +447,7 @@ fun ActMain.updateColumnStripSelection(position: Int, positionOffset: Float) {
                         (abs((child?.left ?: 0) / nColumnWidth.toFloat())).clip(0f, 1f)
                 }
 
-                views.llColumnStrip.setVisibleRange(vr.first, vr.last, slideRatio)
+                viewModel.setVisibleRange(vr.first, vr.last, slideRatio)
             })
         }
     })

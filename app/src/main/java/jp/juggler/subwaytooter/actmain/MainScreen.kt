@@ -19,14 +19,21 @@ import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+
 @Composable
 fun MainScreen(
     viewModel: MainViewModel,
     contentView: View,
     sideMenuAdapter: SideMenuAdapter,
+    onClickMenu: () -> Unit,
+    onClickToot: () -> Unit,
+    onLongClickToot: () -> Unit,
+    onClickColumn: (Int) -> Unit,
     onDrawerClosed: () -> Unit = {},
 ) {
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val drawerState = androidx.compose.material3.rememberDrawerState(androidx.compose.material3.DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     
     // Sync Drawer State with ViewModel
@@ -58,13 +65,28 @@ fun MainScreen(
             }
         },
         content = {
-            AndroidView(
-                factory = { contentView },
+            Scaffold(
+                bottomBar = {
+                    MainFooter(
+                        viewModel = viewModel,
+                        onClickMenu = onClickMenu,
+                        onClickToot = onClickToot,
+                        onLongClickToot = onLongClickToot,
+                        onClickColumn = onClickColumn,
+                    )
+                },
                 modifier = Modifier
                     .fillMaxSize()
                     .systemBarsPadding()
                     .imePadding()
-            )
+            ) { paddingValues ->
+                AndroidView(
+                    factory = { contentView },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                )
+            }
         }
     )
 }

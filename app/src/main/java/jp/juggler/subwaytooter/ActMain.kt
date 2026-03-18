@@ -27,6 +27,9 @@ import androidx.viewpager.widget.ViewPager
 import androidx.activity.compose.setContent
 import jp.juggler.subwaytooter.actmain.MainScreen
 import jp.juggler.subwaytooter.actmain.MainViewModel
+import jp.juggler.subwaytooter.actmain.isVisibleColumn
+import jp.juggler.subwaytooter.actmain.scrollToColumn
+import jp.juggler.subwaytooter.columnviewholder.scrollToTop2
 import jp.juggler.subwaytooter.util.provideViewModel
 import kotlinx.coroutines.launch
 import jp.juggler.subwaytooter.action.accessTokenPrompt
@@ -322,21 +325,9 @@ class ActMain : ComponentActivity(),
                 addView(rvPager)
             })
 
-            // Footer bar
-            addView(LinearLayout(ctx).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                )
-                orientation = LinearLayout.HORIZONTAL
-                addView(btnMenu)
-                addView(vFooterDivider1)
-                addView(svColumnStrip)
-                addView(vFooterDivider2)
-                addView(btnToot)
-            })
-
-            addView(vBottomPadding)
+            // Footer bar removed (Moved to Compose)
+            // But we still need to initialize the views for ActMainViews
+            // The views are created above, just not added to layout.
         }
 
         // val navView ... removed
@@ -529,6 +520,19 @@ class ActMain : ComponentActivity(),
                 viewModel = viewModel,
                 contentView = views.root,
                 sideMenuAdapter = sideMenuAdapter,
+                onClickMenu = { this@ActMain.onClick(views.btnMenu) },
+                onClickToot = { this@ActMain.onClick(views.btnToot) },
+                onLongClickToot = { views.btnToot.performLongClick() },
+                onClickColumn = { idx ->
+                    val column = appState.column(idx)
+                    if (column != null) {
+                        if (jp.juggler.subwaytooter.pref.PrefB.bpScrollTopFromColumnStrip.value && isVisibleColumn(idx)) {
+                            column.viewHolder?.scrollToTop2()
+                        } else {
+                            scrollToColumn(idx)
+                        }
+                    }
+                },
                 onDrawerClosed = { completionHelper.closeAcctPopup() },
             )
         }
