@@ -24,20 +24,10 @@ import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager.widget.ViewPager
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationDrawerItemDefaults
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Modifier
+import androidx.activity.compose.setContent
+import jp.juggler.subwaytooter.actmain.MainScreen
+import jp.juggler.subwaytooter.actmain.MainViewModel
+import jp.juggler.subwaytooter.util.provideViewModel
 import kotlinx.coroutines.launch
 import jp.juggler.subwaytooter.action.accessTokenPrompt
 import jp.juggler.subwaytooter.action.timeline
@@ -136,18 +126,19 @@ class ActMain : ComponentActivity(),
     ViewPager.OnPageChangeListener,
     MyClickableSpanHandler {
 
-    var composeDrawerState: androidx.compose.material3.DrawerState? = null
-    var composeScope: kotlinx.coroutines.CoroutineScope? = null
+    val viewModel by lazy {
+        provideViewModel(this) { MainViewModel(application) }
+    }
 
     val isDrawerOpen: Boolean
-        get() = composeDrawerState?.isOpen == true
+        get() = viewModel.isDrawerOpen.value
 
     fun openDrawer() {
-        composeScope?.launch { composeDrawerState?.open() }
+        viewModel.openDrawer()
     }
 
     fun closeDrawer() {
-        composeScope?.launch { composeDrawerState?.close() }
+        viewModel.closeDrawer()
     }
 
     companion object {
@@ -350,45 +341,8 @@ class ActMain : ComponentActivity(),
 
         // val navView ... removed
 
-        val composeView = ComposeView(ctx).apply {
-            setContent {
-                val drawerState = rememberDrawerState(DrawerValue.Closed)
-                val scope = rememberCoroutineScope()
-                SideEffect {
-                    composeDrawerState = drawerState
-                    composeScope = scope
-                }
-
-                LaunchedEffect(drawerState.isOpen) {
-                    if (drawerState.isOpen) {
-                        // onDrawerOpened
-                    } else {
-                        // onDrawerClosed
-                        completionHelper.closeAcctPopup()
-                    }
-                }
-
-                ModalNavigationDrawer(
-                    drawerState = drawerState,
-                    drawerContent = {
-                        ModalDrawerSheet {
-                            sideMenuAdapter.SideMenuContent(closeDrawer = {
-                                closeDrawer()
-                            })
-                        }
-                    },
-                    content = {
-                        AndroidView(
-                            factory = { llFormRoot },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    }
-                )
-            }
-        }
-
         ActMainViews(
-            root = composeView,
+            root = llFormRoot,
             viewPager = viewPager,
             rvPager = rvPager,
             llFormRoot = llFormRoot,
@@ -569,7 +523,15 @@ class ActMain : ComponentActivity(),
         sideMenuAdapter = SideMenuAdapter(this, handler)
 
         App1.setActivityTheme(this)
-        setContentViewAndInsets(views.root)
+        
+        setContent {
+            MainScreen(
+                viewModel = viewModel,
+                contentView = views.root,
+                sideMenuAdapter = sideMenuAdapter,
+                onDrawerClosed = { completionHelper.closeAcctPopup() },
+            )
+        }
 
         EmojiDecoder.useTwemoji = PrefB.bpUseTwemoji.value
 

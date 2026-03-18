@@ -329,8 +329,15 @@ fun CaptionText(
     activity: ActAppSetting? = null,
 ) {
     if (name.isEmpty()) return
-    val fontSize = item?.captionFontSize?.invoke(activity ?: return)
-    val spacing = item.captionSpacing?.invoke(activity)
+    
+    val fontSize = if (item != null && activity != null) {
+        item.captionFontSize?.invoke(activity)
+    } else null
+    
+    val spacing = if (item != null && activity != null) {
+        item.captionSpacing?.invoke(activity)
+    } else null
+
     val lineHeight = if (spacing != null && spacing.isFinite()) {
         (14f * spacing).sp
     } else TextUnit.Unspecified
@@ -339,6 +346,8 @@ fun CaptionText(
         text = name,
         fontSize = fontSize?.sp ?: 14.sp,
         lineHeight = lineHeight,
+        modifier = Modifier.padding(start = 32.dp, top = 8.dp, bottom = 4.dp),
+        fontWeight = FontWeight.Medium,
     )
 }
 
