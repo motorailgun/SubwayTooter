@@ -1,5 +1,8 @@
 package jp.juggler.subwaytooter
 
+import androidx.activity.viewModels
+import jp.juggler.subwaytooter.actaccountsetting.AccountSettingScreen
+import jp.juggler.subwaytooter.actaccountsetting.AccountSettingViewModel
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -143,6 +146,9 @@ class ActAccountSetting : ComponentActivity(),
     View.OnClickListener,
     CompoundButton.OnCheckedChangeListener,
     AdapterView.OnItemSelectedListener {
+    
+    private val viewModel: AccountSettingViewModel by viewModels()
+
     companion object {
 
         internal val log = LogCategory("ActAccountSetting")
@@ -317,7 +323,17 @@ class ActAccountSetting : ComponentActivity(),
             finish()
             return
         }
+        
+        viewModel.load(a.db_id)
 
+        setContent {
+            AccountSettingScreen(
+                viewModel = viewModel,
+                onBack = { finish() }
+            )
+        }
+
+        /*
         views.btnOpenBrowser.text = getString(
             R.string.open_instance_website,
             a.apiHost.pretty,
@@ -336,6 +352,7 @@ class ActAccountSetting : ComponentActivity(),
             loadUIFromData(a, ti)
             initializeProfile()
         }
+        */
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
