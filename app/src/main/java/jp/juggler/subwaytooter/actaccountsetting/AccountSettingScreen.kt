@@ -36,11 +36,12 @@ fun AccountSettingScreen(
     viewModel: AccountSettingViewModel = viewModel(),
     onBack: () -> Unit = {}
 ) {
-    val account by viewModel.account.collectAsState()
-    val isLoading by viewModel.isLoading.collectAsState()
-    // val error by viewModel.error.collectAsState()
+    MaterialTheme {
+        val account by viewModel.account.collectAsState()
+        val isLoading by viewModel.isLoading.collectAsState()
+        // val error by viewModel.error.collectAsState()
 
-    Scaffold(
+        Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.account_setting)) },
@@ -62,6 +63,7 @@ fun AccountSettingScreen(
                 }
             }
         }
+    }
     }
 }
 

@@ -301,58 +301,34 @@ class ActAccountSetting : ComponentActivity(),
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        try {
+            visualMediaPicker.register(this)
+            cameraOpener.register(this)
+            arShowAcctColor.register(this)
 
-        visualMediaPicker.register(this)
-        cameraOpener.register(this)
-        arShowAcctColor.register(this)
+            savedInstanceState?.getString(ACTIVITY_STATE)
+                ?.let { state = kJson.decodeFromString(it) }
 
-        savedInstanceState?.getString(ACTIVITY_STATE)
-            ?.let { state = kJson.decodeFromString(it) }
+            App1.setActivityTheme(this)
 
-        App1.setActivityTheme(this)
+            val a = account
+            if (a == null) {
+                finish()
+                return
+            }
+            
+            viewModel.load(a.db_id)
 
-        val rootView = views.root
-        views.toolbar.visibility = View.GONE
-
-        setSwitchColor(rootView)
-        fixHorizontalPadding(views.svContent)
-        initUI()
-
-        val a = account
-        if (a == null) {
+            setContent {
+                AccountSettingScreen(
+                    viewModel = viewModel,
+                    onBack = { finish() }
+                )
+            }
+        } catch (ex: Throwable) {
+            log.e(ex, "onCreate failed")
             finish()
-            return
         }
-        
-        viewModel.load(a.db_id)
-
-        setContent {
-            AccountSettingScreen(
-                viewModel = viewModel,
-                onBack = { finish() }
-            )
-        }
-
-        /*
-        views.btnOpenBrowser.text = getString(
-            R.string.open_instance_website,
-            a.apiHost.pretty,
-        )
-
-        setContent {
-            AndroidView(
-                factory = { rootView },
-                modifier = Modifier
-                    .fillMaxSize(),
-            )
-        }
-
-        launchAndShowError {
-            val ti = loadInstance(a) // may null
-            loadUIFromData(a, ti)
-            initializeProfile()
-        }
-        */
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
