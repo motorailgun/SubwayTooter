@@ -16,8 +16,6 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.HorizontalScrollView
 import android.widget.ImageButton
-import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.GravityCompat
@@ -48,7 +46,6 @@ import jp.juggler.subwaytooter.actmain.isOrderChanged
 import jp.juggler.subwaytooter.actmain.justifyWindowContentPortrait
 import jp.juggler.subwaytooter.actmain.launchDialogs
 import jp.juggler.subwaytooter.actmain.onBackPressedImpl
-import jp.juggler.subwaytooter.actmain.onClickImpl
 import jp.juggler.subwaytooter.actmain.onCompleteActPost
 import jp.juggler.subwaytooter.actmain.onMyClickableSpanClickedImpl
 import jp.juggler.subwaytooter.actmain.phoneTab
@@ -59,6 +56,7 @@ import jp.juggler.subwaytooter.actmain.reloadFonts
 import jp.juggler.subwaytooter.actmain.reloadIconSize
 import jp.juggler.subwaytooter.actmain.reloadMediaHeight
 import jp.juggler.subwaytooter.actmain.reloadTextSize
+import jp.juggler.subwaytooter.action.openPost
 import jp.juggler.subwaytooter.actmain.reloadTimeZone
 import jp.juggler.subwaytooter.actmain.resizeColumnWidth
 import jp.juggler.subwaytooter.actmain.scrollColumnStrip
@@ -216,23 +214,7 @@ class ActMain : ComponentActivity(),
 
     val views by lazy {
         val ctx = this@ActMain
-        val colorOnSurface = attrColor(MR.attr.colorOnSurface)
-        val colorSurfaceContainer = attrColor(MR.attr.colorSurfaceContainer)
-        val colorSurface = attrColor(MR.attr.colorSurface)
-
-        val tvEmpty = TextView(ctx).apply {
-            id = R.id.tvEmpty
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-            gravity = android.view.Gravity.CENTER
-            setPadding(dp(12), dp(12), dp(12), dp(12))
-            setText(R.string.column_empty)
-            setTextColor(colorOnSurface)
-            textSize = 16f
-        }
-
+        
         val viewPager = jp.juggler.subwaytooter.view.MyViewPager(ctx).apply {
             id = R.id.viewPager
             layoutParams = FrameLayout.LayoutParams(
@@ -249,102 +231,20 @@ class ActMain : ComponentActivity(),
             )
         }
 
-        val btnMenu = ImageButton(ctx).apply {
-            id = R.id.btnMenu
-            layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
-            contentDescription = getString(R.string.menu)
-            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
-            setImageResource(R.drawable.ic_hamburger)
-        }
-
-        val vFooterDivider1 = View(ctx).apply {
-            id = R.id.vFooterDivider1
-            layoutParams = LinearLayout.LayoutParams(dp(1), LinearLayout.LayoutParams.MATCH_PARENT)
-            setBackgroundColor(colorSurfaceContainer)
-        }
-
-        val llColumnStrip = jp.juggler.subwaytooter.actmain.ColumnStripLinearLayout(ctx).apply {
-            id = R.id.llColumnStrip
-            layoutParams = android.view.ViewGroup.LayoutParams(
-                android.view.ViewGroup.LayoutParams.WRAP_CONTENT,
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT
-            )
-            orientation = LinearLayout.HORIZONTAL
-        }
-
-        val svColumnStrip = HorizontalScrollView(ctx).apply {
-            id = R.id.svColumnStrip
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
-            setBackgroundColor(colorSurfaceContainer)
-            isFillViewport = true
-            isHorizontalScrollBarEnabled = false
-            isHorizontalFadingEdgeEnabled = true
-            setFadingEdgeLength(dp(20))
-            addView(llColumnStrip)
-        }
-
-        val vFooterDivider2 = View(ctx).apply {
-            id = R.id.vFooterDivider2
-            layoutParams = LinearLayout.LayoutParams(dp(1), LinearLayout.LayoutParams.MATCH_PARENT)
-            setBackgroundColor(colorSurfaceContainer)
-        }
-
-        val btnToot = ImageButton(ctx).apply {
-            id = R.id.btnToot
-            layoutParams = LinearLayout.LayoutParams(dp(48), dp(48))
-            contentDescription = getString(R.string.toot)
-            scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
-            setImageResource(R.drawable.ic_edit)
-        }
-
-        val vBottomPadding = View(ctx).apply {
-            id = R.id.vBottomPadding
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                dp(8)
-            )
-        }
-
-        val llFormRoot = LinearLayout(ctx).apply {
-            id = R.id.llFormRoot
+        // Wrapper view to hold pager
+        val root = FrameLayout(ctx).apply {
             layoutParams = android.view.ViewGroup.LayoutParams(
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT,
                 android.view.ViewGroup.LayoutParams.MATCH_PARENT
             )
-            setBackgroundColor(colorSurface)
-            orientation = LinearLayout.VERTICAL
-
-            // Content area (weight=1)
-            addView(FrameLayout(ctx).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    0, 1f
-                )
-                addView(tvEmpty)
-                addView(viewPager)
-                addView(rvPager)
-            })
-
-            // Footer bar removed (Moved to Compose)
-            // But we still need to initialize the views for ActMainViews
-            // The views are created above, just not added to layout.
+            addView(viewPager)
+            addView(rvPager)
         }
 
-        // val navView ... removed
-
         ActMainViews(
-            root = llFormRoot,
+            root = root,
             viewPager = viewPager,
             rvPager = rvPager,
-            llFormRoot = llFormRoot,
-            tvEmpty = tvEmpty,
-            btnMenu = btnMenu,
-            svColumnStrip = svColumnStrip,
-            llColumnStrip = llColumnStrip,
-            btnToot = btnToot,
-            vBottomPadding = vBottomPadding,
-            vFooterDivider1 = vFooterDivider1,
-            vFooterDivider2 = vFooterDivider2,
         )
     }
 
@@ -520,9 +420,9 @@ class ActMain : ComponentActivity(),
                 viewModel = viewModel,
                 contentView = views.root,
                 sideMenuAdapter = sideMenuAdapter,
-                onClickMenu = { this@ActMain.onClick(views.btnMenu) },
-                onClickToot = { this@ActMain.onClick(views.btnToot) },
-                onLongClickToot = { views.btnToot.performLongClick() },
+                onClickMenu = { openDrawer() },
+                onClickToot = { openPost() },
+                onLongClickToot = { /* TODO: Implement toot long click */ },
                 onClickColumn = { idx ->
                     val column = appState.column(idx)
                     if (column != null) {
@@ -800,7 +700,11 @@ class ActMain : ComponentActivity(),
         }
     }
 
-    override fun onClick(v: View) = onClickImpl(v)
+    override fun onClick(v: View) {
+        // Legacy onClick handler - most actions should be direct calls now.
+        // If there are still Views setting OnClickListener to this activity,
+        // they should be migrated to direct calls or specific lambdas.
+    }
 
     override fun onMyClickableSpanClicked(viewClicked: View, span: MyClickableSpan) =
         onMyClickableSpanClickedImpl(viewClicked, span)
@@ -809,7 +713,8 @@ class ActMain : ComponentActivity(),
         return when {
             super.onKeyShortcut(keyCode, event) -> true
             event?.isCtrlPressed == true && keyCode == KeyEvent.KEYCODE_N -> {
-                views.btnToot.performClick()
+                // views.btnToot.performClick()
+                openPost()
                 true
             }
 
@@ -822,8 +727,8 @@ class ActMain : ComponentActivity(),
 
     // ビューのlateinit変数を初期化する
     private fun findViews() {
-        views.btnToot.setOnClickListener(this)
-        views.btnMenu.setOnClickListener(this)
+        // views.btnToot.setOnClickListener(this)
+        // views.btnMenu.setOnClickListener(this)
     }
 
     internal fun initUI() {
@@ -836,11 +741,11 @@ class ActMain : ComponentActivity(),
 
         findViews()
 
-        views.vBottomPadding.layoutParams?.height = screenBottomPadding
+        // views.vBottomPadding.layoutParams?.height = screenBottomPadding
 
         justifyWindowContentPortrait()
 
-        views.svColumnStrip.isHorizontalFadingEdgeEnabled = true
+        // views.svColumnStrip.isHorizontalFadingEdgeEnabled = true
         reloadMediaHeight()
         initPhoneTablet()
         showFooterColor()

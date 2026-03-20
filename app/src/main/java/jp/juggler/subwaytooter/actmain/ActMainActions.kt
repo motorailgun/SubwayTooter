@@ -9,7 +9,6 @@ import androidx.work.WorkManager
 import jp.juggler.subwaytooter.ActMain
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.action.openColumnList
-import jp.juggler.subwaytooter.action.openPost
 import jp.juggler.subwaytooter.api.entity.TootAccountRef
 import jp.juggler.subwaytooter.api.entity.TootTag.Companion.findHashtagFromUrl
 import jp.juggler.subwaytooter.appsetting.appSettingRoot
@@ -104,17 +103,6 @@ fun ActMain.onBackPressedImpl() {
                 }
                 action(getString(R.string.open_column_list)) { openColumnList() }
                 action(getString(R.string.app_exit)) { finish() }
-            }
-        }
-    }
-}
-
-fun ActMain.onClickImpl(v: View) {
-    when (v.id) {
-        R.id.btnToot -> openPost()
-        R.id.btnMenu -> {
-            if (!isDrawerOpen) {
-                openDrawer()
             }
         }
     }

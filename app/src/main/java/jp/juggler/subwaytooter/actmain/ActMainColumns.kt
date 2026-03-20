@@ -138,7 +138,7 @@ fun ActMain.isVisibleColumn(idx: Int) = phoneTab(
 )
 
 fun ActMain.updateColumnStrip() {
-    views.tvEmpty.vg(appState.columnCount == 0)
+    // views.tvEmpty.vg(appState.columnCount == 0)
 
     // Update ViewModel with column list
     val uiList = appState.columnList.mapIndexed { index, column ->

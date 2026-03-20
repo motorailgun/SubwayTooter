@@ -1,29 +1,20 @@
 package jp.juggler.subwaytooter.actmain
 
 import android.content.Context
-import android.content.res.ColorStateList
 import android.graphics.Typeface
-import android.view.View
-import android.view.ViewGroup
-import android.widget.LinearLayout
 import jp.juggler.subwaytooter.ActMain
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootStatus
 import jp.juggler.subwaytooter.util.TootColorConfig
 import jp.juggler.subwaytooter.pref.PrefB
 import jp.juggler.subwaytooter.pref.PrefF
-import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.subwaytooter.pref.PrefS
 import jp.juggler.subwaytooter.pref.impl.StringPref
 import jp.juggler.subwaytooter.span.MyClickableSpan
 import jp.juggler.subwaytooter.util.CustomShare
-import jp.juggler.util.data.clip
 import jp.juggler.util.data.notEmpty
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.attrColor
-import jp.juggler.util.ui.getAdaptiveRippleDrawableRound
-import jp.juggler.util.ui.resDrawable
-import jp.juggler.util.ui.wrapAndTint
 import java.util.*
 import kotlin.math.max
 import com.google.android.material.R as MR
@@ -111,32 +102,7 @@ fun ActMain.loadColumnMin() =
             ).dpToPx(this)
 
 fun ActMain.justifyWindowContentPortrait() {
-    when (PrefI.ipJustifyWindowContentPortrait.value) {
-        PrefI.JWCP_START -> {
-            val iconW = (ActMain.stripIconSize * 1.5f + 0.5f).toInt()
-            val padding = resources.displayMetrics.widthPixels / 2 - iconW
-
-            fun ViewGroup.addViewBeforeLast(v: View) = addView(v, childCount - 1)
-            (views.svColumnStrip.parent as LinearLayout).addViewBeforeLast(
-                View(this).apply {
-                    layoutParams = LinearLayout.LayoutParams(padding, 0)
-                }
-            )
-        }
-
-        PrefI.JWCP_END -> {
-            val iconW = (ActMain.stripIconSize * 1.5f + 0.5f).toInt()
-            val borderWidth = 1f.dpToPx(this)
-            val padding = resources.displayMetrics.widthPixels / 2 - iconW - borderWidth
-
-            fun ViewGroup.addViewAfterFirst(v: View) = addView(v, 1)
-            (views.svColumnStrip.parent as LinearLayout).addViewAfterFirst(
-                View(this).apply {
-                    layoutParams = LinearLayout.LayoutParams(padding, 0)
-                }
-            )
-        }
-    }
+    // No-op: Compose layout handles justification
 }
 
 //////////////////////////////////////////////////////
@@ -167,36 +133,13 @@ fun ActMain.reloadColors() {
     MyClickableSpan.showLinkUnderline = PrefB.bpShowLinkUnderline.value
     MyClickableSpan.defaultLinkColor = attrColor(androidx.appcompat.R.attr.colorPrimary)
 
-    views.llFormRoot.setBackgroundColor(attrColor(MR.attr.colorSurface))
+    // views.llFormRoot.setBackgroundColor(attrColor(MR.attr.colorSurface))
 
     CustomShare.reloadCache(this)
 }
 
 fun ActMain.showFooterColor() {
-    val colorColumnStripBackground = attrColor(MR.attr.colorSurfaceContainer)
-    val colorOnSurface = attrColor(MR.attr.colorOnSurface)
-
-    views.svColumnStrip.setBackgroundColor(colorColumnStripBackground)
-
-    views.vBottomPadding.setBackgroundColor(colorColumnStripBackground)
-
-    val colorButtonBg = colorColumnStripBackground
-
-    views.btnMenu.background =
-        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorOnSurface)
-    views.btnToot.background =
-        getAdaptiveRippleDrawableRound(this, colorButtonBg, colorOnSurface)
-
-    val d = resDrawable(R.drawable.ic_question).wrapAndTint(color = colorOnSurface)
-
-    val csl = ColorStateList.valueOf(colorOnSurface)
-    views.btnToot.imageTintList = csl
-    views.btnMenu.imageTintList = csl
-
-    views.vFooterDivider1.setBackgroundColor(colorColumnStripBackground)
-    views.vFooterDivider2.setBackgroundColor(colorColumnStripBackground)
-
-    views.llColumnStrip.indicatorColor = attrColor(MR.attr.colorOnSurfaceVariant)
+    // No-op: handled by Compose
 }
 
 fun ActMain.closePopup() {

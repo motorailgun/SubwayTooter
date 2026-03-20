@@ -40,6 +40,7 @@ import jp.juggler.subwaytooter.compose.buildTimelineCallbacks
 import jp.juggler.subwaytooter.compose.TimelineState
 import jp.juggler.subwaytooter.table.daoAcctColor
 import jp.juggler.util.ui.attrColor
+import jp.juggler.subwaytooter.action.openPost
 import kotlinx.coroutines.launch
 
 @Composable
@@ -169,7 +170,7 @@ fun ActMainBottomAppBar(activity: ActMain, onMenuClick: () -> Unit) {
         
         VerticalDivider(modifier = Modifier.width(1.dp).fillMaxHeight())
         
-        IconButton(onClick = { activity.onClick(activity.views.btnToot) }) {
+        IconButton(onClick = { activity.openPost() }) {
             Icon(
                 painter = painterResource(R.drawable.ic_edit),
                 contentDescription = stringResource(R.string.toot)
