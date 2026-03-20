@@ -136,7 +136,7 @@ open class TootAccount(
         val privacy: String?
 
         // 添付画像をデフォルトでNSFWにする設定
-        private val sensitive: Boolean
+        val sensitive: Boolean
 
         // HTMLエンコードされていない、生のnote
         val note: String?
