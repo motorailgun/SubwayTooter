@@ -125,7 +125,7 @@ fun reloadTimeZone() {
 // onStart時に呼ばれる
 // カラーカスタマイズを読み直す
 fun ActMain.reloadColors() {
-    TabletColumnDivider.color = 0
+    // TabletColumnDivider.color = 0 (Removed)
     TootColorConfig.toot_color_unlisted = 0
     TootColorConfig.toot_color_follower = 0
     TootColorConfig.toot_color_direct_user = 0

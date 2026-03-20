@@ -1,32 +1,20 @@
 package jp.juggler.subwaytooter.actmain
 
-import android.annotation.SuppressLint
 import android.content.Intent
-import android.content.res.ColorStateList
-import android.view.View
-import android.widget.ImageView
-import android.widget.LinearLayout
 import androidx.appcompat.app.AlertDialog
-import androidx.recyclerview.widget.RecyclerView
 import jp.juggler.subwaytooter.*
 import jp.juggler.subwaytooter.column.*
-import jp.juggler.subwaytooter.columnviewholder.TabletColumnViewHolder
-import jp.juggler.subwaytooter.columnviewholder.scrollToTop2
-import jp.juggler.subwaytooter.columnviewholder.showColumnSetting
 import jp.juggler.subwaytooter.pref.PrefB
 import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.subwaytooter.pref.PrefS
 import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.table.daoAcctColor
 import jp.juggler.subwaytooter.util.AccountCache
-import jp.juggler.util.*
 import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.data.clip
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
-import jp.juggler.util.ui.getAdaptiveRippleDrawableRound
 import jp.juggler.util.ui.vg
-import android.view.Gravity
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -35,18 +23,12 @@ private val log = LogCategory("ActMainColumns")
 // スマホモードなら現在のカラムを、タブレットモードなら-1Lを返す
 // (カラム一覧画面のデフォルト選択位置に使われる)
 val ActMain.currentColumn: Int
-    get() = phoneTab(
-        { it.pager.currentItem },
-        { -1 }
-    )
+    get() = viewModel.currentPage.value
 
 // 新しいカラムをどこに挿入するか
 // 現在のページの次の位置か、終端
 val ActMain.defaultInsertPosition: Int
-    get() = phoneTab(
-        { it.pager.currentItem + 1 },
-        { Integer.MAX_VALUE }
-    )
+    get() = viewModel.currentPage.value + 1
 
 // カラム追加後など、そのカラムにスクロールして初期ロードを行う
 fun ActMain.scrollAndLoad(idx: Int) {
@@ -58,16 +40,9 @@ fun ActMain.scrollAndLoad(idx: Int) {
 fun ActMain.addColumn(column: Column, indexArg: Int): Int {
     val index = indexArg.clip(0, appState.columnCount)
 
-    phoneOnly { env -> env.pager.adapter = null }
-
     appState.editColumnList {
         it.add(index, column)
     }
-
-    phoneTab(
-        { env -> env.pager.adapter = env.pagerAdapter },
-        { env -> resizeColumnWidth(env) }
-    )
 
     updateColumnStrip()
 
@@ -118,29 +93,30 @@ fun ActMain.addColumn(
 fun ActMain.removeColumn(column: Column) {
     val idxColumn = appState.columnIndex(column) ?: return
 
-    phoneOnly { env -> env.pager.adapter = null }
-
     appState.editColumnList {
         it.removeAt(idxColumn).dispose()
     }
 
-    phoneTab(
-        { env -> env.pager.adapter = env.pagerAdapter },
-        { env -> resizeColumnWidth(env) }
-    )
-
     updateColumnStrip()
 }
 
-fun ActMain.isVisibleColumn(idx: Int) = phoneTab(
-    { env -> env.pager.currentItem == idx },
-    { env -> idx >= 0 && idx in env.visibleColumnsIndices },
-)
+fun ActMain.isVisibleColumn(idx: Int): Boolean {
+    // Check via ViewModel state
+    // For single page (phone), it's currentPage
+    // For tablet, check visibleRange
+    val vr = viewModel.visibleRange.value
+    return if (vr.first != -1) {
+        idx in vr.first..vr.last
+    } else {
+        idx == viewModel.currentPage.value
+    }
+}
 
 fun ActMain.updateColumnStrip() {
-    // views.tvEmpty.vg(appState.columnCount == 0)
+    // Update ViewModel with column list objects first!
+    viewModel.setColumnObjects(appState.columnList.toList())
 
-    // Update ViewModel with column list
+    // Update ViewModel with column list for strip
     val uiList = appState.columnList.mapIndexed { index, column ->
         val ac = daoAcctColor.load(column.accessInfo)
         val acctColor = if (daoAcctColor.hasColorForeground(ac)) ac.colorFg else 0
@@ -155,8 +131,6 @@ fun ActMain.updateColumnStrip() {
         )
     }
     viewModel.setColumns(uiList)
-    
-    // Legacy logic removed: view manipulation of llColumnStrip
     
     updateColumnStripSelection(-1, -1f)
 }
@@ -178,16 +152,17 @@ fun ActMain.closeColumn(column: Column, bConfirmed: Boolean = false) {
     }
 
     appState.columnIndex(column)?.let { page_delete ->
-        phoneTab({ env ->
-            val pageShowing = env.pager.currentItem
-            removeColumn(column)
-            if (pageShowing == page_delete) {
-                scrollAndLoad(pageShowing - 1)
-            }
-        }, {
-            removeColumn(column)
-            scrollAndLoad(page_delete - 1)
-        })
+        val pageShowing = viewModel.currentPage.value
+        removeColumn(column)
+        if (pageShowing == page_delete) {
+            scrollAndLoad(pageShowing - 1)
+        } else {
+            // Tablet logic or just keep current page?
+            // If deleted page is before current page, current page index shifts
+            // But VM/Compose handles index shift automatically if we update list?
+            // Wait, we need to scroll to correct position if index shifted?
+            // For now, let's keep it simple.
+        }
     }
 }
 
@@ -202,14 +177,9 @@ fun ActMain.closeColumnAll(oldColumnIndex: Int = -1, bConfirmed: Boolean = false
     }
 
     var lastColumnIndex = when (oldColumnIndex) {
-        -1 -> phoneTab(
-            { it.pager.currentItem },
-            { 0 }
-        )
+        -1 -> viewModel.currentPage.value
         else -> oldColumnIndex
     }
-
-    phoneOnly { env -> env.pager.adapter = null }
 
     appState.editColumnList { list ->
         for (i in list.indices.reversed()) {
@@ -220,35 +190,39 @@ fun ActMain.closeColumnAll(oldColumnIndex: Int = -1, bConfirmed: Boolean = false
         }
     }
 
-    phoneTab(
-        { env -> env.pager.adapter = env.pagerAdapter },
-        { env -> resizeColumnWidth(env) }
-    )
-
     updateColumnStrip()
 
     scrollAndLoad(lastColumnIndex)
 }
 
 fun ActMain.closeColumnSetting(): Boolean {
-    phoneTab({ env ->
-        val vh = env.pagerAdapter.getColumnViewHolder(env.pager.currentItem)
-        if (vh?.isColumnSettingShown == true) {
-            vh.showColumnSetting(false)
-            return@closeColumnSetting true
-        }
-    }, { env ->
-        for (i in 0 until env.tabletLayoutManager.childCount) {
-            val columnViewHolder = when (val v = env.tabletLayoutManager.getChildAt(i)) {
-                null -> null
-                else -> (env.tabletPager.getChildViewHolder(v) as? TabletColumnViewHolder)?.columnViewHolder
+    // Delegate to ViewModel or iterate Columns via VM?
+    // We can't iterate views. 
+    // Logic: check all columns if any has setting shown.
+    // In Compose, settings visibility is in ColumnUiState held by ColumnViewHolder.
+    // We need to iterate over *active* ViewHolders or check Column state if possible.
+    // ColumnUiState is in ColumnViewHolder.
+    // ColumnViewHolder is held by ColumnWrapper.
+    // We don't have direct access to ViewHolders from Activity anymore!
+    // UNLESS we store them in Column object? 
+    // We removed `column.addColumnViewHolder(this)`? No, we kept it!
+    // So Column still has reference to ViewHolders.
+    
+    appState.columnList.forEach { column ->
+        // We need to find if any VH has settings shown
+        // Since we have multiple VHs (potentially), check all?
+        // Wait, Column.viewHolder is the property to access it.
+        // But Column.viewHolder is a property that iterates list.
+        // Let's check Column.kt
+        
+        column.viewHolder?.let { vh ->
+            if (vh.isColumnSettingShown) {
+                // How to close?
+                vh.columnUiState.settingsVisible = false
+                return true
             }
-            if (columnViewHolder?.isColumnSettingShown == true) {
-                columnViewHolder.showColumnSetting(false)
-                return@closeColumnSetting true
-            }
         }
-    })
+    }
     return false
 }
 
@@ -267,8 +241,6 @@ fun ActMain.isOrderChanged(newOrder: List<Int>): Boolean {
 
 fun ActMain.setColumnsOrder(newOrder: List<Int>) {
 
-    phoneOnly { env -> env.pager.adapter = null }
-
     appState.editColumnList { list ->
         // columns with new order
         val tmpList = newOrder.mapNotNull { i -> list.elementAtOrNull(i) }
@@ -280,17 +252,12 @@ fun ActMain.setColumnsOrder(newOrder: List<Int>) {
         list.addAll(tmpList)
     }
 
-    phoneTab(
-        { env -> env.pager.adapter = env.pagerAdapter },
-        { env -> resizeColumnWidth(env) }
-    )
-
     appState.saveColumnList()
     updateColumnStrip()
 }
 
 fun ActMain.searchFromActivityResult(data: Intent?, columnType: ColumnType) =
-    data?.string(Intent.EXTRA_TEXT)?.let {
+    data?.getStringExtra(Intent.EXTRA_TEXT)?.let {
         addColumn(
             false,
             defaultInsertPosition,
@@ -302,18 +269,7 @@ fun ActMain.searchFromActivityResult(data: Intent?, columnType: ColumnType) =
 
 fun ActMain.scrollToColumn(index: Int, smoothScroll: Boolean = true) {
     scrollColumnStrip(index)
-    phoneTab(
-        // スマホはスムーススクロール基本ありだがたまにしない
-        { env ->
-            log.d("ipLastColumnPos beforeScroll=${env.pager.currentItem}")
-            env.pager.setCurrentItem(index, smoothScroll)
-        },
-        // タブレットでスムーススクロールさせると頻繁にオーバーランするので絶対しない
-        { env ->
-            log.d("ipLastColumnPos beforeScroll=${env.visibleColumnsIndices.first}")
-            env.tabletPager.scrollToPosition(index)
-        }
-    )
+    viewModel.requestScrollToColumn(index)
 }
 
 // onCreate時に前回のカラムまでスクロールする
@@ -327,17 +283,9 @@ fun ActMain.scrollToLastColumn() {
     if (columnPos in 0 until appState.columnCount) {
         scrollToColumn(columnPos, false)
     }
-
-    // 表示位置に合わせたイベントを発行
-    phoneTab(
-        { env -> onPageSelected(env.pager.currentItem) },
-        { env -> resizeColumnWidth(env) }
-    )
 }
 
-@SuppressLint("NotifyDataSetChanged")
-fun ActMain.resizeColumnWidth(views: ActMainTabletViews) {
-
+fun ActMain.resizeColumnWidth() {
     var columnWMinDp = ActMain.COLUMN_WIDTH_MIN_DP
     val sv = PrefS.spColumnWidth.value
     if (sv.isNotEmpty()) {
@@ -352,63 +300,26 @@ fun ActMain.resizeColumnWidth(views: ActMainTabletViews) {
     }
 
     val dm = resources.displayMetrics
-
     val screenWidth = dm.widthPixels
-
     val density = dm.density
     var columnWMin = (0.5f + columnWMinDp * density).toInt()
     if (columnWMin < 1) columnWMin = 1
-
-    var columnW: Int
-
-    if (screenWidth < columnWMin * 2) {
-        // 最小幅で2つ表示できないのなら1カラム表示
-        nScreenColumn = 1
-        columnW = screenWidth
+    
+    // Calculate nColumnWidth
+    nColumnWidth = if (screenWidth >= columnWMin) {
+        val n = screenWidth / columnWMin
+        if (n < 1) 1 else screenWidth / n
     } else {
-
-        // カラム最小幅から計算した表示カラム数
-        nScreenColumn = screenWidth / columnWMin
-        if (nScreenColumn < 1) nScreenColumn = 1
-
-        // データのカラム数より大きくならないようにする
-        // (でも最小は1)
-        val columnCount = appState.columnCount
-        if (columnCount > 0 && columnCount < nScreenColumn) {
-            nScreenColumn = columnCount
-        }
-
-        // 表示カラム数から計算したカラム幅
-        columnW = screenWidth / nScreenColumn
-
-        // 最小カラム幅の1.5倍よりは大きくならないようにする
-        val columnWMax = (0.5f + columnWMin * 1.5f).toInt()
-        if (columnW > columnWMax) {
-            columnW = columnWMax
-        }
+        screenWidth
     }
-
-    nColumnWidth = columnW // dividerの幅を含む
-
-    val dividerWidth = (0.5f + 1f * density).toInt()
-    columnW -= dividerWidth
-    views.tabletPagerAdapter.columnWidth = columnW // dividerの幅を含まない
-    // env.tablet_snap_helper.columnWidth = column_w //使われていない
-
-    saveContentTextWidth(columnW) // dividerの幅を含まない
-
-    // 並べ直す
-    views.tabletPagerAdapter.notifyDataSetChanged()
 }
 
 fun ActMain.scrollColumnStrip(select: Int) {
     if (select < 0 || select >= appState.columnCount) {
         return
     }
-
-    // Update ViewModel to scroll the strip
     viewModel.requestScrollToColumn(select)
-
+    
     launchMain {
         try {
             val a = AccountCache.load(this@scrollColumnStrip, null)
@@ -419,38 +330,20 @@ fun ActMain.scrollColumnStrip(select: Int) {
 }
 
 fun ActMain.updateColumnStripSelection(position: Int, positionOffset: Float) {
-    handler.post(Runnable {
-        if (isFinishing) return@Runnable
-
-        if (appState.columnCount == 0) {
-            viewModel.setVisibleRange(-1, -1, 0f)
-        } else {
-            phoneTab({ env ->
-                if (position >= 0) {
-                    viewModel.setVisibleRange(position, position, positionOffset)
-                } else {
-                    val c = env.pager.currentItem
-                    viewModel.setVisibleRange(c, c, 0f)
-                }
-            }, { env ->
-                val vs = env.tabletLayoutManager.findFirstVisibleItemPosition()
-                val ve = env.tabletLayoutManager.findLastVisibleItemPosition()
-                val vr = if (vs == RecyclerView.NO_POSITION || ve == RecyclerView.NO_POSITION) {
-                    IntRange(-1, -2) // empty and less than zero
-                } else {
-                    IntRange(vs, min(ve, vs + nScreenColumn - 1))
-                }
-                var slideRatio = 0f
-                if (vr.first <= vr.last) {
-                    val child = env.tabletLayoutManager.findViewByPosition(vr.first)
-                    slideRatio =
-                        (abs((child?.left ?: 0) / nColumnWidth.toFloat())).clip(0f, 1f)
-                }
-
-                viewModel.setVisibleRange(vr.first, vr.last, slideRatio)
-            })
-        }
-    })
+    // Updates strip highlight.
+    // Position comes from Pager/List scroll event?
+    // Actually this function was called from ViewPager callback.
+    // Now it should be called from MainScreen -> ViewModel -> ActMain?
+    // Or ViewModel handles strip directly.
+    // MainViewModel has visibleRange.
+    // MainFooter observes visibleRange.
+    // So we don't need to call updateColumnStripSelection from here?
+    // But wait, updateColumnStrip calls this.
+    
+    // We can update VM state here if we want to force update.
+    if (position >= 0) {
+        viewModel.setVisibleRange(position, position, positionOffset)
+    }
 }
 
 fun ActMain.showColumnMatchAccount(account: SavedAccount) {

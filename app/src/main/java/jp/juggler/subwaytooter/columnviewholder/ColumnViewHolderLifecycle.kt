@@ -270,9 +270,6 @@ fun ColumnViewHolder.onPageCreate(column: Column, pageIdx: Int, pageCount: Int) 
         // ──── Build callbacks ────
         columnCallbacks = buildColumnCallbacks()
 
-        // ──── Set compose content ────
-        setComposeContent()
-
         // ──── Show content ────
         showColumnColor()
         showContent(reason = "onPageCreate", reset = true)

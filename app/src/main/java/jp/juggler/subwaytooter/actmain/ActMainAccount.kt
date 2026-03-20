@@ -14,37 +14,24 @@ val ActMain.currentPostTarget: SavedAccount?
             val a = daoSavedAccount.loadAccount(dbId)
             if (a != null && !a.isPseudo) return a
         }
-        phoneTab(
-            { env ->
-                val c = env.pagerAdapter.getColumn(env.pager.currentItem)
-                return when {
-                    c == null || c.accessInfo.isPseudo -> null
-                    else -> c.accessInfo
+        
+        val current = viewModel.currentPage.value
+        val vr = viewModel.visibleRange.value
+        
+        if (vr.first == -1) {
+            val c = appState.column(current)
+            return if (c == null || c.accessInfo.isPseudo) null else c.accessInfo
+        } else {
+            val accounts = ArrayList<SavedAccount>()
+            for (i in vr.first..vr.last) {
+                appState.column(i)?.let { c ->
+                    val a = c.accessInfo
+                    if (a.isPseudo) return null
+                    if (accounts.none { it == a }) accounts.add(a)
                 }
-            },
-            { env ->
-                val accounts = ArrayList<SavedAccount>()
-                for (c in env.visibleColumns) {
-                    try {
-                        val a = c.accessInfo
-                        // 画面内に疑似アカウントがあれば常にアカウント選択が必要
-                        if (a.isPseudo) {
-                            accounts.clear()
-                            break
-                        }
-                        // 既出でなければ追加する
-                        if (accounts.none { it == a }) accounts.add(a)
-                    } catch (ignored: Throwable) {
-                    }
-                }
-
-                return when (accounts.size) {
-                    // 候補が1つだけならアカウント選択は不要
-                    1 -> accounts.first()
-                    // 候補が2つ以上ならアカウント選択は必要
-                    else -> null
-                }
-            })
+            }
+            return if (accounts.size == 1) accounts.first() else null
+        }
     }
 
 fun ActMain.reloadAccountSetting(

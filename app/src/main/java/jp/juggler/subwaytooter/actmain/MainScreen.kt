@@ -1,13 +1,16 @@
 package jp.juggler.subwaytooter.actmain
 
-import android.view.View
-import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -15,17 +18,23 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.imePadding
+import androidx.activity.compose.BackHandler
+import jp.juggler.subwaytooter.ActMain
+import jp.juggler.subwaytooter.compose.ColumnWrapper
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
 
 @Composable
 fun MainScreen(
     viewModel: MainViewModel,
-    contentView: View,
     sideMenuAdapter: SideMenuAdapter,
     onClickMenu: () -> Unit,
     onClickToot: () -> Unit,
@@ -33,7 +42,18 @@ fun MainScreen(
     onClickColumn: (Int) -> Unit,
     onDrawerClosed: () -> Unit = {},
 ) {
-    val drawerState = androidx.compose.material3.rememberDrawerState(androidx.compose.material3.DrawerValue.Closed)
+    val context = LocalContext.current
+    val activity = context as ActMain
+    val density = LocalDensity.current
+    val configuration = LocalConfiguration.current
+    val screenWidthDp = configuration.screenWidthDp.dp
+    val isTablet = screenWidthDp >= 600.dp // Simple tablet check
+
+    val columnObjects by viewModel.columnObjects.collectAsState()
+    val pagerState = rememberPagerState { columnObjects.size }
+    val lazyListState = rememberLazyListState()
+
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     
     // Sync Drawer State with ViewModel
@@ -47,6 +67,39 @@ fun MainScreen(
         viewModel.setDrawerOpen(drawerState.isOpen)
         if (!drawerState.isOpen) {
             onDrawerClosed()
+        }
+    }
+
+    // Handle Scroll Requests
+    LaunchedEffect(viewModel.scrollToColumn) {
+        viewModel.scrollToColumn.collectLatest { index ->
+            if (index in columnObjects.indices) {
+                if (isTablet) {
+                    lazyListState.animateScrollToItem(index)
+                } else {
+                    pagerState.animateScrollToPage(index)
+                }
+            }
+        }
+    }
+
+    // Sync Pager State with ViewModel
+    LaunchedEffect(pagerState.currentPage) {
+        if (!isTablet) {
+            viewModel.setCurrentPage(pagerState.currentPage)
+        }
+    }
+    
+    // Sync List State with ViewModel (Tablet)
+    LaunchedEffect(lazyListState.firstVisibleItemIndex) {
+        if (isTablet) {
+            viewModel.setVisibleRange(
+                first = lazyListState.firstVisibleItemIndex,
+                last = lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1,
+                slideRatio = 0f
+            )
+            // Also update current page to first visible
+            viewModel.setCurrentPage(lazyListState.firstVisibleItemIndex)
         }
     }
 
@@ -80,12 +133,28 @@ fun MainScreen(
                     .systemBarsPadding()
                     .imePadding()
             ) { paddingValues ->
-                AndroidView(
-                    factory = { contentView },
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues)
-                )
+                Box(modifier = Modifier.padding(paddingValues)) {
+                    if (isTablet) {
+                        LazyRow(state = lazyListState) {
+                            itemsIndexed(columnObjects) { index, column ->
+                                // Use ActMain's calculated column width or default
+                                val colWidth = with(density) {
+                                    if (activity.nColumnWidth > 0) activity.nColumnWidth.toDp() else 300.dp
+                                }
+                                Box(modifier = Modifier.width(colWidth)) {
+                                    ColumnWrapper(activity, column, index, columnObjects.size)
+                                }
+                            }
+                        }
+                    } else {
+                        HorizontalPager(state = pagerState) { page ->
+                            val column = columnObjects.getOrNull(page)
+                            if (column != null) {
+                                ColumnWrapper(activity, column, page, columnObjects.size)
+                            }
+                        }
+                    }
+                }
             }
         }
     )

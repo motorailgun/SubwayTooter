@@ -78,4 +78,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun setColumns(columns: List<ColumnUiState>) {
         _columnList.value = columns
     }
+    
+    // Actual Column objects for the Pager/List
+    private val _columnObjects = MutableStateFlow<List<jp.juggler.subwaytooter.column.Column>>(emptyList())
+    val columnObjects = _columnObjects.asStateFlow()
+
+    fun setColumnObjects(columns: List<jp.juggler.subwaytooter.column.Column>) {
+        _columnObjects.value = columns
+    }
 }

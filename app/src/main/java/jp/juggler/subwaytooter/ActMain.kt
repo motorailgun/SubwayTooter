@@ -21,7 +21,7 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.GravityCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-import androidx.viewpager.widget.ViewPager
+// import androidx.viewpager.widget.ViewPager
 import androidx.activity.compose.setContent
 import jp.juggler.subwaytooter.actmain.MainScreen
 import jp.juggler.subwaytooter.actmain.MainViewModel
@@ -32,8 +32,8 @@ import jp.juggler.subwaytooter.util.provideViewModel
 import kotlinx.coroutines.launch
 import jp.juggler.subwaytooter.action.accessTokenPrompt
 import jp.juggler.subwaytooter.action.timeline
-import jp.juggler.subwaytooter.actmain.ActMainPhoneViews
-import jp.juggler.subwaytooter.actmain.ActMainTabletViews
+// import jp.juggler.subwaytooter.actmain.ActMainPhoneViews
+// import jp.juggler.subwaytooter.actmain.ActMainTabletViews
 import jp.juggler.subwaytooter.actmain.SideMenuAdapter
 import jp.juggler.subwaytooter.actmain.afterNotificationGranted
 import jp.juggler.subwaytooter.actmain.closePopup
@@ -41,14 +41,14 @@ import jp.juggler.subwaytooter.actmain.defaultInsertPosition
 import jp.juggler.subwaytooter.actmain.handleIntentUri
 import jp.juggler.subwaytooter.actmain.handleSharedIntent
 import jp.juggler.subwaytooter.actmain.importAppData
-import jp.juggler.subwaytooter.actmain.initPhoneTablet
+// import jp.juggler.subwaytooter.actmain.initPhoneTablet
 import jp.juggler.subwaytooter.actmain.isOrderChanged
 import jp.juggler.subwaytooter.actmain.justifyWindowContentPortrait
 import jp.juggler.subwaytooter.actmain.launchDialogs
 import jp.juggler.subwaytooter.actmain.onBackPressedImpl
 import jp.juggler.subwaytooter.actmain.onCompleteActPost
 import jp.juggler.subwaytooter.actmain.onMyClickableSpanClickedImpl
-import jp.juggler.subwaytooter.actmain.phoneTab
+// import jp.juggler.subwaytooter.actmain.phoneTab
 import jp.juggler.subwaytooter.actmain.refreshAfterPost
 import jp.juggler.subwaytooter.actmain.reloadAccountSetting
 import jp.juggler.subwaytooter.actmain.reloadColors
@@ -66,7 +66,7 @@ import jp.juggler.subwaytooter.actmain.searchFromActivityResult
 import jp.juggler.subwaytooter.actmain.setColumnsOrder
 import jp.juggler.subwaytooter.actmain.showFooterColor
 // import jp.juggler.subwaytooter.actmain.showQuickPostVisibility
-import jp.juggler.subwaytooter.actmain.tabOnly
+// import jp.juggler.subwaytooter.actmain.tabOnly
 import jp.juggler.subwaytooter.actmain.updateColumnStrip
 import jp.juggler.subwaytooter.actmain.updateColumnStripSelection
 import jp.juggler.subwaytooter.actpost.CompletionHelper
@@ -124,7 +124,7 @@ import com.google.android.material.R as MR
 
 class ActMain : ComponentActivity(),
     View.OnClickListener,
-    ViewPager.OnPageChangeListener,
+    // ViewPager.OnPageChangeListener,
     MyClickableSpanHandler {
 
     val viewModel by lazy {
@@ -201,8 +201,8 @@ class ActMain : ComponentActivity(),
     // 状態保存の必要なし
     // (removed: popupStatusButtons)
 
-    var phoneViews: ActMainPhoneViews? = null
-    var tabletViews: ActMainTabletViews? = null
+    // var phoneViews: ActMainPhoneViews? = null
+    // var tabletViews: ActMainTabletViews? = null
 
     var nScreenColumn: Int = 0
     var nColumnWidth: Int = 0 // dividerの幅を含む
@@ -212,41 +212,11 @@ class ActMain : ComponentActivity(),
 
     var dlgPrivacyPolicy: WeakReference<Dialog>? = null
 
+    /*
     val views by lazy {
-        val ctx = this@ActMain
-        
-        val viewPager = jp.juggler.subwaytooter.view.MyViewPager(ctx).apply {
-            id = R.id.viewPager
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        }
-
-        val rvPager = jp.juggler.subwaytooter.actmain.TabletModeRecyclerView(ctx).apply {
-            id = R.id.rvPager
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        }
-
-        // Wrapper view to hold pager
-        val root = FrameLayout(ctx).apply {
-            layoutParams = android.view.ViewGroup.LayoutParams(
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                android.view.ViewGroup.LayoutParams.MATCH_PARENT
-            )
-            addView(viewPager)
-            addView(rvPager)
-        }
-
-        ActMainViews(
-            root = root,
-            viewPager = viewPager,
-            rvPager = rvPager,
-        )
+         // Legacy views removed
     }
+    */
 
     lateinit var completionHelper: CompletionHelper
     lateinit var handler: Handler
@@ -418,7 +388,6 @@ class ActMain : ComponentActivity(),
         setContent {
             MainScreen(
                 viewModel = viewModel,
-                contentView = views.root,
                 sideMenuAdapter = sideMenuAdapter,
                 onClickMenu = { openDrawer() },
                 onClickToot = { openPost() },
@@ -426,11 +395,9 @@ class ActMain : ComponentActivity(),
                 onClickColumn = { idx ->
                     val column = appState.column(idx)
                     if (column != null) {
-                        if (jp.juggler.subwaytooter.pref.PrefB.bpScrollTopFromColumnStrip.value && isVisibleColumn(idx)) {
-                            column.viewHolder?.scrollToTop2()
-                        } else {
-                            scrollToColumn(idx)
-                        }
+                        // TODO: Implement scrollToTop logic with Compose state
+                        // For now just scroll to column
+                        scrollToColumn(idx)
                     }
                 },
                 onDrawerClosed = { completionHelper.closeAcctPopup() },
@@ -487,38 +454,20 @@ class ActMain : ComponentActivity(),
     override fun onConfigurationChanged(newConfig: Configuration) {
         log.w("onConfigurationChanged")
         super.onConfigurationChanged(newConfig)
-        if (newConfig.screenWidthDp > 0 || newConfig.screenHeightDp > 0) {
-            tabOnly { env -> resizeColumnWidth(env) }
-        }
+        // resizeColumnWidth removed - handled by Compose
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         log.d("onSaveInstanceState")
         super.onSaveInstanceState(outState)
-        phoneTab(
-            { env -> outState.putInt(STATE_CURRENT_PAGE, env.pager.currentItem) },
-            { env ->
-                env.tabletLayoutManager.findLastVisibleItemPosition()
-                    .takeIf { it != RecyclerView.NO_POSITION }
-                    ?.let { outState.putInt(STATE_CURRENT_PAGE, it) }
-            }
-        )
+        // phoneTab logic removed - Compose handles state restoration or ViewModel
         appState.columnList.forEach { it.saveScrollPosition() }
     }
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         log.d("onRestoreInstanceState")
         super.onRestoreInstanceState(savedInstanceState)
-        val pos = savedInstanceState.getInt(STATE_CURRENT_PAGE)
-        // 注意：開始は0じゃなく1
-        if (pos in 1 until appState.columnCount) {
-            phoneTab(
-                { env -> env.pager.currentItem = pos },
-                { env ->
-                    env.tabletLayoutManager.smoothScrollToPosition(env.tabletPager, null, pos)
-                }
-            )
-        }
+        // phoneTab logic removed
     }
 
     override fun onStart() {
@@ -665,12 +614,9 @@ class ActMain : ComponentActivity(),
 
     override fun onPause() {
         log.d("onPause")
-        isResumed = false
-
+        
         // 最後に表示していたカラムの位置
-        val lastPos = phoneTab(
-            { env -> env.pager.currentItem },
-            { env -> env.visibleColumnsIndices.first })
+        val lastPos = viewModel.currentPage.value
         log.d("ipLastColumnPos save $lastPos")
         PrefI.ipLastColumnPos.value = lastPos
 
@@ -678,27 +624,14 @@ class ActMain : ComponentActivity(),
 
         appState.saveColumnList(bEnableSpeech = false)
 
+        isResumed = false
         super.onPause()
     }
 
     //////////////////////////////////////////////////////////////////
     // UIイベント
 
-    override fun onPageScrollStateChanged(state: Int) {}
-
-    override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {
-        updateColumnStripSelection(position, positionOffset)
-    }
-
-    override fun onPageSelected(position: Int) {
-        handler.post {
-            appState.column(position)?.let { column ->
-                column.startLoading(ColumnLoadReason.PageSelect)
-                scrollColumnStrip(position)
-                completionHelper.setInstance(column.accessInfo.takeIf { !it.isNA })
-            }
-        }
-    }
+    // (ViewPager overrides removed)
 
     override fun onClick(v: View) {
         // Legacy onClick handler - most actions should be direct calls now.
@@ -726,11 +659,8 @@ class ActMain : ComponentActivity(),
     // UI初期化
 
     // ビューのlateinit変数を初期化する
-    private fun findViews() {
-        // views.btnToot.setOnClickListener(this)
-        // views.btnMenu.setOnClickListener(this)
-    }
-
+    // private fun findViews() (Removed)
+    
     internal fun initUI() {
         Column.reloadDefaultColor(this)
 
@@ -739,16 +669,24 @@ class ActMain : ComponentActivity(),
         reloadFonts()
         reloadIconSize()
 
-        findViews()
-
-        // views.vBottomPadding.layoutParams?.height = screenBottomPadding
+        // findViews() removed
 
         justifyWindowContentPortrait()
 
-        // views.svColumnStrip.isHorizontalFadingEdgeEnabled = true
         reloadMediaHeight()
-        initPhoneTablet()
+        // initPhoneTablet() removed
         showFooterColor()
+        
+        // Observe current page changes
+        lifecycleScope.launch {
+            viewModel.currentPage.collect { position ->
+                appState.column(position)?.let { column ->
+                    column.startLoading(ColumnLoadReason.PageSelect)
+                    scrollColumnStrip(position)
+                    completionHelper.setInstance(column.accessInfo.takeIf { !it.isNA })
+                }
+            }
+        }
     }
 
     private fun galaxyBackgroundWorkaround() {

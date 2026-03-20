@@ -15,7 +15,7 @@ import jp.juggler.subwaytooter.appsetting.appSettingRoot
 import jp.juggler.subwaytooter.column.Column
 import jp.juggler.subwaytooter.column.ColumnType
 import jp.juggler.subwaytooter.columnviewholder.ColumnViewHolder
-import jp.juggler.subwaytooter.columnviewholder.TabletColumnViewHolder
+// import jp.juggler.subwaytooter.columnviewholder.TabletColumnViewHolder
 import jp.juggler.subwaytooter.dialog.actionsDialog
 import jp.juggler.subwaytooter.pref.*
 import jp.juggler.subwaytooter.push.PushWorker
@@ -57,15 +57,18 @@ fun ActMain.onBackPressedImpl() {
 
         fun getClosableColumnList(): List<Column> {
             val visibleColumnList = ArrayList<Column>()
-            phoneTab({ env ->
-                try {
-                    appState.column(env.pager.currentItem)?.addTo(visibleColumnList)
-                } catch (ex: Throwable) {
-                    log.e(ex, "getClosableColumnList failed.")
+            val current = viewModel.currentPage.value
+            val vr = viewModel.visibleRange.value
+            
+            if (vr.first != -1) {
+                // Tablet range
+                for (i in vr.first..vr.last) {
+                    appState.column(i)?.addTo(visibleColumnList)
                 }
-            }, { env ->
-                visibleColumnList.addAll(env.visibleColumns)
-            })
+            } else {
+                // Phone (single)
+                appState.column(current)?.addTo(visibleColumnList)
+            }
 
             return visibleColumnList.filter { !it.dontClose }
         }
@@ -121,8 +124,9 @@ fun ActMain.onMyClickableSpanClickedImpl(viewClicked: View, span: MyClickableSpa
                 break@loop
             }
 
-            is TabletColumnViewHolder -> {
-                column = tag.columnViewHolder.column
+            is Column -> {
+                column = tag
+                whoRef = null
                 break@loop
             }
 
