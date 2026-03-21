@@ -1,236 +1,57 @@
 package jp.juggler.subwaytooter
 
-import android.annotation.SuppressLint
 import android.app.DownloadManager
 import android.content.ClipData
 import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Intent
-import android.content.res.ColorStateList
-import android.graphics.*
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.os.SystemClock
-import android.util.TypedValue
-import android.view.Gravity
-import android.view.View
-import android.view.ViewGroup
-import android.view.Window
-import android.webkit.WebView
-import android.widget.CheckBox
-import android.widget.FrameLayout
-import android.widget.ImageButton
-import android.widget.LinearLayout
-import android.widget.ScrollView
-import android.widget.TextView
-import androidx.annotation.OptIn
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.core.net.toUri
-import androidx.media3.common.MediaItem
-import androidx.media3.common.PlaybackException
-import androidx.media3.common.Player
-import androidx.media3.common.Timeline
-import androidx.media3.common.util.RepeatModeUtil
-import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.source.LoadEventInfo
-import androidx.media3.exoplayer.source.MediaLoadData
-import androidx.media3.exoplayer.source.MediaSource
-import androidx.media3.exoplayer.source.MediaSourceEventListener
-import androidx.media3.ui.PlayerView
-import com.google.android.flexbox.AlignItems
-import com.google.android.flexbox.FlexDirection
-import com.google.android.flexbox.FlexWrap
-import com.google.android.flexbox.FlexboxLayout
-import com.google.android.flexbox.JustifyContent
-import jp.juggler.subwaytooter.api.*
-import jp.juggler.subwaytooter.api.entity.*
+import jp.juggler.subwaytooter.actmediaviewer.MediaViewerScreen
+import jp.juggler.subwaytooter.actmediaviewer.MediaViewerViewModel
+import jp.juggler.subwaytooter.api.entity.ServiceType
+import jp.juggler.subwaytooter.api.entity.TootAttachment
+import jp.juggler.subwaytooter.api.entity.TootAttachmentLike
+import jp.juggler.subwaytooter.api.entity.TootAttachmentMSP
+import jp.juggler.subwaytooter.api.entity.TootAttachmentType
 import jp.juggler.subwaytooter.api.entity.TootAttachment.Companion.tootAttachmentJson
 import jp.juggler.subwaytooter.dialog.actionsDialog
-import jp.juggler.subwaytooter.util.reUrlGif
-import jp.juggler.subwaytooter.pref.PrefI
 import jp.juggler.subwaytooter.util.permissionSpecMediaDownload
 import jp.juggler.subwaytooter.util.requester
-import jp.juggler.subwaytooter.view.PinchBitmapView
-import jp.juggler.util.*
+import jp.juggler.subwaytooter.util.provideViewModel
 import jp.juggler.util.coroutine.launchAndShowError
-import jp.juggler.util.coroutine.launchMain
-import jp.juggler.util.data.*
+import jp.juggler.util.data.asciiRegex
+import jp.juggler.util.data.decodeJsonArray
+import jp.juggler.subwaytooter.api.entity.encodeJson
+import jp.juggler.util.data.encodeUTF8
 import jp.juggler.util.log.LogCategory
-import jp.juggler.util.log.dialogOrToast
 import jp.juggler.util.log.showToast
-import jp.juggler.util.log.withCaption
-import jp.juggler.util.media.imageOrientation
-import jp.juggler.util.media.resolveOrientation
-import jp.juggler.util.media.rotateSize
+import jp.juggler.util.overrideActivityTransitionCompat
+import jp.juggler.util.TransitionOverrideType
+import jp.juggler.util.data.mayUri
 import jp.juggler.util.network.MySslSocketFactory
-import jp.juggler.util.ui.*
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.yield
-import okhttp3.Request
-import java.io.ByteArrayInputStream
-import java.io.IOException
 import java.nio.charset.StandardCharsets
-import java.util.*
-import javax.net.ssl.HttpsURLConnection
+import java.util.ArrayList
+import java.util.LinkedList
 import kotlin.math.max
-import kotlin.math.min
-import com.google.android.material.R as MR
 
-data class ActMediaViewerViews(
-    val root: LinearLayout,
-    val svDescription: ScrollView,
-    val tvDescription: TextView,
-    val wvOther: WebView,
-    val pbvImage: PinchBitmapView,
-    val pvVideo: PlayerView,
-    val tvError: TextView,
-    val btnMore: ImageButton,
-    val btnDownload: ImageButton,
-    val btnNext: ImageButton,
-    val btnPrevious: ImageButton,
-    val tvStatus: TextView,
-    val cbMute: CheckBox,
-)
-
-fun createActMediaViewerViews(context: android.content.Context): ActMediaViewerViews {
-    val matchParent = ViewGroup.LayoutParams.MATCH_PARENT
-    val wrapContent = ViewGroup.LayoutParams.WRAP_CONTENT
-    val tintColor = ColorStateList.valueOf(context.attrColor(MR.attr.colorOnSurface))
-
-    val tvDescription = TextView(context).apply {
-        layoutParams = ViewGroup.LayoutParams(matchParent, wrapContent)
-        val padH = context.dp(12)
-        val padV = context.dp(6)
-        setPadding(padH, padV, padH, padV)
-    }
-
-    val svDescription = ScrollView(context).apply {
-        layoutParams = LinearLayout.LayoutParams(matchParent, context.dp(64))
-        isScrollbarFadingEnabled = false
-        isVerticalFadingEdgeEnabled = true
-        setFadingEdgeLength(context.dp(14))
-        addView(tvDescription)
-    }
-
-    val wvOther = WebView(context).apply {
-        layoutParams = FrameLayout.LayoutParams(matchParent, matchParent)
-    }
-
-    val pbvImage = PinchBitmapView(context).apply {
-        layoutParams = FrameLayout.LayoutParams(matchParent, matchParent)
-    }
-
-    val pvVideo = PlayerView(context).apply {
-        layoutParams = FrameLayout.LayoutParams(matchParent, matchParent)
-    }
-
-    val tvError = TextView(context).apply {
-        layoutParams = FrameLayout.LayoutParams(matchParent, matchParent)
-        gravity = Gravity.CENTER
-        val pad = context.dp(12)
-        setPadding(pad, pad, pad, pad)
-    }
-
-    val contentFrame = FrameLayout(context).apply {
-        layoutParams = LinearLayout.LayoutParams(matchParent, 0, 1f)
-        addView(wvOther)
-        addView(pbvImage)
-        addView(pvVideo)
-        addView(tvError)
-    }
-
-    fun makeImageButton48(iconRes: Int, contentDescRes: Int) = ImageButton(context).apply {
-        layoutParams = ViewGroup.LayoutParams(context.dp(48), context.dp(48))
-        minimumWidth = context.dp(48)
-        setImageResource(iconRes)
-        imageTintList = tintColor
-        contentDescription = context.getString(contentDescRes)
-    }
-
-    val btnMore = makeImageButton48(R.drawable.ic_more, R.string.more)
-    val btnDownload = makeImageButton48(R.drawable.ic_download, R.string.download)
-    val btnNext = makeImageButton48(R.drawable.ic_arrow_end, R.string.next)
-    val btnPrevious = makeImageButton48(R.drawable.ic_arrow_start, R.string.previous)
-
-    val tvStatus = TextView(context).apply {
-        layoutParams = FlexboxLayout.LayoutParams(wrapContent, context.dp(48)).apply {
-            marginStart = context.dp(12)
-        }
-        alpha = 0.5f
-        gravity = Gravity.END or Gravity.CENTER_VERTICAL
-        setTextColor(0xffffffff.toInt())
-        setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12f)
-    }
-
-    val cbMute = CheckBox(context).apply {
-        layoutParams = FlexboxLayout.LayoutParams(wrapContent, context.dp(48)).apply {
-            marginStart = context.dp(12)
-        }
-        setText(R.string.mute)
-        visibility = View.GONE
-    }
-
-    FlexboxLayout(context).apply {
-        layoutParams = LinearLayout.LayoutParams(matchParent, wrapContent)
-        flexDirection = FlexDirection.ROW_REVERSE
-        flexWrap = FlexWrap.WRAP
-        alignItems = AlignItems.FLEX_START
-        justifyContent = JustifyContent.FLEX_START
-        addView(btnMore)
-        addView(btnDownload)
-        addView(btnNext)
-        addView(btnPrevious)
-        addView(tvStatus)
-        addView(cbMute)
-    }
-
-    (tvStatus.layoutParams as FlexboxLayout.LayoutParams).flexGrow = 1f
-
-    val root = LinearLayout(context).apply {
-        layoutParams = ViewGroup.LayoutParams(matchParent, matchParent)
-        orientation = LinearLayout.VERTICAL
-        addView(svDescription)
-        addView(contentFrame)
-        addView(tvStatus.parent as ViewGroup) // flFooter
-    }
-
-    return ActMediaViewerViews(
-        root = root,
-        svDescription = svDescription,
-        tvDescription = tvDescription,
-        wvOther = wvOther,
-        pbvImage = pbvImage,
-        pvVideo = pvVideo,
-        tvError = tvError,
-        btnMore = btnMore,
-        btnDownload = btnDownload,
-        btnNext = btnNext,
-        btnPrevious = btnPrevious,
-        tvStatus = tvStatus,
-        cbMute = cbMute,
-    )
-}
-
-class ActMediaViewer : ComponentActivity(), View.OnClickListener {
+class ActMediaViewer : ComponentActivity() {
 
     companion object {
-
         internal val log = LogCategory("ActMediaViewer")
 
         internal val download_history_list = LinkedList<DownloadHistory>()
         internal const val DOWNLOAD_REPEAT_EXPIRE = 3000L
-        internal const val short_limit = 5000L
 
         internal const val EXTRA_IDX = "idx"
         internal const val EXTRA_DATA = "data"
         internal const val EXTRA_SERVICE_TYPE = "serviceType"
         internal const val EXTRA_SHOW_DESCRIPTION = "showDescription"
-
-        internal const val STATE_PLAYER_POS = "playerPos"
-        internal const val STATE_PLAYER_PLAY_WHEN_READY = "playerPlayWhenReady"
-        internal const val STATE_LAST_VOLUME = "lastVolume"
 
         internal fun <T : TootAttachmentLike> encodeMediaList(list: ArrayList<T>?) =
             list?.encodeJson()?.toString() ?: "[]"
@@ -262,236 +83,46 @@ class ActMediaViewer : ComponentActivity(), View.OnClickListener {
                 android.R.anim.fade_out,
             )
         }
-
-        private fun checkMaxBitmapSize(): Int {
-            var bitsMin = 10 // 1024 px
-            var bitsMax = 16 // 65536 px
-            while (bitsMax > bitsMin) {
-                val bitsMid = (bitsMin + bitsMax + 1).shr(1)
-                val px = 1.shl(bitsMid)
-                val canCreate = try {
-                    val bitmap = Bitmap.createBitmap(px, px, Bitmap.Config.ARGB_8888)
-                    bitmap.recycle()
-                    log.i("checkMaxBitmapSize: range=$bitsMin..$bitsMid..$bitsMax, px=${px}, canCreate=true")
-                    true
-                } catch (ex: Throwable) {
-                    log.i(ex.withCaption("checkMaxBitmapSize: range=$bitsMin..$bitsMid..$bitsMax, px=${px}, canCreate=false"))
-                    false
-                }
-                when {
-                    canCreate ->
-                        bitsMin = bitsMid
-
-                    else ->
-                        bitsMax = bitsMid - 1
-                }
-            }
-            val resolved = 1.shl(bitsMin)
-            log.w("checkMaxBitmapSize: resolved=$resolved")
-            return min(8192, resolved)
-        }
-
-        private val maxBitmapSize by lazy {
-            checkMaxBitmapSize()
-        }
     }
 
     class DownloadHistory(val time: Long, val url: String)
 
-    internal var idx: Int = 0
-    private lateinit var mediaList: ArrayList<TootAttachment>
-    private lateinit var serviceType: ServiceType
-    private var showDescription = true
-
-    private val views by lazy {
-        createActMediaViewerViews(this)
+    private val viewModel: MediaViewerViewModel by lazy {
+        provideViewModel(this) { MediaViewerViewModel(application) }
     }
 
-    private lateinit var exoPlayer: ExoPlayer
-
-    private var lastVolume = Float.NaN
-
-    internal var bufferingLastShown: Long = 0
-
-    private var lastVideoUrl: String? = null
-
-    private val tileStep by lazy {
-        val density = resources.displayMetrics.density
-        (density * 12f + 0.5f).toInt()
-    }
-
-    private var originalWidth = 0
-    private var originalHeight = 0
-
-    private val playerListener = object : Player.Listener {
-
-        override fun onTimelineChanged(
-            timeline: Timeline,
-            @Player.TimelineChangeReason reason: Int,
-        ) {
-            log.d("exoPlayer onTimelineChanged reason=$reason")
-        }
-
-        override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
-        }
-
-        private fun showBufferingToast() {
-            val playWhenReady = exoPlayer.playWhenReady
-            val playbackState = exoPlayer.playbackState
-            if (playWhenReady && playbackState == Player.STATE_BUFFERING) {
-                val now = SystemClock.elapsedRealtime()
-                if (now - bufferingLastShown >= short_limit && exoPlayer.duration >= short_limit) {
-                    bufferingLastShown = now
-                    showToast(false, R.string.video_buffering)
-                }
-                /*
-                    exoPlayer.getDuration() may returns negative value (TIME_UNSET ,same as Long.MIN_VALUE + 1).
-                */
-            }
-        }
-
-        override fun onPlaybackStateChanged(playbackState: Int) {
-            showBufferingToast()
-        }
-
-        override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
-            log.d("onPlayWhenReadyChanged playWhenReady=$playWhenReady, reason=$reason")
-            showBufferingToast()
-        }
-
-        override fun onRepeatModeChanged(repeatMode: Int) {
-            log.d("exoPlayer onRepeatModeChanged $repeatMode")
-        }
-
-        override fun onPlayerError(error: PlaybackException) {
-            log.w(error, "exoPlayer onPlayerError")
-            if (recoverLocalVideo()) return
-            showToast(error, "exoPlayer onPlayerError")
-        }
-
-        override fun onPositionDiscontinuity(
-            oldPosition: Player.PositionInfo,
-            newPosition: Player.PositionInfo,
-            reason: Int,
-        ) {
-            log.d("exoPlayer onPositionDiscontinuity reason=$reason, oldPosition=$oldPosition, newPosition=$newPosition")
-        }
-    }
-
-    @UnstableApi
-    private val mediaSourceEventListener = object : MediaSourceEventListener {
-        override fun onLoadStarted(
-            windowIndex: Int,
-            mediaPeriodId: MediaSource.MediaPeriodId?,
-            loadEventInfo: LoadEventInfo,
-            mediaLoadData: MediaLoadData,
-            retryCount: Int,
-        ) {
-            log.d("onLoadStarted retryCount=$retryCount")
-        }
-
-        override fun onDownstreamFormatChanged(
-            windowIndex: Int,
-            mediaPeriodId: MediaSource.MediaPeriodId?,
-            mediaLoadData: MediaLoadData,
-        ) {
-            log.d("onDownstreamFormatChanged")
-        }
-
-        override fun onUpstreamDiscarded(
-            windowIndex: Int,
-            mediaPeriodId: MediaSource.MediaPeriodId,
-            mediaLoadData: MediaLoadData,
-        ) {
-            log.d("onUpstreamDiscarded")
-        }
-
-        override fun onLoadCompleted(
-            windowIndex: Int,
-            mediaPeriodId: MediaSource.MediaPeriodId?,
-            loadEventInfo: LoadEventInfo,
-            mediaLoadData: MediaLoadData,
-        ) {
-            log.d("onLoadCompleted")
-        }
-
-        override fun onLoadCanceled(
-            windowIndex: Int,
-            mediaPeriodId: MediaSource.MediaPeriodId?,
-            loadEventInfo: LoadEventInfo,
-            mediaLoadData: MediaLoadData,
-        ) {
-            log.d("onLoadCanceled")
-        }
-
-        override fun onLoadError(
-            windowIndex: Int,
-            mediaPeriodId: MediaSource.MediaPeriodId?,
-            loadEventInfo: LoadEventInfo,
-            mediaLoadData: MediaLoadData,
-            error: IOException,
-            wasCanceled: Boolean,
-        ) {
-            showError(error.withCaption("load error."))
-        }
-    }
-
-    private val prDownload = permissionSpecMediaDownload.requester { download(mediaList[idx]) }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-
-        log.d("onSaveInstanceState")
-
-        outState.putInt(EXTRA_IDX, idx)
-        outState.putInt(EXTRA_SERVICE_TYPE, serviceType.ordinal)
-        outState.putString(EXTRA_DATA, encodeMediaList(mediaList))
-
-        outState.putLong(STATE_PLAYER_POS, exoPlayer.currentPosition)
-        outState.putBoolean(STATE_PLAYER_PLAY_WHEN_READY, exoPlayer.playWhenReady)
-        outState.putFloat(STATE_LAST_VOLUME, lastVolume)
+    private val prDownload = permissionSpecMediaDownload.requester { 
+        val state = viewModel.state.value
+        val ta = state.mediaList.getOrNull(state.idx)
+        if (ta != null) download(ta)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         prDownload.register(this)
 
-        this.showDescription = intent.getBooleanExtra(EXTRA_SHOW_DESCRIPTION, showDescription)
-
-        this.serviceType = ServiceType.entries[
-            savedInstanceState?.int(EXTRA_SERVICE_TYPE)
-                ?: intent.int(EXTRA_SERVICE_TYPE) ?: 0
-        ]
-
-        this.mediaList = decodeMediaList(
-            savedInstanceState?.getString(EXTRA_DATA)
-                ?: intent.string(EXTRA_DATA)
-        )
-
-        this.idx = (savedInstanceState?.int(EXTRA_IDX) ?: intent.int(EXTRA_IDX))
-            ?.takeIf { it in mediaList.indices } ?: 0
-
         App1.setActivityTheme(this, forceDark = true)
-        setContentViewAndInsets(views.root)
-        initUI()
-
-        load(savedInstanceState)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        views.pbvImage.setBitmap(null)
-        exoPlayer.release()
-    }
-
-    override fun onStart() {
-        super.onStart()
-        views.pvVideo.onResume()
-    }
-
-    override fun onStop() {
-        super.onStop()
-        views.pvVideo.onPause()
+        
+        if (savedInstanceState == null) {
+            val idx = intent.getIntExtra(EXTRA_IDX, 0)
+            val serviceTypeOrdinal = intent.getIntExtra(EXTRA_SERVICE_TYPE, 0)
+            val dataString = intent.getStringExtra(EXTRA_DATA)
+            val showDesc = intent.getBooleanExtra(EXTRA_SHOW_DESCRIPTION, true)
+            
+            val list = decodeMediaList(dataString)
+            val serviceType = ServiceType.entries.getOrNull(serviceTypeOrdinal) ?: ServiceType.MASTODON
+            
+            viewModel.initialize(list, idx, serviceType, showDesc)
+        }
+        
+        setContent {
+            MediaViewerScreen(
+                viewModel = viewModel,
+                onDownload = { download(it) },
+                onMore = { more(it) },
+                onClose = { finish() }
+            )
+        }
     }
 
     override fun finish() {
@@ -502,374 +133,13 @@ class ActMediaViewer : ComponentActivity(), View.OnClickListener {
             R.anim.slide_to_bottom,
         )
     }
-
-    @OptIn(UnstableApi::class)
-    private fun initUI() {
-        val enablePaging = mediaList.size > 1
-        views.btnPrevious.isEnabledAlpha = enablePaging
-        views.btnNext.isEnabledAlpha = enablePaging
-
-        views.btnPrevious.setOnClickListener(this)
-        views.btnNext.setOnClickListener(this)
-        views.btnDownload.setOnClickListener(this)
-        views.btnMore.setOnClickListener(this)
-
-        views.cbMute.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                // mute
-                lastVolume = exoPlayer.volume
-                exoPlayer.volume = 0f
-            } else {
-                // unmute
-                exoPlayer.volume = when {
-                    lastVolume.isNaN() -> 1f
-                    lastVolume <= 0f -> 1f
-                    else -> lastVolume
-                }
-                lastVolume = Float.NaN
-            }
-        }
-
-        views.pbvImage.setCallback(object : PinchBitmapView.Callback {
-            override fun onSwipe(deltaX: Int, deltaY: Int) {
-                if (isDestroyed) return
-                if (deltaX != 0) {
-                    loadDelta(deltaX)
-                } else {
-                    log.d("finish by vertical swipe")
-                    finish()
-                }
-            }
-
-            override fun onMove(
-                bitmapW: Float,
-                bitmapH: Float,
-                tx: Float,
-                ty: Float,
-                scale: Float,
-            ) {
-                App1.getAppState(this@ActMediaViewer).handler.post {
-                    showZoom(bitmapW.toInt(), bitmapH.toInt(), scale)
-                }
-            }
-        })
-
-        exoPlayer = ExoPlayer.Builder(this).build()
-        exoPlayer.addListener(playerListener)
-
-        views.pvVideo.run {
-            player = exoPlayer
-            controllerAutoShow = false
-            setShowRewindButton(false)
-            setShowFastForwardButton(false)
-            setShowPreviousButton(false)
-            setShowNextButton(false)
-            setRepeatToggleModes(RepeatModeUtil.REPEAT_TOGGLE_MODE_ONE)
-        }
-
-        views.wvOther.apply {
-            scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
-            settings.apply {
-                @SuppressLint("SetJavaScriptEnabled")
-                javaScriptEnabled = true
-                loadWithOverviewMode = true
-                useWideViewPort = true
-                setSupportZoom(true)
-            }
-        }
-    }
-
-    internal fun loadDelta(delta: Int) {
-        if (mediaList.size < 2) return
-        val size = mediaList.size
-        idx = (idx + size + delta) % size
-        load()
-    }
-
-    internal fun load(state: Bundle? = null) {
-
-        exoPlayer.stop()
-
-        // いったんすべて隠す
-        views.run {
-            wvOther.gone()
-            pbvImage.gone()
-            pvVideo.gone()
-            tvError.gone()
-            svDescription.gone()
-            tvStatus.gone()
-        }
-
-        if (idx < 0 || idx >= mediaList.size) {
-            showError(getString(R.string.media_attachment_empty))
-            return
-        }
-        val ta = mediaList[idx]
-        val description = ta.description
-        if (showDescription && description?.isNotEmpty() == true) {
-            views.svDescription.visible()
-            views.tvDescription.text = description
-        }
-
-        when (ta.type) {
-            TootAttachmentType.Unknown,
-            -> loadOther(ta) // showError(getString(R.string.media_attachment_type_error, ta.type.id))
-
-            TootAttachmentType.Image -> when {
-                reUrlGif.containsMatchIn(ta.remote_url ?: "") ->
-                    loadOther(ta)
-
-                else ->
-                    loadBitmap(ta)
-            }
-
-            TootAttachmentType.Video,
-            TootAttachmentType.GIFV,
-            TootAttachmentType.Audio,
-            -> loadVideo(ta, state)
-        }
-    }
-
-    private fun showError(message: String) {
-        views.run {
-            pvVideo.gone()
-            pbvImage.gone()
-            tvError.visible().text = message
-        }
-    }
-
-    private fun loadVideo(
-        ta: TootAttachment,
-        state: Bundle? = null,
-        forceLocalUrl: Boolean = false,
-    ) {
-
-        views.cbMute.visible().run {
-            if (isChecked && lastVolume.isFinite()) {
-                exoPlayer.volume = 0f
-            }
-        }
-
-        val url = when {
-            forceLocalUrl -> ta.url
-            else -> ta.getLargeUrl()
-        }
-        if (url == null) {
-            showError("missing media attachment url.")
-            return
-        }
-        val uri = url.mayUri()
-        if (uri == null) {
-            showError("can't parse URI: $url")
-            return
-        }
-        lastVideoUrl = url
-
-        // https://github.com/google/ExoPlayer/issues/1819
-        HttpsURLConnection.setDefaultSSLSocketFactory(MySslSocketFactory)
-        views.pvVideo.visibility = View.VISIBLE
-        exoPlayer.setMediaItem(MediaItem.fromUri(uri))
-        exoPlayer.prepare()
-        exoPlayer.repeatMode = when (ta.type) {
-            TootAttachmentType.Video -> Player.REPEAT_MODE_OFF
-            // GIFV or AUDIO
-            else -> Player.REPEAT_MODE_ALL
-        }
-        if (state == null) {
-            exoPlayer.playWhenReady = true
-        } else {
-            exoPlayer.playWhenReady = state.getBoolean(STATE_PLAYER_PLAY_WHEN_READY, true)
-            exoPlayer.seekTo(max(0L, state.getLong(STATE_PLAYER_POS, 0L)))
-            lastVolume = state.getFloat(STATE_LAST_VOLUME, 1f)
-        }
-    }
-
-    private fun decodeBitmap(
-        options: BitmapFactory.Options,
-        data: ByteArray,
-        @Suppress("SameParameterValue") pixelMax: Int = maxBitmapSize,
-    ): Pair<Bitmap?, String?> {
-
-        val orientation: Int? = ByteArrayInputStream(data).imageOrientation()
-
-        // detects image size
-        options.inJustDecodeBounds = true
-        options.inScaled = false
-        options.outWidth = 0
-        options.outHeight = 0
-        BitmapFactory.decodeByteArray(data, 0, data.size, options)
-        var w = options.outWidth
-        var h = options.outHeight
-        if (w <= 0 || h <= 0) {
-            return Pair(null, "can't decode image bounds.")
-        }
-        originalWidth = w
-        originalHeight = h
-
-        // calc bits to reduce size
-        var bits = 0
-        while (w > pixelMax || h > pixelMax) {
-            ++bits
-            w = w shr 1
-            h = h shr 1
-        }
-        options.inJustDecodeBounds = false
-        options.inSampleSize = 1 shl bits
-
-        // decode image
-        val bitmap1 = BitmapFactory.decodeByteArray(data, 0, data.size, options)
-            ?: return Pair(null, "BitmapFactory.decodeByteArray returns null.")
-
-        val srcWidth = bitmap1.width.toFloat()
-        val srcHeight = bitmap1.height.toFloat()
-        if (srcWidth <= 0f || srcHeight <= 0f) {
-            bitmap1.recycle()
-            return Pair(null, "image size <= 0")
-        }
-
-        val dstSize = rotateSize(orientation, srcWidth, srcHeight)
-        val dstSizeInt = Point(
-            max(1, (dstSize.x + 0.5f).toInt()),
-            max(1, (dstSize.y + 0.5f).toInt())
-        )
-
-        // 回転行列を作る
-        val matrix = Matrix()
-        matrix.reset()
-
-        // 画像の中心が原点に来るようにして
-        matrix.postTranslate(srcWidth * -0.5f, srcHeight * -0.5f)
-
-        // orientationに合わせた回転指定
-        matrix.resolveOrientation(orientation)
-
-        // 表示領域に埋まるように平行移動
-        matrix.postTranslate(dstSize.x * 0.5f, dstSize.y * 0.5f)
-
-        // 回転後の画像
-        val bitmap2 = try {
-            Bitmap.createBitmap(dstSizeInt.x, dstSizeInt.y, Bitmap.Config.ARGB_8888)
-        } catch (ex: Throwable) {
-            log.e(ex, "createBitmap failed.")
-            return Pair(bitmap1, ex.withCaption("createBitmap failed."))
-        }
-
-        try {
-            Canvas(bitmap2).drawBitmap(
-                bitmap1,
-                matrix,
-                Paint().apply { isFilterBitmap = true }
-            )
-        } catch (ex: Throwable) {
-            bitmap2.recycle()
-            log.e(ex, "drawBitmap failed.")
-            return Pair(bitmap1, ex.withCaption("drawBitmap failed."))
-        }
-
-        try {
-            bitmap1.recycle()
-        } catch (ignored: Throwable) {
-        }
-        return Pair(bitmap2, null)
-    }
-
-    private fun loadOther(ta: TootAttachment) {
-
-        val urlList = ta.getLargeUrlList()
-        if (urlList.isEmpty()) {
-            showError("missing media attachment url.")
-            return
-        }
-        val url = urlList.first()
-        views.run {
-            cbMute.gone()
-            tvStatus.visible().text = "${ta.type.id} ${url.ellipsizeDot3(100)}"
-            wvOther.visible().loadUrl(url)
-        }
-    }
-
-    private fun loadBitmap(ta: TootAttachment) {
-
-        views.run {
-            cbMute.gone()
-            tvStatus.visible().text = null
-            pbvImage.visible().setBitmap(null)
-        }
-
-        val urlList = ta.getLargeUrlList()
-        if (urlList.isEmpty()) {
-            showError("missing media attachment url.")
-            return
-        }
-
-        launchMain {
-            try {
-                val errors = ArrayList<String>()
-                val bitmap = runApiTask2(progressStyle = ApiTask.PROGRESS_HORIZONTAL) { client ->
-                    if (urlList.isEmpty()) {
-                        errors.add("missing url(s)")
-                    }
-                    val options = BitmapFactory.Options()
-                    for (url in urlList) {
-                        try {
-                            val ba = Request.Builder()
-                                .url(url)
-                                .cacheControl(App1.CACHE_CONTROL)
-                                .addHeader("Accept", "image/webp,image/*,*/*;q=0.8")
-                                .build()
-                                .send(
-                                    client,
-                                    errorSuffix = url,
-                                    overrideClient = App1.ok_http_client_media_viewer
-                                )
-                                .readBytes { bytesRead, bytesTotal ->
-                                    // 50MB以上のデータはキャンセルする
-                                    if (max(bytesRead, bytesTotal) >= 50000000) {
-                                        error("media attachment is larger than 50000000")
-                                    }
-                                    client.publishApiProgressRatio(
-                                        bytesRead.toInt(),
-                                        bytesTotal.toInt()
-                                    )
-                                }
-                            client.publishApiProgress("decoding image…")
-                            val (b, error) = decodeBitmap(options, ba)
-                            if (b != null) return@runApiTask2 b
-                            if (error != null) errors.add(error)
-                        } catch (ex: Throwable) {
-                            if (ex is CancellationException) break
-                            errors.add("load error. ${ex.withCaption()} url=$url")
-                        }
-                    }
-                    return@runApiTask2 null
-                }
-                when {
-                    bitmap != null -> views.pbvImage.setBitmap(bitmap)
-                    else -> errors.notEmpty()?.let { dialogOrToast(it.joinToString("\n")) }
-                }
-            } catch (ex: Throwable) {
-                showApiError(ex)
-            }
-        }
-    }
-
-    override fun onClick(v: View) {
-        try {
-            when (v) {
-                views.btnPrevious -> loadDelta(-1)
-                views.btnNext -> loadDelta(+1)
-                views.btnDownload -> download(mediaList[idx])
-                views.btnMore -> more(mediaList[idx])
-            }
-        } catch (ex: Throwable) {
-            showToast(ex, "action failed.")
-        }
-    }
+    
+    // ──────── Download Logic ────────
 
     private fun download(ta: TootAttachmentLike) {
         if (!prDownload.checkOrLaunch()) return
 
-        val downLoadManager: DownloadManager = systemService(this)
+        val downLoadManager: DownloadManager = getSystemService(DOWNLOAD_SERVICE) as? DownloadManager
             ?: error("missing DownloadManager system service")
 
         val url = if (ta is TootAttachment) {
@@ -1054,7 +324,7 @@ class ActMediaViewer : ComponentActivity(), View.OnClickListener {
                     }
                 }
 
-                if (TootAttachmentType.Image == mediaList.elementAtOrNull(idx)?.type) {
+                if (TootAttachmentType.Image == viewModel.state.value.mediaList.elementAtOrNull(viewModel.state.value.idx)?.type) {
                     action(getString(R.string.background_pattern)) { mediaBackgroundDialog() }
                 }
             }
@@ -1066,57 +336,5 @@ class ActMediaViewer : ComponentActivity(), View.OnClickListener {
             actionsDialog(getString(R.string.background_pattern)) {}
         }
     }
-
-    /**
-     * remote_urlを再生できなかった場合、自サーバで再生し直す
-     */
-    private fun recoverLocalVideo(): Boolean {
-        val ta = mediaList.elementAtOrNull(idx)
-        if (ta != null &&
-            lastVideoUrl == ta.remote_url &&
-            !ta.url.isNullOrEmpty() &&
-            ta.url != ta.remote_url
-        ) {
-            launchMain {
-                yield()
-                loadVideo(ta, forceLocalUrl = true)
-            }
-            return true
-        }
-        return false
-    }
-
-    /**
-     * 画面下部の情報テキストの表示を更新する
-     */
-    private fun showZoom(
-        w: Int,
-        h: Int,
-        scale: Float,
-    ) {
-        if (isDestroyed) return
-        if (views.tvStatus.visibility == View.VISIBLE) {
-            views.tvStatus.text = if (w != originalWidth || h != originalHeight) {
-                getString(
-                    R.string.zooming_of_resized,
-                    w,
-                    h,
-                    scale,
-                    idx + 1,
-                    mediaList.size,
-                    originalWidth,
-                    originalHeight,
-                )
-            } else {
-                getString(
-                    R.string.zooming_of,
-                    w,
-                    h,
-                    scale,
-                    idx + 1,
-                    mediaList.size
-                )
-            }
-        }
-    }
 }
+
