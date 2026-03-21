@@ -1,6 +1,5 @@
 package jp.juggler.subwaytooter.actmain
 
-import android.app.AlertDialog
 import android.text.Spannable
 import android.view.View
 import android.widget.TextView
@@ -16,7 +15,6 @@ import jp.juggler.subwaytooter.column.Column
 import jp.juggler.subwaytooter.column.ColumnType
 import jp.juggler.subwaytooter.columnviewholder.ColumnViewHolder
 // import jp.juggler.subwaytooter.columnviewholder.TabletColumnViewHolder
-import jp.juggler.subwaytooter.dialog.actionsDialog
 import jp.juggler.subwaytooter.pref.*
 import jp.juggler.subwaytooter.push.PushWorker
 import jp.juggler.subwaytooter.span.MyClickableSpan
@@ -36,79 +34,7 @@ import java.util.concurrent.TimeUnit
 private val log = LogCategory("ActMainActions")
 
 fun ActMain.onBackPressedImpl() {
-    // メニューが開いていたら閉じる
-    if (isDrawerOpen) {
-        closeDrawer()
-        return
-    }
-
-    launchAndShowError {
-
-        // カラムが0個ならアプリを終了する
-        if (appState.columnCount == 0) {
-            finish()
-            return@launchAndShowError
-        }
-
-        // カラム設定が開いているならカラム設定を閉じる
-        if (closeColumnSetting()) {
-            return@launchAndShowError
-        }
-
-        fun getClosableColumnList(): List<Column> {
-            val visibleColumnList = ArrayList<Column>()
-            val current = viewModel.currentPage.value
-            val vr = viewModel.visibleRange.value
-            
-            if (vr.first != -1) {
-                // Tablet range
-                for (i in vr.first..vr.last) {
-                    appState.column(i)?.addTo(visibleColumnList)
-                }
-            } else {
-                // Phone (single)
-                appState.column(current)?.addTo(visibleColumnList)
-            }
-
-            return visibleColumnList.filter { !it.dontClose }
-        }
-
-        // カラムが1個以上ある場合は設定に合わせて挙動を変える
-        when (PrefI.ipBackButtonAction.value) {
-            PrefI.BACK_EXIT_APP -> finish()
-            PrefI.BACK_OPEN_COLUMN_LIST -> openColumnList()
-            PrefI.BACK_CLOSE_COLUMN -> {
-                val closeableColumnList = getClosableColumnList()
-                when (closeableColumnList.size) {
-                    0 -> when {
-                        PrefB.bpExitAppWhenCloseProtectedColumn.value &&
-                                PrefB.bpDontConfirmBeforeCloseColumn.value ->
-                            finish()
-
-                        else -> showToast(false, R.string.missing_closeable_column)
-                    }
-
-                    1 -> closeColumn(closeableColumnList.first())
-                    else -> showToast(
-                        false,
-                        R.string.cant_close_column_by_back_button_when_multiple_column_shown
-                    )
-                }
-            }
-            /* PrefI.BACK_ASK_ALWAYS */
-            else -> actionsDialog {
-                val closeableColumnList = getClosableColumnList()
-                if (closeableColumnList.size == 1) {
-                    val column = closeableColumnList.first()
-                    action(getString(R.string.close_column)) {
-                        closeColumn(column, bConfirmed = true)
-                    }
-                }
-                action(getString(R.string.open_column_list)) { openColumnList() }
-                action(getString(R.string.app_exit)) { finish() }
-            }
-        }
-    }
+    viewModel.onBackPressed()
 }
 
 fun ActMain.onMyClickableSpanClickedImpl(viewClicked: View, span: MyClickableSpan) {

@@ -19,10 +19,12 @@ import android.widget.ImageButton
 import androidx.activity.ComponentActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.GravityCompat
+import androidx.activity.addCallback
+import kotlinx.coroutines.flow.collectLatest
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-// import androidx.viewpager.widget.ViewPager
 import androidx.activity.compose.setContent
+import jp.juggler.subwaytooter.action.openColumnList
 import jp.juggler.subwaytooter.actmain.MainScreen
 import jp.juggler.subwaytooter.actmain.MainViewModel
 import jp.juggler.subwaytooter.actmain.isVisibleColumn
@@ -32,8 +34,6 @@ import jp.juggler.subwaytooter.util.provideViewModel
 import kotlinx.coroutines.launch
 import jp.juggler.subwaytooter.action.accessTokenPrompt
 import jp.juggler.subwaytooter.action.timeline
-// import jp.juggler.subwaytooter.actmain.ActMainPhoneViews
-// import jp.juggler.subwaytooter.actmain.ActMainTabletViews
 import jp.juggler.subwaytooter.actmain.SideMenuAdapter
 import jp.juggler.subwaytooter.actmain.afterNotificationGranted
 import jp.juggler.subwaytooter.actmain.closePopup
@@ -41,14 +41,12 @@ import jp.juggler.subwaytooter.actmain.defaultInsertPosition
 import jp.juggler.subwaytooter.actmain.handleIntentUri
 import jp.juggler.subwaytooter.actmain.handleSharedIntent
 import jp.juggler.subwaytooter.actmain.importAppData
-// import jp.juggler.subwaytooter.actmain.initPhoneTablet
 import jp.juggler.subwaytooter.actmain.isOrderChanged
 import jp.juggler.subwaytooter.actmain.justifyWindowContentPortrait
 import jp.juggler.subwaytooter.actmain.launchDialogs
 import jp.juggler.subwaytooter.actmain.onBackPressedImpl
 import jp.juggler.subwaytooter.actmain.onCompleteActPost
 import jp.juggler.subwaytooter.actmain.onMyClickableSpanClickedImpl
-// import jp.juggler.subwaytooter.actmain.phoneTab
 import jp.juggler.subwaytooter.actmain.refreshAfterPost
 import jp.juggler.subwaytooter.actmain.reloadAccountSetting
 import jp.juggler.subwaytooter.actmain.reloadColors
@@ -65,8 +63,6 @@ import jp.juggler.subwaytooter.actmain.scrollToLastColumn
 import jp.juggler.subwaytooter.actmain.searchFromActivityResult
 import jp.juggler.subwaytooter.actmain.setColumnsOrder
 import jp.juggler.subwaytooter.actmain.showFooterColor
-// import jp.juggler.subwaytooter.actmain.showQuickPostVisibility
-// import jp.juggler.subwaytooter.actmain.tabOnly
 import jp.juggler.subwaytooter.actmain.updateColumnStrip
 import jp.juggler.subwaytooter.actmain.updateColumnStripSelection
 import jp.juggler.subwaytooter.actpost.CompletionHelper
@@ -123,8 +119,6 @@ import java.util.LinkedList
 import com.google.android.material.R as MR
 
 class ActMain : ComponentActivity(),
-    View.OnClickListener,
-    // ViewPager.OnPageChangeListener,
     MyClickableSpanHandler {
 
     val viewModel by lazy {
@@ -363,7 +357,21 @@ class ActMain : ComponentActivity(),
         refActMain = WeakReference(this)
         // supportRequestWindowFeature not needed without AppCompat
         super.onCreate(savedInstanceState)
-        backPressed { onBackPressedImpl() }
+        
+        onBackPressedDispatcher.addCallback(this) { 
+            viewModel.onBackPressed() 
+        }
+
+        // Back Press Handling
+        lifecycleScope.launch {
+            viewModel.backPressEffect.collectLatest { effect ->
+                when(effect) {
+                    MainViewModel.BackPressEffect.Finish -> finish()
+                    MainViewModel.BackPressEffect.OpenColumnList -> openColumnList()
+                    is MainViewModel.BackPressEffect.ShowToast -> showToast(effect.isError, effect.textId)
+                }
+            }
+        }
 
         prNotification.register(this)
         arColumnColor.register(this)
@@ -391,7 +399,7 @@ class ActMain : ComponentActivity(),
                 sideMenuAdapter = sideMenuAdapter,
                 onClickMenu = { openDrawer() },
                 onClickToot = { openPost() },
-                onLongClickToot = { /* TODO: Implement toot long click */ },
+                onLongClickToot = { viewModel.toggleQuickTootMenu() },
                 onClickColumn = { idx ->
                     val column = appState.column(idx)
                     if (column != null) {
@@ -633,12 +641,6 @@ class ActMain : ComponentActivity(),
 
     // (ViewPager overrides removed)
 
-    override fun onClick(v: View) {
-        // Legacy onClick handler - most actions should be direct calls now.
-        // If there are still Views setting OnClickListener to this activity,
-        // they should be migrated to direct calls or specific lambdas.
-    }
-
     override fun onMyClickableSpanClicked(viewClicked: View, span: MyClickableSpan) =
         onMyClickableSpanClickedImpl(viewClicked, span)
 
@@ -646,7 +648,6 @@ class ActMain : ComponentActivity(),
         return when {
             super.onKeyShortcut(keyCode, event) -> true
             event?.isCtrlPressed == true && keyCode == KeyEvent.KEYCODE_N -> {
-                // views.btnToot.performClick()
                 openPost()
                 true
             }
@@ -669,12 +670,9 @@ class ActMain : ComponentActivity(),
         reloadFonts()
         reloadIconSize()
 
-        // findViews() removed
-
         justifyWindowContentPortrait()
 
         reloadMediaHeight()
-        // initPhoneTablet() removed
         showFooterColor()
         
         // Observe current page changes

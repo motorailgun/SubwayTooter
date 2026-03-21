@@ -6,8 +6,119 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import jp.juggler.subwaytooter.App1
+import jp.juggler.subwaytooter.table.daoAcctColor
+import jp.juggler.subwaytooter.column.Column
+import jp.juggler.subwaytooter.column.getIconId
+import jp.juggler.subwaytooter.column.getHeaderNameColor
+import jp.juggler.subwaytooter.column.getHeaderBackgroundColor
+import jp.juggler.subwaytooter.column.getColumnName
+import jp.juggler.subwaytooter.column.viewHolder
+import jp.juggler.subwaytooter.columnviewholder.ColumnViewHolder
+
+import jp.juggler.subwaytooter.R
+import jp.juggler.subwaytooter.pref.PrefI
+import jp.juggler.subwaytooter.pref.PrefB
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
+
+    // Back Press Handling
+    sealed class BackPressEffect {
+        object Finish : BackPressEffect()
+        object OpenColumnList : BackPressEffect()
+        data class ShowToast(val textId: Int, val isError: Boolean = false) : BackPressEffect()
+    }
+
+    private val _backPressEffect = Channel<BackPressEffect>(Channel.CONFLATED)
+    val backPressEffect = _backPressEffect.receiveAsFlow()
+
+    data class BackDialogState(
+        val closableColumn: Column?,
+    )
+    private val _showBackDialog = MutableStateFlow<BackDialogState?>(null)
+    val showBackDialog = _showBackDialog.asStateFlow()
+
+    fun onBackPressed() {
+        if (_isDrawerOpen.value) {
+            closeDrawer()
+            return
+        }
+
+        if (appState.columnCount == 0) {
+            _backPressEffect.trySend(BackPressEffect.Finish)
+            return
+        }
+        
+        // Check if any column setting is open
+        var settingClosed = false
+        appState.columnList.forEach { column ->
+             column.viewHolder?.let { vh ->
+                if (vh.isColumnSettingShown) {
+                    vh.columnUiState.settingsVisible = false
+                    settingClosed = true
+                }
+            }
+        }
+        if (settingClosed) return
+
+        // getClosableColumnList logic
+        val visibleColumnList = ArrayList<Column>()
+        val current = _currentPage.value
+        val vr = _visibleRange.value
+        
+        if (vr.first != -1) {
+            for (i in vr.first..vr.last) {
+                appState.column(i)?.let { visibleColumnList.add(it) }
+            }
+        } else {
+            appState.column(current)?.let { visibleColumnList.add(it) }
+        }
+        val closableColumnList = visibleColumnList.filter { !it.dontClose }
+
+        when (PrefI.ipBackButtonAction.value) {
+            PrefI.BACK_EXIT_APP -> _backPressEffect.trySend(BackPressEffect.Finish)
+            PrefI.BACK_OPEN_COLUMN_LIST -> _backPressEffect.trySend(BackPressEffect.OpenColumnList)
+            PrefI.BACK_CLOSE_COLUMN -> {
+                when (closableColumnList.size) {
+                    0 -> {
+                        if (PrefB.bpExitAppWhenCloseProtectedColumn.value &&
+                            PrefB.bpDontConfirmBeforeCloseColumn.value) {
+                            _backPressEffect.trySend(BackPressEffect.Finish)
+                        } else {
+                             _backPressEffect.trySend(BackPressEffect.ShowToast(R.string.missing_closeable_column))
+                        }
+                    }
+                    1 -> removeColumn(closableColumnList.first())
+                    else -> _backPressEffect.trySend(BackPressEffect.ShowToast(R.string.cant_close_column_by_back_button_when_multiple_column_shown))
+                }
+            }
+            else -> {
+                // Ask Always
+                _showBackDialog.value = BackDialogState(
+                    closableColumn = if (closableColumnList.size == 1) closableColumnList.first() else null
+                )
+            }
+        }
+    }
+    
+    fun confirmCloseColumn(column: Column) {
+        removeColumn(column)
+        _showBackDialog.value = null
+    }
+
+    fun confirmOpenColumnList() {
+        _backPressEffect.trySend(BackPressEffect.OpenColumnList)
+         _showBackDialog.value = null
+    }
+
+    fun confirmFinish() {
+        _backPressEffect.trySend(BackPressEffect.Finish)
+         _showBackDialog.value = null
+    }
+
+    fun dismissBackDialog() {
+        _showBackDialog.value = null
+    }
 
     // Drawer state control (true=open, false=close)
     private val _drawerControl = Channel<Boolean>(Channel.CONFLATED)
@@ -85,5 +196,77 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setColumnObjects(columns: List<jp.juggler.subwaytooter.column.Column>) {
         _columnObjects.value = columns
+    }
+
+    // AppState access
+    private val appState get() = jp.juggler.subwaytooter.App1.getAppState(getApplication())
+
+    // Column Management
+
+    fun updateColumnStrip() {
+        val list = appState.columnList
+        setColumnObjects(list.toList())
+
+        val uiList = list.mapIndexed { index, column ->
+            val ac = jp.juggler.subwaytooter.table.daoAcctColor.load(column.accessInfo)
+            val acctColor = if (jp.juggler.subwaytooter.table.daoAcctColor.hasColorForeground(ac)) ac.colorFg else 0
+            
+            ColumnUiState(
+                index = index,
+                iconId = column.getIconId(),
+                acctColor = acctColor,
+                headerNameColor = column.getHeaderNameColor(),
+                headerBackgroundColor = column.getHeaderBackgroundColor(),
+                contentDescription = column.getColumnName(true) ?: ""
+            )
+        }
+        setColumns(uiList)
+        
+        // notify update (if needed)
+    }
+
+    fun addColumn(column: jp.juggler.subwaytooter.column.Column, indexArg: Int): Int {
+        val index = indexArg.coerceIn(0, appState.columnCount)
+        appState.editColumnList {
+            it.add(index, column)
+        }
+        updateColumnStrip()
+        return index
+    }
+
+    fun removeColumn(column: jp.juggler.subwaytooter.column.Column) {
+        val idxColumn = appState.columnIndex(column) ?: return
+        appState.editColumnList {
+            it.removeAt(idxColumn).dispose()
+        }
+        updateColumnStrip()
+    }
+    
+    fun removeColumnAt(index: Int) {
+         appState.editColumnList {
+            if (index in it.indices) {
+                it.removeAt(index).dispose()
+            }
+        }
+        updateColumnStrip()
+    }
+
+    // Quick Toot Menu State
+    private val _isQuickTootMenuShown = MutableStateFlow(false)
+    val isQuickTootMenuShown = _isQuickTootMenuShown.asStateFlow()
+
+    private val _quickTootVisibility = MutableStateFlow(jp.juggler.subwaytooter.api.entity.TootVisibility.Public)
+    val quickTootVisibility = _quickTootVisibility.asStateFlow()
+
+    fun toggleQuickTootMenu() {
+        _isQuickTootMenuShown.value = !_isQuickTootMenuShown.value
+    }
+
+    fun setQuickTootVisibility(visibility: jp.juggler.subwaytooter.api.entity.TootVisibility) {
+        _quickTootVisibility.value = visibility
+    }
+
+    fun closeQuickTootMenu() {
+        _isQuickTootMenuShown.value = false
     }
 }

@@ -27,8 +27,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.layout.imePadding
 import androidx.activity.compose.BackHandler
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import jp.juggler.subwaytooter.ActMain
 import jp.juggler.subwaytooter.compose.ColumnWrapper
+import jp.juggler.subwaytooter.compose.QuickTootMenuDialog
+import jp.juggler.subwaytooter.action.openPost
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -158,4 +163,68 @@ fun MainScreen(
             }
         }
     )
+
+    // Quick Toot Menu
+    val isQuickTootMenuShown by viewModel.isQuickTootMenuShown.collectAsState()
+    val quickTootVisibility by viewModel.quickTootVisibility.collectAsState()
+
+    if (isQuickTootMenuShown) {
+        QuickTootMenuDialog(
+            visibility = quickTootVisibility,
+            onVisibilityPick = { viewModel.setQuickTootVisibility(it) },
+            onUseMacro = { text ->
+                viewModel.closeQuickTootMenu()
+                activity.openPost(text)
+            },
+            onClose = { viewModel.closeQuickTootMenu() }
+        )
+    }
+    
+    // Back Press Dialog
+    val backDialogState by viewModel.showBackDialog.collectAsState()
+    backDialogState?.let { state ->
+        BackPressDialog(
+            state = state,
+            onCloseColumn = { viewModel.confirmCloseColumn(it) },
+            onOpenColumnList = { viewModel.confirmOpenColumnList() },
+            onFinish = { viewModel.confirmFinish() },
+            onDismiss = { viewModel.dismissBackDialog() }
+        )
+    }
 }
+
+@Composable
+fun BackPressDialog(
+    state: MainViewModel.BackDialogState,
+    onCloseColumn: (jp.juggler.subwaytooter.column.Column) -> Unit,
+    onOpenColumnList: () -> Unit,
+    onFinish: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    androidx.compose.material3.AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(androidx.compose.ui.res.stringResource(jp.juggler.subwaytooter.R.string.confirm)) },
+        text = {
+            androidx.compose.foundation.layout.Column {
+                if (state.closableColumn != null) {
+                    androidx.compose.material3.TextButton(onClick = { onCloseColumn(state.closableColumn) }) {
+                        Text(androidx.compose.ui.res.stringResource(jp.juggler.subwaytooter.R.string.close_column))
+                    }
+                }
+                androidx.compose.material3.TextButton(onClick = onOpenColumnList) {
+                    Text(androidx.compose.ui.res.stringResource(jp.juggler.subwaytooter.R.string.open_column_list))
+                }
+                androidx.compose.material3.TextButton(onClick = onFinish) {
+                    Text(androidx.compose.ui.res.stringResource(jp.juggler.subwaytooter.R.string.app_exit))
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            androidx.compose.material3.TextButton(onClick = onDismiss) {
+                Text(androidx.compose.ui.res.stringResource(android.R.string.cancel))
+            }
+        }
+    )
+}
+

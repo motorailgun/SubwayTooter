@@ -38,15 +38,7 @@ fun ActMain.scrollAndLoad(idx: Int) {
 }
 
 fun ActMain.addColumn(column: Column, indexArg: Int): Int {
-    val index = indexArg.clip(0, appState.columnCount)
-
-    appState.editColumnList {
-        it.add(index, column)
-    }
-
-    updateColumnStrip()
-
-    return index
+    return viewModel.addColumn(column, indexArg)
 }
 
 fun ActMain.addColumn(
@@ -91,13 +83,7 @@ fun ActMain.addColumn(
 )
 
 fun ActMain.removeColumn(column: Column) {
-    val idxColumn = appState.columnIndex(column) ?: return
-
-    appState.editColumnList {
-        it.removeAt(idxColumn).dispose()
-    }
-
-    updateColumnStrip()
+    viewModel.removeColumn(column)
 }
 
 fun ActMain.isVisibleColumn(idx: Int): Boolean {
@@ -113,26 +99,7 @@ fun ActMain.isVisibleColumn(idx: Int): Boolean {
 }
 
 fun ActMain.updateColumnStrip() {
-    // Update ViewModel with column list objects first!
-    viewModel.setColumnObjects(appState.columnList.toList())
-
-    // Update ViewModel with column list for strip
-    val uiList = appState.columnList.mapIndexed { index, column ->
-        val ac = daoAcctColor.load(column.accessInfo)
-        val acctColor = if (daoAcctColor.hasColorForeground(ac)) ac.colorFg else 0
-        
-        MainViewModel.ColumnUiState(
-            index = index,
-            iconId = column.getIconId(),
-            acctColor = acctColor,
-            headerNameColor = column.getHeaderNameColor(),
-            headerBackgroundColor = column.getHeaderBackgroundColor(),
-            contentDescription = column.getColumnName(true) ?: ""
-        )
-    }
-    viewModel.setColumns(uiList)
-    
-    updateColumnStripSelection(-1, -1f)
+    viewModel.updateColumnStrip()
 }
 
 fun ActMain.closeColumn(column: Column, bConfirmed: Boolean = false) {
