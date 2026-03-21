@@ -78,7 +78,10 @@ import androidx.core.content.ContextCompat
 import jp.juggler.subwaytooter.compose.NetworkImage
 import com.google.android.flexbox.FlexboxLayout
 import jp.juggler.subwaytooter.action.saveWindowSize
+import jp.juggler.subwaytooter.actpost.PostViewModel
+import jp.juggler.subwaytooter.util.provideViewModel
 import jp.juggler.subwaytooter.actpost.ActPostStates
+import jp.juggler.subwaytooter.actpost.AttachmentSlotUi
 import jp.juggler.subwaytooter.actpost.FeaturedTagCache
 import jp.juggler.subwaytooter.actpost.TextEditState
 import jp.juggler.subwaytooter.actpost.addAttachment
@@ -225,48 +228,115 @@ class ActPost : ComponentActivity(),
     }
 
     // Text states
-    val etContent = TextEditState()
-    val etContentWarning = TextEditState()
-    val etChoice1 = TextEditState()
-    val etChoice2 = TextEditState()
-    val etChoice3 = TextEditState()
-    val etChoice4 = TextEditState()
-    val etExpireDays = TextEditState("1")
-    val etExpireHours = TextEditState()
-    val etExpireMinutes = TextEditState()
+    val viewModel by lazy {
+        provideViewModel(this) { PostViewModel(application) }
+    }
+    
+    val etContent get() = viewModel.etContent
+    val etContentWarning get() = viewModel.etContentWarning
+    val etChoice1 get() = viewModel.etChoice1
+    val etChoice2 get() = viewModel.etChoice2
+    val etChoice3 get() = viewModel.etChoice3
+    val etChoice4 get() = viewModel.etChoice4
+    val etExpireDays get() = viewModel.etExpireDays
+    val etExpireHours get() = viewModel.etExpireHours
+    val etExpireMinutes get() = viewModel.etExpireMinutes
 
     val views by lazy { ActPostViews(this) }
-    val etChoices: List<TextEditState> get() = listOf(etChoice1, etChoice2, etChoice3, etChoice4)
-
+    val etChoices: List<TextEditState> get() = viewModel.etChoices
+    
     /** Which text field has focus: 0=content, 1=cw, 2-5=choice1-4. Used by Mushroom plugin. */
-    var focusedEditField: Int = 0
+    var focusedEditField: Int
+        get() = viewModel.focusedEditField.value
+        set(value) { viewModel.focusedEditField.value = value }
 
     /** FocusRequester wired to etContent's BasicTextField. */
     val contentFocusRequester = FocusRequester()
 
-    var charCountText by mutableStateOf("")
-    var charCountColorArgb by mutableIntStateOf(0)
-    var visibilityIconRes by mutableStateOf(Icons.Filled.Public)
-    var scheduleText by mutableStateOf("")
-    var pollTypeIndex by mutableIntStateOf(0)
-    var pollMultipleChoiceChecked by mutableStateOf(false)
-    var pollHideTotalsChecked by mutableStateOf(false)
-    var nsfwChecked by mutableStateOf(false)
-    var contentWarningChecked by mutableStateOf(false)
-    var quoteChecked by mutableStateOf(false)
-    var showQuoteOption by mutableStateOf(false)
-    var showReplySection by mutableStateOf(false)
-    var replyToText by mutableStateOf("")
-    var accountButtonText by mutableStateOf("")
-    var accountAvatarStaticUrl by mutableStateOf<String?>(null)
-    var accountAvatarAnimatedUrl by mutableStateOf<String?>(null)
-    var accountAvatarCorner by mutableStateOf(0f)
-    var showAttachmentSection by mutableStateOf(false)
-    var selectedLanguageIndex by mutableIntStateOf(0)
-    var attachmentSlots by mutableStateOf(List(4) { AttachmentSlotUi() })
-    var attachmentThumbCorner by mutableStateOf(0f)
-    var showAttachmentRearrange by mutableStateOf(false)
-    var attachmentProgressText by mutableStateOf("")
+    // Flag Delegates to ViewModel
+    var nsfwChecked: Boolean
+        get() = viewModel.nsfwChecked.value
+        set(value) { viewModel.setNsfw(value) }
+        
+    var contentWarningChecked: Boolean
+        get() = viewModel.contentWarningChecked.value
+        set(value) { viewModel.setContentWarning(value) }
+
+    var pollTypeIndex: Int
+        get() = viewModel.pollTypeIndex.value
+        set(value) { viewModel.setPollTypeIndex(value) }
+        
+    var pollMultipleChoiceChecked: Boolean
+        get() = viewModel.pollMultipleChoiceChecked.value
+        set(value) { viewModel.setPollMultipleChoice(value) }
+        
+    var pollHideTotalsChecked: Boolean
+        get() = viewModel.pollHideTotalsChecked.value
+        set(value) { viewModel.setPollHideTotals(value) }
+        
+    var quoteChecked: Boolean
+        get() = viewModel.quoteChecked.value
+        set(value) { viewModel.setQuote(value) }
+        
+    var showQuoteOption: Boolean
+        get() = viewModel.showQuoteOption.value
+        set(value) { viewModel.setShowQuoteOption(value) }
+        
+    var showReplySection: Boolean
+        get() = viewModel.showReplySection.value
+        set(value) { viewModel.setShowReplySection(value) }
+        
+    var replyToText: String
+        get() = viewModel.replyToText.value
+        set(value) { viewModel.setReplyToText(value) }
+
+    var charCountText: String
+        get() = viewModel.charCountText.value
+        set(value) { viewModel.charCountText.value = value }
+    var charCountColorArgb: Int
+        get() = viewModel.charCountColorArgb.value
+        set(value) { viewModel.charCountColorArgb.value = value }
+    var visibilityIconRes: ImageVector
+        get() = viewModel.visibilityIconRes.value
+        set(value) { viewModel.visibilityIconRes.value = value }
+    var scheduleText: String
+        get() = viewModel.scheduleText.value
+        set(value) { viewModel.scheduleText.value = value }
+    
+    // Legacy mutableState variables that are not yet in ViewModel or specific to UI
+    var accountButtonText: String
+        get() = viewModel.accountButtonText.value
+        set(value) { viewModel.accountButtonText.value = value }
+    var accountAvatarStaticUrl: String?
+        get() = viewModel.accountAvatarStaticUrl.value
+        set(value) { viewModel.accountAvatarStaticUrl.value = value }
+    var accountAvatarAnimatedUrl: String?
+        get() = viewModel.accountAvatarAnimatedUrl.value
+        set(value) { viewModel.accountAvatarAnimatedUrl.value = value }
+    var accountAvatarCorner: Float
+        get() = viewModel.accountAvatarCorner.value
+        set(value) { viewModel.accountAvatarCorner.value = value }
+    var showAttachmentSection: Boolean
+        get() = viewModel.showAttachmentSection.value
+        set(value) { viewModel.showAttachmentSection.value = value }
+    var selectedLanguageIndex: Int
+        get() = viewModel.selectedLanguageIndex.value
+        set(value) { viewModel.selectedLanguageIndex.value = value }
+    var attachmentSlots: List<AttachmentSlotUi>
+        get() = viewModel.attachmentSlots
+        set(value) { 
+             viewModel.attachmentSlots.clear()
+             viewModel.attachmentSlots.addAll(value)
+        }
+    var attachmentThumbCorner: Float
+        get() = viewModel.attachmentThumbCorner.value
+        set(value) { viewModel.attachmentThumbCorner.value = value }
+    var showAttachmentRearrange: Boolean
+        get() = viewModel.showAttachmentRearrange.value
+        set(value) { viewModel.showAttachmentRearrange.value = value }
+    var attachmentProgressText: String
+        get() = viewModel.attachmentProgressText.value
+        set(value) { viewModel.attachmentProgressText.value = value }
 
     lateinit var handler: Handler
     lateinit var appState: AppState
@@ -292,11 +362,19 @@ class ActPost : ComponentActivity(),
 
     ///////////////////////////////////////////////////
 
-    var states = ActPostStates()
+    var states: ActPostStates
+        get() = viewModel.states
+        set(value) { viewModel.states = value }
 
     var accountList: List<SavedAccount> = emptyList()
-    var account: SavedAccount? = null
-    var attachmentList = ArrayList<PostAttachment>()
+    var account: SavedAccount?
+        get() = viewModel.account.value
+        set(value) { viewModel.setAccount(value) }
+        
+    var attachmentList: ArrayList<PostAttachment>
+        get() = viewModel.attachmentList
+        set(value) { viewModel.attachmentList = value }
+        
     var isPostComplete: Boolean = false
     var scheduledStatus: TootScheduled? = null
 
@@ -356,28 +434,31 @@ class ActPost : ComponentActivity(),
         arMushroom.register(this)
 
         progressChannel = Channel(capacity = Channel.CONFLATED)
-
-        charCountColorArgb = attrColor(android.R.attr.textColorPrimary)
-        visibilityIconRes = (states.visibility ?: jp.juggler.subwaytooter.api.entity.TootVisibility.Public)
-            .getVisibilityIconId(account?.isMisskey == true)
-        scheduleText = getString(R.string.unspecified)
-        pollTypeIndex = 0
-        nsfwChecked = false
-        contentWarningChecked = false
-        quoteChecked = false
-        showQuoteOption = false
-        showReplySection = false
-        replyToText = ""
-        accountButtonText = getString(R.string.not_selected_2)
-        accountAvatarStaticUrl = null
-        accountAvatarAnimatedUrl = null
-        accountAvatarCorner = calcIconRound(dp(32))
-        showAttachmentSection = false
-        selectedLanguageIndex = 0
-        attachmentSlots = List(4) { AttachmentSlotUi() }
-        attachmentThumbCorner = calcIconRound(dp(48))
-        showAttachmentRearrange = false
-        attachmentProgressText = ""
+        
+        if (!viewModel.isInitialized) {
+            viewModel.isInitialized = true
+            charCountColorArgb = attrColor(android.R.attr.textColorPrimary)
+            visibilityIconRes = (states.visibility ?: jp.juggler.subwaytooter.api.entity.TootVisibility.Public)
+                .getVisibilityIconId(account?.isMisskey == true)
+            scheduleText = getString(R.string.unspecified)
+            pollTypeIndex = 0
+            nsfwChecked = false
+            contentWarningChecked = false
+            quoteChecked = false
+            showQuoteOption = false
+            showReplySection = false
+            replyToText = ""
+            accountButtonText = getString(R.string.not_selected_2)
+            accountAvatarStaticUrl = null
+            accountAvatarAnimatedUrl = null
+            accountAvatarCorner = calcIconRound(dp(32))
+            showAttachmentSection = false
+            selectedLanguageIndex = 0
+            attachmentSlots = List(4) { AttachmentSlotUi() }.toMutableList()
+            attachmentThumbCorner = calcIconRound(dp(48))
+            showAttachmentRearrange = false
+            attachmentProgressText = ""
+        }
 
         App1.setActivityTheme(this)
         setContent {

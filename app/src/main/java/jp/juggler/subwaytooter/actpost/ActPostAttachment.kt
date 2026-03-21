@@ -6,7 +6,6 @@ import android.text.InputType
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import jp.juggler.subwaytooter.ActPost
-import jp.juggler.subwaytooter.AttachmentSlotUi
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.ApiTask
 import jp.juggler.subwaytooter.api.TootApiResult
