@@ -176,9 +176,8 @@ suspend fun ActPost.restoreState(savedInstanceState: Bundle) {
             // static なデータが残ってるならそれを使う
             this.attachmentList = stateAttachmentList
             // コールバックを新しい画面に差し替える
-            for (pa in attachmentList) {
-                pa.callback = this
-            }
+            // pa.callback = this 
+            // PostViewModel handles callback
         } else {
             // state から復元する
             states.attachmentListEncoded?.let {

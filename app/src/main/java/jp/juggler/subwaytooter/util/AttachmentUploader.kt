@@ -3,7 +3,7 @@ package jp.juggler.subwaytooter.util
 import android.os.Handler
 import android.os.SystemClock
 import androidx.annotation.WorkerThread
-import androidx.activity.ComponentActivity
+import android.content.Context
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.TootApiCallback
 import jp.juggler.subwaytooter.api.TootApiClient
@@ -47,14 +47,14 @@ import java.nio.channels.ClosedChannelException
 import kotlin.coroutines.coroutineContext
 
 class AttachmentUploader(
-    activity: ComponentActivity,
-    private val handler: Handler,
+    context: Context,
+    private val handler: Handler?,
 ) {
     companion object {
         val log = LogCategory("AttachmentUploader")
     }
 
-    private val safeContext = activity.applicationContext!!
+    private val safeContext = context.applicationContext!!
     private var lastAttachmentAdd = 0L
     private var lastAttachmentComplete = 0L
     private val channel = Channel<AttachmentRequest>(capacity = Channel.UNLIMITED)

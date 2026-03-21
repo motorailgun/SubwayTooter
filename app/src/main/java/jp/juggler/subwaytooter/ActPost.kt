@@ -1,5 +1,6 @@
 package jp.juggler.subwaytooter
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
@@ -86,27 +87,41 @@ import jp.juggler.subwaytooter.actpost.FeaturedTagCache
 import jp.juggler.subwaytooter.actpost.TextEditState
 import jp.juggler.subwaytooter.actpost.addAttachment
 import jp.juggler.subwaytooter.actpost.applyMushroomText
-import jp.juggler.subwaytooter.actpost.onPickCustomThumbnailImpl
-import jp.juggler.subwaytooter.actpost.onPostAttachmentCompleteImpl
+import jp.juggler.subwaytooter.actpost.editAttachmentDescription
 import jp.juggler.subwaytooter.actpost.openAttachment
 import jp.juggler.subwaytooter.actpost.openMushroom
 import jp.juggler.subwaytooter.actpost.openEmojiPickerForContent
 import jp.juggler.subwaytooter.actpost.openFeaturedTagList
+import jp.juggler.subwaytooter.actpost.openFocusPoint
 import jp.juggler.subwaytooter.actpost.openVisibilityPicker
 import jp.juggler.subwaytooter.actpost.performAccountChooser
 import jp.juggler.subwaytooter.actpost.performAttachmentClick
 import jp.juggler.subwaytooter.actpost.performMore
 import jp.juggler.subwaytooter.actpost.performPost
-import jp.juggler.subwaytooter.actpost.performSchedule
+import androidx.compose.runtime.getValue
+import androidx.compose.material3.Text
+import androidx.compose.ui.res.stringResource
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.Checkbox
+import androidx.compose.ui.Alignment
+import androidx.lifecycle.lifecycleScope
+import jp.juggler.subwaytooter.actmain.onCompleteActPost
+import jp.juggler.subwaytooter.actpost.editAttachmentDescription
+import jp.juggler.subwaytooter.actpost.openFocusPoint
+import jp.juggler.subwaytooter.actpost.performAttachmentClick
 import jp.juggler.subwaytooter.actpost.rearrangeAttachments
+import jp.juggler.subwaytooter.actpost.resetText
+import jp.juggler.subwaytooter.actpost.afterUpdateText
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import jp.juggler.subwaytooter.actpost.removeReply
 import jp.juggler.subwaytooter.actpost.resetSchedule
 import jp.juggler.subwaytooter.actpost.restoreState
+import jp.juggler.subwaytooter.actpost.saveAttachmentList
 import jp.juggler.subwaytooter.actpost.saveDraft
 import jp.juggler.subwaytooter.actpost.saveState
 import jp.juggler.subwaytooter.actpost.showContentWarningEnabled
-import jp.juggler.subwaytooter.actpost.showMediaAttachment
-import jp.juggler.subwaytooter.actpost.showMediaAttachmentProgress
 import jp.juggler.subwaytooter.actpost.showPoll
 import jp.juggler.subwaytooter.actpost.showQuotedRenote
 import jp.juggler.subwaytooter.actpost.showReplyTo
@@ -167,7 +182,6 @@ class ActPostViews(val activity: ActPost) {
 }
 
 class ActPost : ComponentActivity(),
-    PostAttachment.Callback,
     MyClickableSpanHandler {
 
     companion object {
@@ -340,7 +354,7 @@ class ActPost : ComponentActivity(),
 
     lateinit var handler: Handler
     lateinit var appState: AppState
-    lateinit var attachmentUploader: AttachmentUploader
+    // attachmentUploader moved to ViewModel
     lateinit var attachmentPicker: AttachmentPicker
 
     var density: Float = 0f
@@ -348,8 +362,6 @@ class ActPost : ComponentActivity(),
     val languages by lazy {
         loadLanguageList()
     }
-
-    private lateinit var progressChannel: Channel<Unit>
 
     ///////////////////////////////////////////////////
 
@@ -413,10 +425,9 @@ class ActPost : ComponentActivity(),
         if (isMultiWindowPost) ActMain.refActMain?.get()?.closeList?.add(WeakReference(this))
         appState = App1.getAppState(this)
         handler = appState.handler
-        attachmentUploader = AttachmentUploader(this, handler)
         attachmentPicker = AttachmentPicker(this, object : AttachmentPicker.Callback {
             override suspend fun onPickAttachment(item: UriAndType) {
-                addAttachment(item.uri, item.mimeType)
+                viewModel.addAttachment(item.uri, item.mimeType)
             }
 
             override suspend fun onPickCustomThumbnail(
@@ -426,15 +437,13 @@ class ActPost : ComponentActivity(),
                 src ?: return
                 val pa = attachmentList.find { it.attachment?.id?.toString() == attachmentId }
                     ?: error("missing attachment for attachmentId=$attachmentId")
-                onPickCustomThumbnailImpl(pa, src)
+                viewModel.uploadCustomThumbnail(pa, src)
             }
         })
 
         density = resources.displayMetrics.density
         arMushroom.register(this)
 
-        progressChannel = Channel(capacity = Channel.CONFLATED)
-        
         if (!viewModel.isInitialized) {
             viewModel.isInitialized = true
             charCountColorArgb = attrColor(android.R.attr.textColorPrimary)
@@ -462,6 +471,34 @@ class ActPost : ComponentActivity(),
 
         App1.setActivityTheme(this)
         setContent {
+            val confirmRequest by viewModel.confirmDialogRequest
+            if (confirmRequest != null) {
+                val (skipNext, setSkipNext) = remember { mutableStateOf(false) }
+                AlertDialog(
+                    onDismissRequest = confirmRequest!!.onCancel,
+                    confirmButton = {
+                        TextButton(onClick = { confirmRequest!!.onConfirm(skipNext) }) { Text(stringResource(android.R.string.ok)) }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = confirmRequest!!.onCancel) { Text(stringResource(android.R.string.cancel)) }
+                    },
+                    text = {
+                        Column {
+                            Text(confirmRequest!!.message)
+                            if (confirmRequest!!.showSkipNext) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Checkbox(
+                                        checked = skipNext,
+                                        onCheckedChange = setSkipNext
+                                    )
+                                    Text(stringResource(R.string.dont_confirm_again))
+                                }
+                            }
+                        }
+                    }
+                )
+            }
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -480,18 +517,30 @@ class ActPost : ComponentActivity(),
         }
         initUI()
 
-        // 進捗表示チャネルの回収コルーチン
-        launchAndShowError {
-            try {
-                while (true) {
-                    progressChannel.receive()
-                    showMediaAttachmentProgress()
-                    delay(1000L)
-                }
-            } catch (ex: Throwable) {
-                when (ex) {
-                    is CancellationException, is ClosedReceiveChannelException -> Unit
-                    else -> log.e(ex, "can't show media progress.")
+        lifecycleScope.launch {
+            viewModel.effects.collect { effect ->
+                when (effect) {
+                    is PostViewModel.Effect.ShowToast -> showToast(effect.error, effect.message)
+                    is PostViewModel.Effect.ShowError -> showToast(true, effect.exception.message ?: "Error")
+                    PostViewModel.Effect.OpenAttachmentPicker -> attachmentPicker.openPicker()
+                    is PostViewModel.Effect.OpenCustomThumbnailPicker -> attachmentPicker.openThumbnailPicker(effect.pa)
+                    is PostViewModel.Effect.EditAttachmentDescription -> editAttachmentDescription(effect.pa)
+                    is PostViewModel.Effect.OpenFocusPoint -> openFocusPoint(effect.pa)
+                    is PostViewModel.Effect.ShowAttachmentMenu -> performAttachmentClick(effect.pa)
+                    is PostViewModel.Effect.PostComplete -> {
+                        ActMain.refActMain?.get()?.onCompleteActPost(effect.intent)
+                        if (effect.isMultiWindowPost) {
+                             resetText()
+                             launchAndShowError {
+                                 updateText(Intent(), saveDraft = false, resetAccount = false)
+                                 afterUpdateText()
+                             }
+                        } else {
+                            setResult(Activity.RESULT_OK, effect.intent)
+                            isPostComplete = true
+                            finish()
+                        }
+                    }
                 }
             }
         }
@@ -506,12 +555,6 @@ class ActPost : ComponentActivity(),
     }
 
     override fun onDestroy() {
-        try {
-            progressChannel.close()
-        } catch (ex: Throwable) {
-            log.e(ex, "progressChannel close failed.")
-        }
-        attachmentUploader.onActivityDestroy()
         super.onDestroy()
     }
 
@@ -523,7 +566,7 @@ class ActPost : ComponentActivity(),
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
         showContentWarningEnabled()
-        showMediaAttachment()
+        // showMediaAttachment() handled by ViewModel
         showVisibility()
         updateTextCount()
         launchAndShowError { showReplyTo() }
@@ -556,7 +599,7 @@ class ActPost : ComponentActivity(),
         return when {
             super.onKeyShortcut(keyCode, event) -> true
             event?.isCtrlPressed == true && keyCode == KeyEvent.KEYCODE_T -> {
-                performPost()
+                viewModel.performPost(isMultiWindowPost)
                 true
             }
 
@@ -568,19 +611,6 @@ class ActPost : ComponentActivity(),
         openBrowser(span.linkInfo.url)
     }
 
-    override fun onPostAttachmentProgress() {
-        launchIO {
-            try {
-                progressChannel.send(Unit)
-            } catch (ex: Throwable) {
-                log.w(ex, "progressChannel send failed.")
-            }
-        }
-    }
-
-    override fun onPostAttachmentComplete(pa: PostAttachment) {
-        onPostAttachmentCompleteImpl(pa)
-    }
 
     @Composable
     private fun PostFooterBar() {
@@ -613,7 +643,7 @@ class ActPost : ComponentActivity(),
                     .align(androidx.compose.ui.Alignment.CenterVertically),
             )
             FooterIconButton(Icons.AutoMirrored.Filled.Send, getString(R.string.toot)) {
-                performPost()
+                viewModel.performPost(isMultiWindowPost)
             }
         }
     }

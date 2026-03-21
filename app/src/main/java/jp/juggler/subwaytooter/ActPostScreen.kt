@@ -120,7 +120,7 @@ fun ActPostScreen(activity: ActPost, modifier: Modifier = Modifier) {
                     activity.attachmentSlots.forEachIndexed { index, slot ->
                         if (slot.visible) {
                             IconButton(
-                                onClick = { activity.performAttachmentClick(index) },
+                                onClick = { activity.performAttachmentClick(activity.attachmentList[index]) },
                                 modifier = Modifier.size(48.dp),
                             ) {
                                 if (slot.previewUrl != null) {

@@ -1,7 +1,8 @@
 package jp.juggler.subwaytooter.util
 
+import android.content.Context
 import android.os.SystemClock
-import android.app.Activity
+import androidx.annotation.StringRes
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.TootApiClient
 import jp.juggler.subwaytooter.api.TootApiResultException
@@ -64,9 +65,18 @@ sealed class PostResult {
     ) : PostResult()
 }
 
+interface PostInteractions {
+    suspend fun confirm(message: String)
+    suspend fun confirm(@StringRes messageId: Int, vararg args: Any?)
+    suspend fun confirm(message: String, isConfirmEnabled: Boolean, setConfirmEnabled: (Boolean) -> Unit)
+    fun showToast(error: Boolean, message: String)
+    fun showToast(error: Boolean, @StringRes messageId: Int, vararg args: Any?)
+}
+
 @Suppress("LongParameterList")
 class PostImpl(
-    val activity: Activity,
+    val context: Context,
+    val interactions: PostInteractions,
     val account: SavedAccount,
     val content: String,
 
@@ -125,12 +135,12 @@ class PostImpl(
         val cpCount = item.codePointCount(0, item.length)
         if (cpCount > choiceMaxChars) {
             val over = cpCount - choiceMaxChars
-            activity.errorString(R.string.enquete_item_too_long, idx + 1, over)
+            context.errorString(R.string.enquete_item_too_long, idx + 1, over)
         }
 
         // 他の項目と重複している
         if ((0 until idx).any { list[it] == item }) {
-            activity.errorString(R.string.enquete_item_duplicate, idx + 1)
+            context.errorString(R.string.enquete_item_duplicate, idx + 1)
         }
     }
 
@@ -160,7 +170,7 @@ class PostImpl(
     ) {
         if (actual != extra || checkFun(instance)) return
         val strVisibility = extra.getVisibilityString(account.isMisskey)
-        activity.errorApiResult(R.string.server_has_no_support_of_visibility, strVisibility)
+        context.errorApiResult(R.string.server_has_no_support_of_visibility, strVisibility)
     }
 
     private suspend fun checkVisibility(
@@ -363,7 +373,7 @@ class PostImpl(
 
         if (scheduledAt != 0L) {
             if (!instance.versionGE(TootInstance.VERSION_2_7_0_rc1)) {
-                activity.errorApiResult(R.string.scheduled_status_requires_mastodon_2_7_0)
+                context.errorApiResult(R.string.scheduled_status_requires_mastodon_2_7_0)
             }
             // UTCの日時を渡す
             val c = GregorianCalendar.getInstance(TimeZone.getTimeZone("UTC"))
@@ -413,22 +423,22 @@ class PostImpl(
                 ?.map { it.id.toString() }
                 ?.takeIf { it != it.distinct() }
                 ?.let {
-                    activity.errorString(R.string.post_error_attachments_duplicated)
+                    context.errorString(R.string.post_error_attachments_duplicated)
                 }
         }
 
         if (content.isEmpty() && attachmentList == null) {
-            activity.errorString(R.string.post_error_contents_empty)
+            context.errorString(R.string.post_error_contents_empty)
         }
 
         // nullはCWチェックなしを示す // nullじゃなくてカラならエラー
         if (spoilerText != null && spoilerText.isEmpty()) {
-            activity.errorString(R.string.post_error_contents_warning_empty)
+            context.errorString(R.string.post_error_contents_warning_empty)
         }
 
         if (!enqueteItems.isNullOrEmpty()) {
             if (enqueteItems.size < 2) {
-                activity.errorString(R.string.enquete_item_is_empty, enqueteItems.size + 1)
+                context.errorString(R.string.enquete_item_is_empty, enqueteItems.size + 1)
             }
             enqueteItems.forEachIndexed { i, v ->
                 preCheckPollItemOne(enqueteItems, i, v)
@@ -449,7 +459,7 @@ class PostImpl(
                 }?.map { "#$it" }
                 ?.notEmpty()
                 ?.let { badTags ->
-                    activity.confirm(
+                    interactions.confirm(
                         R.string.hashtag_contains_ascii_and_not_ascii,
                         badTags.joinToString(", ")
                     )
@@ -462,22 +472,22 @@ class PostImpl(
                 ?.notEmpty()
                 ?.let { tags ->
                     log.d("findHashtags ${tags.joinToString(",")}")
-                    activity.confirm(
+                    interactions.confirm(
                         R.string.hashtag_and_visibility_not_match
                     )
                 }
         }
 
         if (redraftStatusId != null) {
-            activity.confirm(R.string.delete_base_status_before_toot)
+            interactions.confirm(R.string.delete_base_status_before_toot)
         }
 
         if (scheduledId != null) {
-            activity.confirm(R.string.delete_scheduled_status_before_update)
+            interactions.confirm(R.string.delete_scheduled_status_before_update)
         }
 
-        activity.confirm(
-            activity.getString(
+        interactions.confirm(
+            context.getString(
                 R.string.confirm_post_from,
                 daoAcctColor.getNickname(account)
             ),
@@ -493,21 +503,21 @@ class PostImpl(
         lastPostTapped = now
         if (delta < 1000L) {
             log.e("lastPostTapped within 1 sec!")
-            activity.showToast(false, R.string.post_button_tapped_repeatly)
+            interactions.showToast(false, R.string.post_button_tapped_repeatly)
             throw CancellationException("post_button_tapped_repeatly")
         }
 
         // 投稿中に再度投稿ボタンが押された
         if (isPosting.get()) {
             log.e("other postJob is active!")
-            activity.showToast(false, R.string.post_button_tapped_repeatly)
+            interactions.showToast(false, R.string.post_button_tapped_repeatly)
             throw CancellationException("preCheck failed.")
         }
         // 全ての確認を終えたらバックグラウンドでの処理を開始する
         isPosting.set(true)
         return try {
             withContext(AppDispatchers.MainImmediate) {
-                val (status, scheduled) = activity.runApiTask2(
+                val (status, scheduled) = context.runApiTask2(
                     accessInfo = account,
                     progressSetup = { it.setCanceledOnTouchOutside(false) },
                 ) { client ->
@@ -609,7 +619,7 @@ class PostImpl(
                             errorMessage.isNullOrBlank() -> error("(missing error detail)")
 
                             errorMessage.contains("HTTP 404") ->
-                                error("$ex\n${activity.getString(R.string.post_404_desc)}")
+                                error("$ex\n${context.getString(R.string.post_404_desc)}")
 
                             else -> throw ex
                         }
