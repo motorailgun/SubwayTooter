@@ -28,6 +28,8 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.util.CustomShare
 import jp.juggler.subwaytooter.util.cn
@@ -95,6 +97,12 @@ class DlgAppPicker(
         else -> {
             val dialog = Dialog(activity)
             val composeView = ComposeView(activity).apply {
+                if (activity is androidx.lifecycle.LifecycleOwner) {
+                    setViewTreeLifecycleOwner(activity)
+                }
+                if (activity is androidx.savedstate.SavedStateRegistryOwner) {
+                    setViewTreeSavedStateRegistryOwner(activity)
+                }
                 setContent {
                     AppPickerContent(
                         items = list,

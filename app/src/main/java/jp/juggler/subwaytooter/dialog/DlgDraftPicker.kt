@@ -25,6 +25,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.ActPost
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.actpost.DRAFT_CONTENT
@@ -86,6 +88,8 @@ class DlgDraftPicker {
         }
 
         val composeView = ComposeView(activity).apply {
+            setViewTreeLifecycleOwner(activity)
+            setViewTreeSavedStateRegistryOwner(activity)
             setContent {
                 DraftPickerContent(
                     drafts = drafts,

@@ -34,6 +34,8 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.ActMain
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.action.*
@@ -282,6 +284,8 @@ class DlgListMember(
         val displayName = who.decodeDisplayName(act)
         val actHandler = act.handler
         val composeView = ComposeView(act).apply {
+            setViewTreeLifecycleOwner(act)
+            setViewTreeSavedStateRegistryOwner(act)
             setContent {
                 DlgListMemberContent(
                     who = who,

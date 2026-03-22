@@ -45,6 +45,12 @@ class ActionsDialogInitializer(
     suspend fun showSuspend(context: Context): Action =
         suspendCancellableCoroutine { cont ->
             val dialog = Dialog(context)
+            if (context is androidx.lifecycle.LifecycleOwner) {
+                dialog.window?.decorView?.setViewTreeLifecycleOwner(context)
+            }
+            if (context is androidx.savedstate.SavedStateRegistryOwner) {
+                dialog.window?.decorView?.setViewTreeSavedStateRegistryOwner(context)
+            }
             val composeView = ComposeView(context).apply {
                 if (context is androidx.lifecycle.LifecycleOwner) {
                     setViewTreeLifecycleOwner(context as androidx.lifecycle.LifecycleOwner)

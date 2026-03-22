@@ -25,6 +25,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.graphics.drawable.toBitmap
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.github.alexzhirkevich.customqrgenerator.QrData
 import com.github.alexzhirkevich.customqrgenerator.vector.QrCodeDrawable
 import com.github.alexzhirkevich.customqrgenerator.vector.createQrVectorOptions
@@ -62,6 +64,8 @@ fun ComponentActivity.dialogQrCode(
     val dialog = Dialog(this@dialogQrCode)
 
     val composeView = ComposeView(this@dialogQrCode).apply {
+        setViewTreeLifecycleOwner(this@dialogQrCode)
+        setViewTreeSavedStateRegistryOwner(this@dialogQrCode)
         setContent {
             Surface {
                 Column(

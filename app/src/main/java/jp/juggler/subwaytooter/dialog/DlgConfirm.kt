@@ -166,6 +166,12 @@ object DlgConfirm {
         onCancel: () -> Unit,
     ): Dialog {
         val dialog = Dialog(this)
+        if (this is androidx.lifecycle.LifecycleOwner) {
+            dialog.window?.decorView?.setViewTreeLifecycleOwner(this)
+        }
+        if (this is androidx.savedstate.SavedStateRegistryOwner) {
+            dialog.window?.decorView?.setViewTreeSavedStateRegistryOwner(this)
+        }
         val composeView = ComposeView(this).apply {
             if (this@showComposeDialog is androidx.lifecycle.LifecycleOwner) {
                 setViewTreeLifecycleOwner(this@showComposeDialog)

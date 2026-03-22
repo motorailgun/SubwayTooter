@@ -14,6 +14,8 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.dismissSafe
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,6 +36,8 @@ class SuspendProgress(val activity: ComponentActivity) {
             reporter.setTitle(title)
 
             val composeView = ComposeView(activity).apply {
+                setViewTreeLifecycleOwner(activity)
+                setViewTreeSavedStateRegistryOwner(activity)
                 setContent {
                     val currentTitle by reporter.flowTitle.collectAsState()
                     val currentMessage by reporter.flowMessage.collectAsState()

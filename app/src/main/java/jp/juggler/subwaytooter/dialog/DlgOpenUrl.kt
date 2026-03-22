@@ -34,6 +34,8 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.R
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
@@ -51,6 +53,12 @@ object DlgOpenUrl {
         val dialog = Dialog(activity)
 
         val composeView = ComposeView(activity).apply {
+            if (activity is androidx.lifecycle.LifecycleOwner) {
+                setViewTreeLifecycleOwner(activity)
+            }
+            if (activity is androidx.savedstate.SavedStateRegistryOwner) {
+                setViewTreeSavedStateRegistryOwner(activity)
+            }
             setContent {
                 Surface {
                     DlgOpenUrlContent(

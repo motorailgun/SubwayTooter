@@ -41,6 +41,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.bumptech.glide.Glide
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.defaultColorIcon
@@ -61,6 +63,8 @@ suspend fun ComponentActivity.dialogAttachmentRearrange(
 ): List<PostAttachment> = suspendCancellableCoroutine { cont ->
     val dialog = Dialog(this)
     val composeView = ComposeView(this).apply {
+        setViewTreeLifecycleOwner(this@dialogAttachmentRearrange)
+        setViewTreeSavedStateRegistryOwner(this@dialogAttachmentRearrange)
         setContent {
             AttachmentRearrangeContent(
                 initialList = initialList,

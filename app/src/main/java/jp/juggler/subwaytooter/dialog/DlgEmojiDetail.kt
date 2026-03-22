@@ -25,6 +25,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.bumptech.glide.Glide
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.view.NetworkEmojiView
@@ -60,6 +62,8 @@ fun ComponentActivity.showEmojiDetailDialog(
 ) {
     val dialog = Dialog(this)
     val composeView = ComposeView(this).apply {
+        setViewTreeLifecycleOwner(this@showEmojiDetailDialog)
+        setViewTreeSavedStateRegistryOwner(this@showEmojiDetailDialog)
         setContent {
             EmojiDetailContent(
                 detail = detail,

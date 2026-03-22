@@ -35,6 +35,8 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootStatus
 import jp.juggler.subwaytooter.dialog.actionsDialog
@@ -188,6 +190,8 @@ suspend fun ComponentActivity.dialogLanguageFilterEdit(
 ): LanguageFilterEditResult = suspendCancellableCoroutine { cont ->
     val dialog = Dialog(this)
     val composeView = ComposeView(this).apply {
+        setViewTreeLifecycleOwner(this@dialogLanguageFilterEdit)
+        setViewTreeSavedStateRegistryOwner(this@dialogLanguageFilterEdit)
         setContent {
             val scope = rememberCoroutineScope()
             LanguageFilterEditContent(

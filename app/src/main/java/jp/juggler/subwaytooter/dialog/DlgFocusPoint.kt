@@ -41,6 +41,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.*
 import jp.juggler.subwaytooter.api.entity.TootAttachment
@@ -118,6 +120,8 @@ suspend fun ComponentActivity.focusPointDialog(
         val dialog = Dialog(this)
         val activity = this
         val composeView = ComposeView(this).apply {
+            setViewTreeLifecycleOwner(activity)
+            setViewTreeSavedStateRegistryOwner(activity)
             setContent {
                 FocusPointContent(
                     bitmap = bmp,

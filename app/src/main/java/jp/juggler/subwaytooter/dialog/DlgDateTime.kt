@@ -17,6 +17,8 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.R
 import jp.juggler.util.ui.dismissSafe
 import java.util.*
@@ -43,6 +45,12 @@ class DlgDateTime(val activity: Activity) {
         dialog = Dialog(activity)
 
         val composeView = ComposeView(activity).apply {
+            if (activity is androidx.lifecycle.LifecycleOwner) {
+                setViewTreeLifecycleOwner(activity)
+            }
+            if (activity is androidx.savedstate.SavedStateRegistryOwner) {
+                setViewTreeSavedStateRegistryOwner(activity)
+            }
             setContent {
                 var year by remember { mutableStateOf(c.get(Calendar.YEAR)) }
                 var month by remember { mutableStateOf(c.get(Calendar.MONTH)) }

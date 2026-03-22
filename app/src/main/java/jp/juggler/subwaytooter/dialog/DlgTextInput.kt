@@ -174,6 +174,8 @@ suspend fun ComponentActivity.showTextInputDialog(
     onOk: suspend (String) -> Boolean,
 ) {
     val dialog = Dialog(this)
+    dialog.window?.decorView?.setViewTreeLifecycleOwner(this)
+    dialog.window?.decorView?.setViewTreeSavedStateRegistryOwner(this)
     suspendCancellableCoroutine { cont ->
         val composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@showTextInputDialog)
@@ -222,6 +224,8 @@ suspend fun ComponentActivity.showMediaDescEditDialog(
     onOk: suspend (String) -> Boolean,
 ) {
     val dialog = Dialog(this)
+    dialog.window?.decorView?.setViewTreeLifecycleOwner(this)
+    dialog.window?.decorView?.setViewTreeSavedStateRegistryOwner(this)
     
     // multiline input for media description
     val actualInputType = inputType

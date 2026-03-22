@@ -27,6 +27,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.auth.CreateUserParams
 import jp.juggler.subwaytooter.api.entity.Host
@@ -69,6 +71,8 @@ class DlgCreateAccount(
 
         val dialog = Dialog(activity)
         val composeView = ComposeView(activity).apply {
+            setViewTreeLifecycleOwner(activity)
+            setViewTreeSavedStateRegistryOwner(activity)
             setContent {
                 CreateAccountContent(
                     apiHostPretty = apiHost.pretty,

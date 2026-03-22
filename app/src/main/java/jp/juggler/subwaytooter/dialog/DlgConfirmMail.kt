@@ -25,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.table.SavedAccount
 
@@ -37,6 +39,8 @@ class DlgConfirmMail(
 
     init {
         val composeView = ComposeView(activity).apply {
+            setViewTreeLifecycleOwner(activity)
+            setViewTreeSavedStateRegistryOwner(activity)
             setContent {
                 Surface {
                     DlgConfirmMailContent(

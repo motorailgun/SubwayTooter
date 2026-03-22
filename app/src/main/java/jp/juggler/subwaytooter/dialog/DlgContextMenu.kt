@@ -54,6 +54,8 @@ import jp.juggler.subwaytooter.table.*
 import jp.juggler.subwaytooter.util.*
 import jp.juggler.util.data.*
 import jp.juggler.util.ui.*
+import androidx.lifecycle.setViewTreeLifecycleOwner
+import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 
 private data class LinkItem(val caption: String, val action: () -> Unit)
 
@@ -146,6 +148,13 @@ internal class DlgContextMenu(
             setCanceledOnTouchOutside(true)
         }
         val composeView = ComposeView(activity).apply {
+            val act = activity
+            if (act is androidx.lifecycle.LifecycleOwner) {
+                setViewTreeLifecycleOwner(act)
+            }
+            if (act is androidx.savedstate.SavedStateRegistryOwner) {
+                setViewTreeSavedStateRegistryOwner(act)
+            }
             setContent {
                 ContextMenuContent()
             }
