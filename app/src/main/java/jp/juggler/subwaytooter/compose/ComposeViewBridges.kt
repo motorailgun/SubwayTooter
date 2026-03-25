@@ -2,7 +2,7 @@ package jp.juggler.subwaytooter.compose
 
 import android.view.ViewGroup
 import android.widget.ImageView
-import android.widget.TextView
+import androidx.appcompat.widget.AppCompatTextView
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
@@ -11,11 +11,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.viewinterop.AndroidView
 import jp.juggler.subwaytooter.util.NetworkEmojiInvalidator
 import jp.juggler.subwaytooter.view.MyLinkMovementMethod
-import jp.juggler.subwaytooter.view.MyNetworkImageView
-import jp.juggler.subwaytooter.view.MyTextView
 
 /**
- * AndroidView wrapper for MyNetworkImageView, used for avatar/media/card images.
+ * Network image component for avatar/media/card images using Glide.
+ * Uses the new ComposeNetworkImage instead of legacy MyNetworkImageView.
  *
  * @param modifier Compose modifier
  * @param cornerRadius corner radius in pixels (0f = square)
@@ -35,31 +34,19 @@ fun NetworkImage(
     scaleType: ImageView.ScaleType = ImageView.ScaleType.CENTER_CROP,
     defaultDrawable: android.graphics.drawable.Drawable? = null,
 ) {
-    AndroidView(
+    ComposeNetworkImage(
+        url = staticUrl,
         modifier = modifier,
-        factory = { ctx ->
-            MyNetworkImageView(ctx).apply {
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                )
-                this.scaleType = scaleType
-                importantForAccessibility =
-                    if (contentDescription != null) android.view.View.IMPORTANT_FOR_ACCESSIBILITY_YES
-                    else android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }
-        },
-        update = { view ->
-            view.contentDescription = contentDescription
-            view.scaleType = scaleType
-            if (defaultDrawable != null) view.setDefaultImage(defaultDrawable)
-            view.setImageUrl(cornerRadius, staticUrl, animatedUrl)
-        },
+        cornerRadius = cornerRadius,
+        animatedUrl = animatedUrl,
+        contentDescription = contentDescription,
+        scaleType = scaleType,
+        defaultDrawable = defaultDrawable,
     )
 }
 
 /**
- * AndroidView wrapper for MyTextView that supports Spannable text with custom emoji animation.
+ * AndroidView wrapper for AppCompatTextView that supports Spannable text with custom emoji animation.
  *
  * @param modifier Compose modifier
  * @param text the Spannable or CharSequence to display
@@ -96,7 +83,7 @@ fun SpannableTextView(
     AndroidView(
         modifier = modifier,
         factory = { ctx ->
-            MyTextView(ctx).apply {
+            AppCompatTextView(ctx).apply {
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -145,4 +132,3 @@ fun PreviewSpannableTextView() {
         text = "Hello, world!"
     )
 }
-

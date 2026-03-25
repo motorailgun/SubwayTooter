@@ -1,10 +1,14 @@
 package jp.juggler.subwaytooter.columnviewholder
 
 import android.graphics.Bitmap
+import android.os.Handler
 import android.text.SpannableStringBuilder
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.lifecycle.lifecycleScope
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import jp.juggler.subwaytooter.ActMain
+import jp.juggler.subwaytooter.App1
+import jp.juggler.subwaytooter.AppState
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.column.*
 import jp.juggler.subwaytooter.compose.*
@@ -16,10 +20,9 @@ import jp.juggler.subwaytooter.util.ScrollPosition
 import jp.juggler.subwaytooter.appendColorShadeIcon
 import jp.juggler.util.data.notZero
 import jp.juggler.util.log.LogCategory
-import jp.juggler.util.ui.attrColor
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import com.google.android.material.R as MR
 import java.util.ArrayList
 
 /**
@@ -28,6 +31,12 @@ import java.util.ArrayList
  * Replaces the old View-based ColumnViewHolder.
  */
 class ColumnViewHolder(
+    val appState: AppState,
+    val handler: Handler,
+    val themeColors: ThemeColors,
+    val coroutineScope: CoroutineScope,
+    val acctPadLr: Int,
+    @Deprecated("For backwards compatibility with appendColorShadeIcon")
     val activity: ActMain,
     var column: Column?
 ) {
@@ -45,6 +54,7 @@ class ColumnViewHolder(
     val columnUiState = ColumnUiState()
     var columnCallbacks = ColumnCallbacks()
     var timelineCallbacks: TimelineCallbacks = buildTimelineCallbacks(activity)
+    var listDataFlowJob: Job? = null
 
     // ──────── Bitmap / background image state ────────
     // Kept for compatibility if logic elsewhere depends on it, but likely unused in Compose
@@ -62,9 +72,9 @@ class ColumnViewHolder(
     var bRefreshErrorWillShown = false
 
     // ──────── Cached theme colors ────────
-    val colorOnSurface = activity.attrColor(MR.attr.colorOnSurface)
-    val colorSurfaceContainerLow = activity.attrColor(MR.attr.colorSurfaceContainerLow)
-    val colorSurfaceContainerHigh = activity.attrColor(MR.attr.colorSurfaceContainerHigh)
+    val colorOnSurface = themeColors.colorOnSurface
+    val colorSurfaceContainerLow = themeColors.colorSurfaceContainerLow
+    val colorSurfaceContainerHigh = themeColors.colorSurfaceContainerHigh
 
     // ──────── Derived properties ────────
 
@@ -92,9 +102,9 @@ class ColumnViewHolder(
 
         columnUiState.columnContext = ac.nickname
         columnUiState.columnContextColorFg =
-            ac.colorFg.notZero() ?: activity.attrColor(MR.attr.colorOnSurfaceVariant)
+            ac.colorFg.notZero() ?: themeColors.colorOnSurfaceVariant
         columnUiState.columnContextColorBg = ac.colorBg
-        columnUiState.columnContextPadLr = activity.acctPadLr
+        columnUiState.columnContextPadLr = acctPadLr
 
         columnUiState.columnName = column.getColumnName(false)
 
@@ -105,7 +115,7 @@ class ColumnViewHolder(
 
     val procRestoreScrollPosition = object : Runnable {
         override fun run() {
-            activity.handler.removeCallbacks(this)
+            handler.removeCallbacks(this)
 
             if (isPageDestroyed) {
                 log.d("restoreScrollPosition [%d], page is destroyed.")
@@ -120,7 +130,7 @@ class ColumnViewHolder(
 
             if (column.hasMultipleViewHolder()) {
                 log.d("restoreScrollPosition [%d] ${column.getColumnName(true)}, column has multiple view holder. retry later.")
-                activity.handler.postDelayed(this, 100L)
+                handler.postDelayed(this, 100L)
                 return
             }
 
@@ -134,7 +144,7 @@ class ColumnViewHolder(
             val lls = lazyListState
             if (lls != null) {
                 log.d("restoreScrollPosition [%d] ${column.getColumnName(true)} , Compose restore ${sp.adapterIndex},${sp.offset}")
-                activity.lifecycleScope.launch {
+                coroutineScope.launch {
                     try {
                         lls.scrollToItem(sp.adapterIndex, sp.offset)
                     } catch (ex: Throwable) {
@@ -191,8 +201,8 @@ class ColumnViewHolder(
     // ──────── Helpers ────────
 
     fun delayLoadByContentInvalidated() {
-        activity.appState.saveColumnList()
-        activity.handler.removeCallbacks(procLoadByContentInvalidated)
-        activity.handler.postDelayed(procLoadByContentInvalidated, 666L)
+        appState.saveColumnList()
+        handler.removeCallbacks(procLoadByContentInvalidated)
+        handler.postDelayed(procLoadByContentInvalidated, 666L)
     }
 }

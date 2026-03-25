@@ -56,8 +56,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.viewmodel.compose.viewModel
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootVisibility
+import jp.juggler.subwaytooter.compose.ComposeNetworkImage
 import jp.juggler.subwaytooter.table.SavedAccount
-import jp.juggler.subwaytooter.view.MyNetworkImageView
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,6 +113,7 @@ fun AccountSettingContent(
     val tootAccount by viewModel.tootAccount.collectAsState()
     val editingVisibility by viewModel.editingVisibility.collectAsState()
     val editingDefaultSensitive by viewModel.editingDefaultSensitive.collectAsState()
+    val tokenInfo by viewModel.tokenInfo.collectAsState()
 
     val launcherAvatar = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         viewModel.setAvatar(uri)
@@ -134,7 +135,7 @@ fun AccountSettingContent(
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
             title = { Text("Delete Account") },
-            text = { Text("Are you sure you want to delete this account? This action cannot be undone.") },
+            text = { Text("Are you sure you want to delete this account from the app? This action cannot be undone.") },
             confirmButton = {
                 TextButton(
                     onClick = {
@@ -188,15 +189,11 @@ fun AccountSettingContent(
              } else {
                  val url = tootAccount?.header ?: account.loginAccount?.header
                  if (url != null) {
-                      AndroidView(
+                      ComposeNetworkImage(
+                          url = url,
                           modifier = Modifier.fillMaxSize(),
-                          factory = { ctx -> 
-                             MyNetworkImageView(ctx).apply { 
-                                 scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
-                                 setImageUrl(0f, url) 
-                             }
-                          },
-                          update = { view -> (view as? MyNetworkImageView)?.setImageUrl(0f, url) }
+                          cornerRadius = 0f,
+                          scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
                       )
                  }
              }
@@ -228,15 +225,11 @@ fun AccountSettingContent(
              } else {
                  val url = tootAccount?.avatar ?: account.loginAccount?.avatar
                  if (url != null) {
-                      AndroidView(
+                      ComposeNetworkImage(
+                          url = url,
                           modifier = Modifier.fillMaxSize(),
-                          factory = { ctx -> 
-                             MyNetworkImageView(ctx).apply { 
-                                 scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
-                                 setImageUrl(0.5f, url) 
-                             }
-                          },
-                          update = { view -> (view as? MyNetworkImageView)?.setImageUrl(0.5f, url) }
+                          cornerRadius = 0.5f,
+                          scaleType = android.widget.ImageView.ScaleType.CENTER_CROP
                       )
                  }
              }
@@ -433,12 +426,75 @@ fun AccountSettingContent(
 
         Spacer(modifier = Modifier.height(24.dp))
 
+        // Access Token Management Section
+        SettingSectionHeader("Access Token")
+        
+        if (tokenInfo.isNotEmpty()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+            ) {
+                tokenInfo["access_token"]?.let { token ->
+                    Text(
+                        text = "Token: $token",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
+                tokenInfo["token_type"]?.let { type ->
+                    Text(
+                        text = "Type: $type",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
+                tokenInfo["scope"]?.let { scope ->
+                    Text(
+                        text = "Scopes: $scope",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
+                tokenInfo["created_at"]?.let { created ->
+                    Text(
+                        text = "Created: $created",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
+                }
+            }
+        } else {
+            Text(
+                text = "No token information available",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Account Removal Section
+        SettingSectionHeader("Account Management")
+        
+        Text(
+            text = "Remove this account from the app. This will remove all stored data for this account.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = 8.dp)
+        )
+
         Button(
             onClick = { showDeleteDialog = true },
             modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp),
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
         ) {
-            Text("Delete Account")
+            Text("Remove Account from App")
         }
     }
 }

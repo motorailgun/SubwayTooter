@@ -5,24 +5,22 @@ import android.os.Handler
 import android.os.Looper
 import android.text.Spannable
 import android.text.SpannableStringBuilder
-import android.view.ViewGroup
 import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import jp.juggler.subwaytooter.compose.ComposeNetworkImage
 import jp.juggler.subwaytooter.span.NetworkEmojiSpan
 import jp.juggler.subwaytooter.util.EmojiSizeMode
 import jp.juggler.subwaytooter.util.NetworkEmojiInvalidator
-import jp.juggler.subwaytooter.view.MyNetworkImageView
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError
 import kotlinx.coroutines.withContext
@@ -85,49 +83,28 @@ class ActGlideTest : ComponentActivity() {
 
     @Composable
     private fun GlideTestRow(item: MyItem) {
+        val cornerRadiusPx = with(LocalDensity.current) { 8.dp.toPx() }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(4.dp),
             verticalAlignment = Alignment.Top,
         ) {
-            // Static image
-            AndroidView(
-                factory = { context ->
-                    MyNetworkImageView(context).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            (60 * context.resources.displayMetrics.density).toInt(),
-                            (60 * context.resources.displayMetrics.density).toInt(),
-                        )
-                    }
-                },
-                update = { view ->
-                    val density = view.context.resources.displayMetrics.density
-                    val r = (8f * density)
-                    view.setImageUrl(r, item.url, null)
-                },
+            ComposeNetworkImage(
+                url = item.url,
                 modifier = Modifier.size(60.dp),
+                cornerRadius = cornerRadiusPx,
+                contentDescription = "${item.name} static preview",
             )
             Spacer(Modifier.width(4.dp))
-            // Animation image
-            AndroidView(
-                factory = { context ->
-                    MyNetworkImageView(context).apply {
-                        layoutParams = ViewGroup.LayoutParams(
-                            (60 * context.resources.displayMetrics.density).toInt(),
-                            (60 * context.resources.displayMetrics.density).toInt(),
-                        )
-                    }
-                },
-                update = { view ->
-                    val density = view.context.resources.displayMetrics.density
-                    val r = (8f * density)
-                    view.setImageUrl(r, item.url, item.url)
-                },
+            ComposeNetworkImage(
+                url = item.url,
+                animatedUrl = item.url,
                 modifier = Modifier.size(60.dp),
+                cornerRadius = cornerRadiusPx,
+                contentDescription = "${item.name} animated preview",
             )
             Spacer(Modifier.width(4.dp))
-            // Name with emoji span
             AndroidView(
                 factory = { context ->
                     TextView(context)

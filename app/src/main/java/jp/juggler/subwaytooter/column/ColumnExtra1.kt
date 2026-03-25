@@ -152,16 +152,12 @@ fun Column.getHeaderDesc(): String {
     return cache
 }
 
-fun Column.hasMultipleViewHolder(): Boolean = listViewHolder.size > 1
+// With the new ViewModel-based registry, each column has at most one active view holder
+fun Column.hasMultipleViewHolder(): Boolean = false
 
+@Deprecated("View holders are now managed by MainViewModel", ReplaceWith(""))
 fun Column.addColumnViewHolder(cvh: ColumnViewHolder) {
-
-    // 現在のリストにあるなら削除する
-    removeColumnViewHolder(cvh)
-
-    // 最後に追加されたものが先頭にくるようにする
-    // 呼び出しの後に必ず追加されているようにする
-    listViewHolder.addFirst(cvh)
+    // No-op: View holders are now registered in ColumnWrapper via MainViewModel
 }
 
 /////////////////////////////////////////////////////////////////

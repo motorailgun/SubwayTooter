@@ -12,7 +12,7 @@ import androidx.annotation.StringRes
 import jp.juggler.subwaytooter.ActAppSetting
 import jp.juggler.subwaytooter.ActDrawableList
 import jp.juggler.subwaytooter.ActExitReasons
-import jp.juggler.subwaytooter.ActGlideTest
+
 import jp.juggler.subwaytooter.App1
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.actmain.selectPushDistributor
@@ -885,11 +885,7 @@ val appSettingRoot = AppSettingItem(null, SettingType.Section, R.string.app_sett
             }
         }
 
-        action(R.string.glide_test) {
-            action = {
-                startActivity(Intent(this, ActGlideTest::class.java))
-            }
-        }
+
 
         action(R.string.alert_test) {
             action = { showAlertNotification("this is a test.") }

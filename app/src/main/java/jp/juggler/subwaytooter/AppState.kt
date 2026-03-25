@@ -48,6 +48,9 @@ class AppState(
     internal val context: Context,
     internal val handler: Handler,
 ) {
+    // Reference to MainViewModel for accessing view holder registry
+    // Set by ActMain during initialization
+    var mainViewModel: jp.juggler.subwaytooter.actmain.MainViewModel? = null
 
     companion object {
 

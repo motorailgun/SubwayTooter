@@ -1,9 +1,10 @@
 package jp.juggler.subwaytooter.dialog
 
-import android.app.Dialog
 import android.graphics.Bitmap
+import android.view.ViewGroup
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.activity.ComponentDialog
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -173,13 +174,17 @@ suspend fun ComponentActivity.showTextInputDialog(
     // returns true if we can close dialog
     onOk: suspend (String) -> Boolean,
 ) {
-    val dialog = Dialog(this)
-    dialog.window?.decorView?.setViewTreeLifecycleOwner(this)
-    dialog.window?.decorView?.setViewTreeSavedStateRegistryOwner(this)
+    val dialog = ComponentDialog(this)
+    dialog.window?.decorView?.let { decor ->
+        decor.setViewTreeLifecycleOwner(this)
+        decor.setViewTreeSavedStateRegistryOwner(this)
+        decor.setViewTreeViewModelStoreOwner(this)
+    }
     suspendCancellableCoroutine { cont ->
         val composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@showTextInputDialog)
             setViewTreeSavedStateRegistryOwner(this@showTextInputDialog)
+            setViewTreeViewModelStoreOwner(this@showTextInputDialog)
             setContent {
                 TextInputDialogContent(
                     title = title,
@@ -223,9 +228,12 @@ suspend fun ComponentActivity.showMediaDescEditDialog(
     // returns true if we can close dialog
     onOk: suspend (String) -> Boolean,
 ) {
-    val dialog = Dialog(this)
-    dialog.window?.decorView?.setViewTreeLifecycleOwner(this)
-    dialog.window?.decorView?.setViewTreeSavedStateRegistryOwner(this)
+    val dialog = ComponentDialog(this)
+    dialog.window?.decorView?.let { decor ->
+        decor.setViewTreeLifecycleOwner(this)
+        decor.setViewTreeSavedStateRegistryOwner(this)
+        decor.setViewTreeViewModelStoreOwner(this)
+    }
     
     // multiline input for media description
     val actualInputType = inputType
@@ -235,6 +243,7 @@ suspend fun ComponentActivity.showMediaDescEditDialog(
         val composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@showMediaDescEditDialog)
             setViewTreeSavedStateRegistryOwner(this@showMediaDescEditDialog)
+            setViewTreeViewModelStoreOwner(this@showMediaDescEditDialog)
             setContent {
                 TextInputDialogContent(
                     title = title,

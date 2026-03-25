@@ -1,33 +1,21 @@
 package jp.juggler.subwaytooter.column
 
-import jp.juggler.subwaytooter.ActMain
 import jp.juggler.subwaytooter.columnviewholder.*
 import jp.juggler.util.coroutine.isMainThread
 import jp.juggler.util.ui.AdapterChange
 
-fun Column.removeColumnViewHolder(cvh: ColumnViewHolder) {
-    val it = listViewHolder.iterator()
-    while (it.hasNext()) {
-        if (cvh == it.next()) it.remove()
-    }
-}
-
-fun Column.removeColumnViewHolderByActivity(activity: ActMain) {
-    val it = listViewHolder.iterator()
-    while (it.hasNext()) {
-        val cvh = it.next()
-        if (cvh.activity == activity) {
-            it.remove()
-        }
-    }
-}
-
-// 複数のリスナがある場合、最も新しいものを返す
+// Extension property to get the active viewHolder for this column
+// Uses the MainViewModel registry instead of the deprecated LinkedList
 val Column.viewHolder: ColumnViewHolder?
     get() = when {
         isDispose.get() -> null
-        else -> listViewHolder.firstOrNull()
+        else -> appState.mainViewModel?.getViewHolder(this)
     }
+
+@Deprecated("View holders are now managed by MainViewModel", ReplaceWith(""))
+fun Column.removeColumnViewHolder(cvh: ColumnViewHolder) {
+    // No-op: View holders are now unregistered in ColumnWrapper via MainViewModel
+}
 
 fun Column.fireShowContent(
     reason: String,
@@ -35,6 +23,7 @@ fun Column.fireShowContent(
     reset: Boolean = false,
 ) {
     if (!isMainThread) error("fireShowContent: not on main thread.")
+    emitListDataSnapshot()
     viewHolder?.showContent(reason, changeList, reset)
 }
 

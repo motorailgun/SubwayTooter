@@ -131,6 +131,15 @@ class TimelineState {
     }
 
     /**
+     * Sync items from a list (full replacement).
+     */
+    fun syncFromList(newList: List<TimelineItem>) {
+        items.clear()
+        items.addAll(newList)
+        revision++
+    }
+
+    /**
      * Sync items from column data (full replacement).
      */
     fun syncFromColumn(column: Column) {

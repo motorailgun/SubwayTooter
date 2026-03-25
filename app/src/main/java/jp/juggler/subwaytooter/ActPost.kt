@@ -4,15 +4,11 @@ import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.content.res.Configuration
-import android.content.res.ColorStateList
+
 import android.os.Bundle
 import android.os.Handler
-import android.view.Gravity
 import android.view.KeyEvent
-import android.view.View
-import android.view.ViewGroup
-import android.widget.ImageButton
-import android.widget.TextView
+
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -69,15 +65,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.platform.ComposeView
-import androidx.compose.ui.platform.ViewCompositionStrategy
+
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import jp.juggler.subwaytooter.compose.NetworkImage
-import com.google.android.flexbox.FlexboxLayout
+
 import jp.juggler.subwaytooter.action.saveWindowSize
 import jp.juggler.subwaytooter.actpost.PostViewModel
 import jp.juggler.subwaytooter.util.provideViewModel
@@ -141,7 +136,7 @@ import jp.juggler.subwaytooter.util.AttachmentUploader
 import jp.juggler.subwaytooter.util.PostAttachment
 import jp.juggler.subwaytooter.util.loadLanguageList
 import jp.juggler.subwaytooter.util.openBrowser
-import jp.juggler.subwaytooter.view.MyNetworkImageView
+
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.launchIO

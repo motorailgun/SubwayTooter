@@ -22,7 +22,6 @@ import androidx.core.view.GravityCompat
 import androidx.activity.addCallback
 import kotlinx.coroutines.flow.collectLatest
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.RecyclerView
 import androidx.activity.compose.setContent
 import jp.juggler.subwaytooter.action.openColumnList
 import jp.juggler.subwaytooter.actmain.MainScreen
@@ -78,7 +77,6 @@ import jp.juggler.subwaytooter.column.fireShowColumnHeader
 import jp.juggler.subwaytooter.column.fireShowContent
 import jp.juggler.subwaytooter.column.onActivityStart
 import jp.juggler.subwaytooter.column.onLanguageFilterChanged
-import jp.juggler.subwaytooter.column.removeColumnViewHolderByActivity
 import jp.juggler.subwaytooter.column.saveScrollPosition
 import jp.juggler.subwaytooter.column.startLoading
 import jp.juggler.subwaytooter.column.viewHolder
@@ -248,8 +246,6 @@ class ActMain : ComponentActivity(),
         }
     }
 
-    val viewPool = RecyclerView.RecycledViewPool()
-
     val arColumnColor = ActivityResultHandler(log) { r ->
         if (r.isNotOk) return@ActivityResultHandler
         appState.saveColumnList()
@@ -385,9 +381,10 @@ class ActMain : ComponentActivity(),
         arActText.register(this)
 
         appState = App1.getAppState(this)
+        appState.mainViewModel = viewModel
         handler = appState.handler
         density = appState.density
-        completionHelper = CompletionHelper(this, appState.handler)
+        completionHelper = CompletionHelper()
         
         sideMenuAdapter = SideMenuAdapter(this, handler)
 
@@ -448,10 +445,7 @@ class ActMain : ComponentActivity(),
         }
         closeList.clear()
 
-        // このアクティビティに関連する ColumnViewHolder への参照を全カラムから除去する
-        appState.columnList.forEach {
-            it.removeColumnViewHolderByActivity(this)
-        }
+        // View holders are now automatically cleaned up via DisposableEffect in ColumnWrapper
     }
 
     override fun onNewIntent(intent: Intent) {

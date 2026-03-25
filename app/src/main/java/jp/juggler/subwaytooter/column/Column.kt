@@ -6,7 +6,6 @@ import jp.juggler.subwaytooter.AppState
 import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.DuplicateMap
 import jp.juggler.subwaytooter.api.entity.*
-import jp.juggler.subwaytooter.columnviewholder.ColumnViewHolder
 import jp.juggler.subwaytooter.streaming.StreamCallback
 import jp.juggler.subwaytooter.streaming.StreamStatus
 import jp.juggler.subwaytooter.table.SavedAccount
@@ -22,6 +21,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import com.google.android.material.R as MR
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 enum class ColumnPagingType { Default, Cursor, Offset, None, }
 
@@ -211,15 +213,6 @@ class Column(
 
     var filterReloadRequired = false
 
-    //////////////////////////////////////////////////////////////////////////////////////
-
-    // カラムを閉じた後のnotifyDataSetChangedのタイミングで、add/removeされる順序が期待通りにならないので
-    // 参照を１つだけ持つのではなく、リストを保持して先頭の要素を使うことにする
-
-    val listViewHolder = LinkedList<ColumnViewHolder>()
-
-    //////////////////////////////////////////////////////////////////////////////////////
-
     internal var lastTask: ColumnTask? = null
 
     @Volatile
@@ -236,6 +229,14 @@ class Column(
     internal var taskProgress: String? = null
 
     internal val listData = BucketList<TimelineItem>()
+
+    private val _listDataFlow = MutableStateFlow<List<TimelineItem>>(emptyList())
+    val listDataFlow: StateFlow<List<TimelineItem>> = _listDataFlow.asStateFlow()
+
+    internal fun emitListDataSnapshot() {
+        _listDataFlow.value = ArrayList(listData)
+    }
+
     internal val duplicateMap = DuplicateMap()
 
     @Volatile
@@ -344,9 +345,8 @@ class Column(
         isDispose.set(true)
         appState.streamManager.updateStreamingColumns()
 
-        for (vh in listViewHolder) {
-            vh.column = null
-        }
+        // Clear the column reference in the view holder (if any)
+        viewHolder?.column = null
     }
 
     init {

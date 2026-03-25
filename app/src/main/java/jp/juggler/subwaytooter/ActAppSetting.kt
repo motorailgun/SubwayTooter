@@ -12,14 +12,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.text.InputType
 import android.util.JsonWriter
-import android.view.KeyEvent
-import android.view.View
-import android.view.ViewGroup
-import android.widget.LinearLayout
-import android.widget.Spinner
-import android.widget.ArrayAdapter
-import android.widget.BaseAdapter
-import android.widget.TextView
+
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.annotation.WorkerThread

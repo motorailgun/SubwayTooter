@@ -62,7 +62,7 @@ import jp.juggler.subwaytooter.table.SavedAccount
 import jp.juggler.subwaytooter.table.daoAcctColor
 import jp.juggler.subwaytooter.table.daoContentWarning
 import jp.juggler.subwaytooter.table.daoMediaShown
-import jp.juggler.subwaytooter.view.MyNetworkImageView
+
 import jp.juggler.util.ui.getSpannedString
 import jp.juggler.util.data.notEmpty
 import jp.juggler.util.data.notZero

@@ -8,7 +8,7 @@ import jp.juggler.subwaytooter.R
 import jp.juggler.subwaytooter.api.entity.TootStatus
 import jp.juggler.subwaytooter.pref.PrefS
 import jp.juggler.subwaytooter.span.NetworkEmojiSpan
-import jp.juggler.subwaytooter.view.MyTextView
+import androidx.appcompat.widget.AppCompatTextView
 import java.lang.ref.WeakReference
 
 /**
@@ -65,7 +65,7 @@ fun ActMain.checkAutoCW(status: TootStatus, text: CharSequence) {
     autoCw.decodedSpoilerText = null
 
     // テキストをレイアウトして行数を測定
-    val tv = MyTextView(this).apply {
+    val tv = AppCompatTextView(this).apply {
         layoutParams =
             LinearLayout.LayoutParams(nAutoCwCellWidth, LinearLayout.LayoutParams.WRAP_CONTENT)
         ActMain.timelineFontSizeSp.takeIf { it.isFinite() }

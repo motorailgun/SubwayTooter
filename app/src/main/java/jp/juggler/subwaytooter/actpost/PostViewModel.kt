@@ -14,6 +14,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.launch
 import jp.juggler.subwaytooter.api.entity.TootStatus
 import jp.juggler.subwaytooter.api.entity.TootVisibility
 import jp.juggler.subwaytooter.table.SavedAccount
@@ -78,6 +82,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application), P
     private val _progressChannel = Channel<Unit>(Channel.CONFLATED)
     
     init {
+        startCompletionObserver()
         viewModelScope.launch {
             for (item in _progressChannel) {
                  notifyAttachmentListUpdated()
@@ -622,6 +627,35 @@ class PostViewModel(application: Application) : AndroidViewModel(application), P
                 if (ex !is CancellationException) {
                     showError(ex)
                 }
+            }
+        }
+    }
+
+    // Completion
+    val completionResult = mutableStateOf<PostCompletionLogic.Result>(PostCompletionLogic.Result.None())
+    private val completionLogic = PostCompletionLogic()
+
+    fun checkCompletion(text: String, selectionEnd: Int) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val res = completionLogic.check(getApplication(), text, selectionEnd, account.value) {
+                // Re-check on emoji load
+                checkCompletion(text, selectionEnd)
+            }
+            withContext(Dispatchers.Main) {
+                completionResult.value = res
+            }
+        }
+    }
+    
+    fun closeCompletion() {
+        completionResult.value = PostCompletionLogic.Result.None()
+    }
+
+    fun startCompletionObserver() {
+         viewModelScope.launch {
+            snapshotFlow { etContent.fieldValue }.collectLatest { fv ->
+                delay(100)
+                checkCompletion(fv.text, fv.selection.end)
             }
         }
     }

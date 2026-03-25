@@ -77,6 +77,8 @@ class AccountSettingViewModel(application: Application) : AndroidViewModel(appli
                 val acct = daoSavedAccount.loadAccount(dbId)
                 _account.value = acct
                 if (acct != null) {
+                    // Load token info first (synchronously available)
+                    loadTokenInfo()
                     // initializeProfile() logic
                     initializeProfile(acct)
                 }
@@ -121,6 +123,9 @@ class AccountSettingViewModel(application: Application) : AndroidViewModel(appli
                 a.loginAccount = ta
                 a.accountJson = jsonObject
                 saveAccount()
+                
+                // Load token info
+                loadTokenInfo()
             }
         } catch (ex: Throwable) {
             log.e(ex, "initializeProfile failed")
@@ -410,6 +415,30 @@ class AccountSettingViewModel(application: Application) : AndroidViewModel(appli
             } catch (ex: Throwable) {
                 log.e(ex, "updatePushSubscription failed")
             }
+        }
+    }
+
+    // Token Management
+    private val _tokenInfo = MutableStateFlow<Map<String, String?>>(emptyMap())
+    val tokenInfo = _tokenInfo.asStateFlow()
+
+    fun loadTokenInfo() {
+        val a = _account.value ?: return
+        try {
+            val tokenJson = a.tokenJson
+            if (tokenJson != null) {
+                val tokenMap = mutableMapOf<String, String?>()
+                tokenMap["access_token"] = tokenJson.string("access_token")?.take(20) + "..."
+                tokenMap["token_type"] = tokenJson.string("token_type")
+                tokenMap["scope"] = tokenJson.string("scope")
+                tokenMap["created_at"] = tokenJson.long("created_at")?.let { 
+                    java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.US)
+                        .format(java.util.Date(it * 1000))
+                }
+                _tokenInfo.value = tokenMap
+            }
+        } catch (ex: Throwable) {
+            log.e(ex, "loadTokenInfo failed")
         }
     }
 

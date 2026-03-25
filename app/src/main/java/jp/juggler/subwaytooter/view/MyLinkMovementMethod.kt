@@ -54,9 +54,6 @@ object MyLinkMovementMethod : LinkMovementMethod() {
                         if (action == MotionEvent.ACTION_UP) {
                             link[0].onClick(widget)
                         }
-                        if (widget is MyTextView) {
-                            widget.linkHit = true
-                        }
                         return true
                     }
                 }

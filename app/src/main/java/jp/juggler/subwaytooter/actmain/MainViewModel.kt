@@ -201,6 +201,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     // AppState access
     private val appState get() = jp.juggler.subwaytooter.App1.getAppState(getApplication())
 
+    // ──────── ViewHolder Registry ────────
+    // Manages active ColumnViewHolder instances for each Column
+    private val _activeViewHolders = MutableStateFlow<Map<Column, ColumnViewHolder>>(emptyMap())
+    
+    fun registerViewHolder(column: Column, holder: ColumnViewHolder) {
+        _activeViewHolders.value = _activeViewHolders.value + (column to holder)
+    }
+    
+    fun unregisterViewHolder(column: Column) {
+        _activeViewHolders.value = _activeViewHolders.value - column
+    }
+    
+    fun getViewHolder(column: Column): ColumnViewHolder? {
+        return _activeViewHolders.value[column]
+    }
+
     // Column Management
 
     fun updateColumnStrip() {

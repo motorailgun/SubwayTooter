@@ -15,7 +15,9 @@ import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.media.createResizedBitmap
 import jp.juggler.util.ui.createRoundDrawable
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 private val log = LogCategory("ColumnViewHolderLifeCycle")
@@ -88,6 +90,9 @@ fun ColumnViewHolder.loadBackgroundImage(url: String?) {
 }
 
 fun ColumnViewHolder.onPageDestroy(pageIdx: Int) {
+    listDataFlowJob?.cancel()
+    listDataFlowJob = null
+
     val column = this.column
     if (column != null) {
         ColumnViewHolder.log.d("onPageDestroy [$pageIdx] ${columnUiState.columnName}")
@@ -97,7 +102,6 @@ fun ColumnViewHolder.onPageDestroy(pageIdx: Int) {
         column.removeColumnViewHolder(this)
         this.column = null
     }
-
     closeBitmaps()
 
     activity.closePopup()
@@ -131,6 +135,13 @@ fun ColumnViewHolder.onPageCreate(column: Column, pageIdx: Int, pageCount: Int) 
 
         val newTimelineState = TimelineState()
         this.timelineState = newTimelineState
+
+        listDataFlowJob?.cancel()
+        listDataFlowJob = coroutineScope.launch {
+            column.listDataFlow.collectLatest {
+                this@ColumnViewHolder.timelineState?.syncFromColumn(column)
+            }
+        }
 
         // ──── Settings visibility ────
         ui.settingsVisible = false
@@ -273,6 +284,14 @@ fun ColumnViewHolder.onPageCreate(column: Column, pageIdx: Int, pageCount: Int) 
         // ──── Show content ────
         showColumnColor()
         showContent(reason = "onPageCreate", reset = true)
+
+        // ──── Start reactive updates ────
+        listDataFlowJob?.cancel()
+        listDataFlowJob = coroutineScope.launch {
+            column.listDataFlow.collect { newList ->
+                timelineState?.syncFromList(newList)
+            }
+        }
     } finally {
         bindingBusy = false
     }
