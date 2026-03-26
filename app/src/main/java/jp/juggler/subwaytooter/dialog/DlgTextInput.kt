@@ -178,13 +178,11 @@ suspend fun ComponentActivity.showTextInputDialog(
     dialog.window?.decorView?.let { decor ->
         decor.setViewTreeLifecycleOwner(this)
         decor.setViewTreeSavedStateRegistryOwner(this)
-        decor.setViewTreeViewModelStoreOwner(this)
     }
     suspendCancellableCoroutine { cont ->
         val composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@showTextInputDialog)
             setViewTreeSavedStateRegistryOwner(this@showTextInputDialog)
-            setViewTreeViewModelStoreOwner(this@showTextInputDialog)
             setContent {
                 TextInputDialogContent(
                     title = title,
@@ -232,7 +230,6 @@ suspend fun ComponentActivity.showMediaDescEditDialog(
     dialog.window?.decorView?.let { decor ->
         decor.setViewTreeLifecycleOwner(this)
         decor.setViewTreeSavedStateRegistryOwner(this)
-        decor.setViewTreeViewModelStoreOwner(this)
     }
     
     // multiline input for media description
@@ -243,7 +240,6 @@ suspend fun ComponentActivity.showMediaDescEditDialog(
         val composeView = ComposeView(this).apply {
             setViewTreeLifecycleOwner(this@showMediaDescEditDialog)
             setViewTreeSavedStateRegistryOwner(this@showMediaDescEditDialog)
-            setViewTreeViewModelStoreOwner(this@showMediaDescEditDialog)
             setContent {
                 TextInputDialogContent(
                     title = title,

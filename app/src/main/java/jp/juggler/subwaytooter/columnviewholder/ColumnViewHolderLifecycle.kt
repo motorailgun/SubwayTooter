@@ -138,8 +138,8 @@ fun ColumnViewHolder.onPageCreate(column: Column, pageIdx: Int, pageCount: Int) 
 
         listDataFlowJob?.cancel()
         listDataFlowJob = coroutineScope.launch {
-            column.listDataFlow.collectLatest {
-                this@ColumnViewHolder.timelineState?.syncFromColumn(column)
+            column.listDataFlow.collect { newList ->
+                timelineState?.syncFromList(newList)
             }
         }
 
