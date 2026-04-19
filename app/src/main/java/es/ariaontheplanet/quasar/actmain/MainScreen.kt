@@ -1,19 +1,13 @@
 package es.ariaontheplanet.quasar.actmain
 
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
@@ -23,7 +17,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -42,8 +35,6 @@ import androidx.compose.material3.AlertDialog
 import es.ariaontheplanet.quasar.ActMain
 import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.compose.ColumnWrapper
-import es.ariaontheplanet.quasar.compose.QuickTootMenuDialog
-import es.ariaontheplanet.quasar.action.openPost
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -52,8 +43,9 @@ import kotlinx.coroutines.launch
 fun MainScreen(
     viewModel: MainViewModel,
     sideMenuAdapter: SideMenuAdapter,
-    onClickToot: () -> Unit,
-    onLongClickToot: () -> Unit,
+    onClickAccountIcon: () -> Unit,
+    onSubmitQuickPost: () -> Unit,
+    onExpandQuickPost: () -> Unit,
     onDrawerClosed: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -69,14 +61,14 @@ fun MainScreen(
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-    
+
     // Sync Drawer State with ViewModel
     LaunchedEffect(viewModel.drawerControl) {
         viewModel.drawerControl.collectLatest { isOpen ->
             if (isOpen) drawerState.open() else drawerState.close()
         }
     }
-    
+
     LaunchedEffect(drawerState.isOpen) {
         viewModel.setDrawerOpen(drawerState.isOpen)
         if (!drawerState.isOpen) {
@@ -103,7 +95,7 @@ fun MainScreen(
             viewModel.setCurrentPage(pagerState.currentPage)
         }
     }
-    
+
     // Sync List State with ViewModel (Tablet)
     LaunchedEffect(lazyListState.firstVisibleItemIndex) {
         if (isTablet) {
@@ -133,25 +125,14 @@ fun MainScreen(
         },
         content = {
             Scaffold(
-                bottomBar = { MainFooter(viewModel = viewModel) },
-                floatingActionButton = {
-                    FloatingActionButton(onClick = {}) {
-                        Box(
-                            modifier = Modifier
-                                .size(56.dp)
-                                .combinedClickable(
-                                    onClick = onClickToot,
-                                    onLongClick = onLongClickToot,
-                                ),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Edit,
-                                contentDescription = stringResource(R.string.toot),
-                            )
-                        }
-                    }
+                topBar = {
+                    QuickPostTopBar(
+                        onClickHamburger = { scope.launch { drawerState.open() } },
+                        onClickPostPlaceholder = { viewModel.openQuickPostSheet() },
+                        onClickAccountIcon = onClickAccountIcon,
+                    )
                 },
+                bottomBar = { MainFooter(viewModel = viewModel) },
                 modifier = Modifier
                     .fillMaxSize()
                     .systemBarsPadding()
@@ -183,22 +164,31 @@ fun MainScreen(
         }
     )
 
-    // Quick Toot Menu
-    val isQuickTootMenuShown by viewModel.isQuickTootMenuShown.collectAsState()
-    val quickTootVisibility by viewModel.quickTootVisibility.collectAsState()
+    // Quick Post Sheet (replaces FAB + QuickTootMenu)
+    val sheetShown by viewModel.isQuickPostSheetShown.collectAsState()
+    if (sheetShown) {
+        val text by viewModel.quickPostText.collectAsState()
+        val cwEnabled by viewModel.quickPostCwEnabled.collectAsState()
+        val cwText by viewModel.quickPostCwText.collectAsState()
+        val visibility by viewModel.quickPostVisibility.collectAsState()
+        val sending by viewModel.quickPostSending.collectAsState()
 
-    if (isQuickTootMenuShown) {
-        QuickTootMenuDialog(
-            visibility = quickTootVisibility,
-            onVisibilityPick = { viewModel.setQuickTootVisibility(it) },
-            onUseMacro = { text ->
-                viewModel.closeQuickTootMenu()
-                activity.openPost(text)
-            },
-            onClose = { viewModel.closeQuickTootMenu() }
+        QuickPostSheet(
+            text = text,
+            cwEnabled = cwEnabled,
+            cwText = cwText,
+            visibility = visibility,
+            sending = sending,
+            onTextChange = { viewModel.setQuickPostText(it) },
+            onCwEnabledChange = { viewModel.setQuickPostCwEnabled(it) },
+            onCwTextChange = { viewModel.setQuickPostCwText(it) },
+            onVisibilityChange = { viewModel.setQuickPostVisibility(it) },
+            onDismiss = { viewModel.closeQuickPostSheet() },
+            onClickSend = onSubmitQuickPost,
+            onClickExpand = onExpandQuickPost,
         )
     }
-    
+
     // Back Press Dialog — confirm exit
     val backDialogState by viewModel.showBackDialog.collectAsState()
     if (backDialogState != null) {
@@ -219,4 +209,3 @@ fun MainScreen(
         )
     }
 }
-

@@ -195,6 +195,17 @@ fun ActMain.accountOpenSetting() {
     }
 }
 
+// TopAppBar 右端のアバタータップから呼ばれる。現在のアカウントがあれば直接設定画面を開き、
+// 無ければ従来の pickAccount 経由にフォールバックする。
+fun ActMain.openCurrentAccountSetting() {
+    val current = appState.currentAccount.value
+    if (current != null) {
+        arAccountSetting.launch(ActAccountSetting.createIntent(this, current))
+    } else {
+        accountOpenSetting()
+    }
+}
+
 fun ActMain.accountResendConfirmMail(accessInfo: SavedAccount) {
     DlgConfirmMail(
         this,

@@ -52,7 +52,9 @@ import es.ariaontheplanet.quasar.actmain.reloadFonts
 import es.ariaontheplanet.quasar.actmain.reloadIconSize
 import es.ariaontheplanet.quasar.actmain.reloadMediaHeight
 import es.ariaontheplanet.quasar.actmain.reloadTextSize
+import es.ariaontheplanet.quasar.action.openCurrentAccountSetting
 import es.ariaontheplanet.quasar.action.openPost
+import es.ariaontheplanet.quasar.action.submitQuickPost
 import es.ariaontheplanet.quasar.actmain.reloadTimeZone
 import es.ariaontheplanet.quasar.actmain.resizeColumnWidth
 import es.ariaontheplanet.quasar.actmain.scrollColumnStrip
@@ -79,7 +81,6 @@ import es.ariaontheplanet.quasar.column.onLanguageFilterChanged
 import es.ariaontheplanet.quasar.column.saveScrollPosition
 import es.ariaontheplanet.quasar.column.startLoading
 import es.ariaontheplanet.quasar.column.viewHolder
-import es.ariaontheplanet.quasar.dialog.DlgQuickTootMenu
 import es.ariaontheplanet.quasar.notification.checkNotificationImmediateAll
 import es.ariaontheplanet.quasar.pref.PrefB
 import es.ariaontheplanet.quasar.pref.PrefI
@@ -365,8 +366,29 @@ class ActMain : ComponentActivity(),
             MainScreen(
                 viewModel = viewModel,
                 sideMenuAdapter = sideMenuAdapter,
-                onClickToot = { openPost() },
-                onLongClickToot = { viewModel.toggleQuickTootMenu() },
+                onClickAccountIcon = { openCurrentAccountSetting() },
+                onSubmitQuickPost = {
+                    submitQuickPost(
+                        text = viewModel.quickPostText.value,
+                        cwEnabled = viewModel.quickPostCwEnabled.value,
+                        cwText = viewModel.quickPostCwText.value,
+                        visibility = viewModel.quickPostVisibility.value,
+                    )
+                },
+                onExpandQuickPost = {
+                    val text = viewModel.quickPostText.value
+                    val cwEnabled = viewModel.quickPostCwEnabled.value
+                    val cwText = viewModel.quickPostCwText.value
+                    val visibility = viewModel.quickPostVisibility.value
+                    viewModel.closeQuickPostSheet()
+                    viewModel.resetQuickPost()
+                    openPost(
+                        initialText = text,
+                        initialCwEnabled = cwEnabled,
+                        initialCwText = cwText.takeIf { cwEnabled },
+                        initialVisibility = visibility,
+                    )
+                },
                 onDrawerClosed = { completionHelper.closeAcctPopup() },
             )
         }

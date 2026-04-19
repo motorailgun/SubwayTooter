@@ -229,22 +229,58 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         updateColumnStrip()
     }
 
-    // Quick Toot Menu State
-    private val _isQuickTootMenuShown = MutableStateFlow(false)
-    val isQuickTootMenuShown = _isQuickTootMenuShown.asStateFlow()
+    // Quick Post Sheet State (top app bar tap → ModalBottomSheet)
+    private val _isQuickPostSheetShown = MutableStateFlow(false)
+    val isQuickPostSheetShown = _isQuickPostSheetShown.asStateFlow()
 
-    private val _quickTootVisibility = MutableStateFlow(es.ariaontheplanet.quasar.api.entity.TootVisibility.Public)
-    val quickTootVisibility = _quickTootVisibility.asStateFlow()
+    private val _quickPostText = MutableStateFlow("")
+    val quickPostText = _quickPostText.asStateFlow()
 
-    fun toggleQuickTootMenu() {
-        _isQuickTootMenuShown.value = !_isQuickTootMenuShown.value
+    private val _quickPostCwEnabled = MutableStateFlow(false)
+    val quickPostCwEnabled = _quickPostCwEnabled.asStateFlow()
+
+    private val _quickPostCwText = MutableStateFlow("")
+    val quickPostCwText = _quickPostCwText.asStateFlow()
+
+    private val _quickPostVisibility =
+        MutableStateFlow(es.ariaontheplanet.quasar.api.entity.TootVisibility.Public)
+    val quickPostVisibility = _quickPostVisibility.asStateFlow()
+
+    private val _quickPostSending = MutableStateFlow(false)
+    val quickPostSending = _quickPostSending.asStateFlow()
+
+    fun openQuickPostSheet() {
+        _isQuickPostSheetShown.value = true
     }
 
-    fun setQuickTootVisibility(visibility: es.ariaontheplanet.quasar.api.entity.TootVisibility) {
-        _quickTootVisibility.value = visibility
+    fun closeQuickPostSheet() {
+        _isQuickPostSheetShown.value = false
     }
 
-    fun closeQuickTootMenu() {
-        _isQuickTootMenuShown.value = false
+    fun setQuickPostText(text: String) {
+        _quickPostText.value = text
+    }
+
+    fun setQuickPostCwEnabled(enabled: Boolean) {
+        _quickPostCwEnabled.value = enabled
+    }
+
+    fun setQuickPostCwText(text: String) {
+        _quickPostCwText.value = text
+    }
+
+    fun setQuickPostVisibility(visibility: es.ariaontheplanet.quasar.api.entity.TootVisibility) {
+        _quickPostVisibility.value = visibility
+    }
+
+    fun setQuickPostSending(sending: Boolean) {
+        _quickPostSending.value = sending
+    }
+
+    fun resetQuickPost() {
+        _quickPostText.value = ""
+        _quickPostCwEnabled.value = false
+        _quickPostCwText.value = ""
+        _quickPostSending.value = false
     }
 }

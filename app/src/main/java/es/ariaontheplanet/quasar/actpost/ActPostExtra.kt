@@ -166,6 +166,21 @@ suspend fun ActPost.updateText(
 
     appendContentText(intent.string(ActPost.KEY_INITIAL_TEXT))
 
+    if (resetAccount) {
+        // QuickPostSheet からの引き継ぎ。CW・Visibility は新規セッションのみ適用
+        if (intent.getBooleanExtra(ActPost.KEY_INITIAL_CW_ENABLED, false)) {
+            contentWarningChecked = true
+            intent.string(ActPost.KEY_INITIAL_CW_TEXT)?.let {
+                views.etContentWarning.setText(it)
+            }
+        }
+        intent.string(ActPost.KEY_INITIAL_VISIBILITY)?.let { name ->
+            runCatching { TootVisibility.valueOf(name) }
+                .getOrNull()
+                ?.let { states.visibility = it }
+        }
+    }
+
     val account = this.account
 
     if (account != null) {

@@ -196,6 +196,9 @@ class ActPost : ComponentActivity(),
         const val KEY_REDRAFT_STATUS = "redraft_status"
         const val KEY_EDIT_STATUS = "edit_status"
         const val KEY_INITIAL_TEXT = "initial_text"
+        const val KEY_INITIAL_CW_ENABLED = "initial_cw_enabled"
+        const val KEY_INITIAL_CW_TEXT = "initial_cw_text"
+        const val KEY_INITIAL_VISIBILITY = "initial_visibility"
         const val KEY_SHARED_INTENT = "sent_intent"
         const val KEY_QUOTE = "quote"
         const val KEY_SCHEDULED_STATUS = "scheduled_status"
@@ -222,10 +225,17 @@ class ActPost : ComponentActivity(),
             quote: Boolean = false,
             //(Mastodon) 予約投稿の編集
             scheduledStatus: TootScheduled? = null,
+            // QuickPostSheet → 全画面遷移時の引き継ぎ
+            initialCwEnabled: Boolean = false,
+            initialCwText: String? = null,
+            initialVisibility: es.ariaontheplanet.quasar.api.entity.TootVisibility? = null,
         ) = Intent(context, ActPost::class.java).apply {
             putExtra(EXTRA_MULTI_WINDOW, multiWindowMode)
             putExtra(KEY_ACCOUNT_DB_ID, accountDbId)
             initialText?.let { putExtra(KEY_INITIAL_TEXT, it) }
+            if (initialCwEnabled) putExtra(KEY_INITIAL_CW_ENABLED, true)
+            initialCwText?.let { putExtra(KEY_INITIAL_CW_TEXT, it) }
+            initialVisibility?.let { putExtra(KEY_INITIAL_VISIBILITY, it.name) }
             redraftStatus?.let { putExtra(KEY_REDRAFT_STATUS, it.json.toString()) }
             editStatus?.let { putExtra(KEY_EDIT_STATUS, it.json.toString()) }
             replyStatus?.let {

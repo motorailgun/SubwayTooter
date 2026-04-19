@@ -75,6 +75,11 @@ fun ActMain.openActPostImpl(
 
     //(Mastodon) 予約投稿の編集
     scheduledStatus: TootScheduled? = null,
+
+    // QuickPostSheet からの引き継ぎ
+    initialCwEnabled: Boolean = false,
+    initialCwText: String? = null,
+    initialVisibility: es.ariaontheplanet.quasar.api.entity.TootVisibility? = null,
 ) {
 
     val useManyWindow = PrefB.bpManyWindowPost.value
@@ -90,7 +95,10 @@ fun ActMain.openActPostImpl(
         sharedIntent = sharedIntent,
         quote = quote,
         scheduledStatus = scheduledStatus,
-        multiWindowMode = useMultiWindow
+        multiWindowMode = useMultiWindow,
+        initialCwEnabled = initialCwEnabled,
+        initialCwText = initialCwText,
+        initialVisibility = initialVisibility,
     )
 
     if (!useMultiWindow) {
@@ -124,6 +132,9 @@ fun ActMain.openActPostImpl(
 // 投稿画面を開く。初期テキストを指定する
 fun ActMain.openPost(
     initialText: String? = "",
+    initialCwEnabled: Boolean = false,
+    initialCwText: String? = null,
+    initialVisibility: es.ariaontheplanet.quasar.api.entity.TootVisibility? = null,
 ) {
     initialText ?: return
 
@@ -138,7 +149,15 @@ fun ActMain.openPost(
                 message = getString(R.string.account_picker_toot)
             )
 
-        account?.db_id?.let { openActPostImpl(it, initialText = initialText) }
+        account?.db_id?.let {
+            openActPostImpl(
+                it,
+                initialText = initialText,
+                initialCwEnabled = initialCwEnabled,
+                initialCwText = initialCwText,
+                initialVisibility = initialVisibility,
+            )
+        }
     }
 }
 
