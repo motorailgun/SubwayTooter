@@ -23,7 +23,6 @@ import androidx.activity.addCallback
 import kotlinx.coroutines.flow.collectLatest
 import androidx.lifecycle.lifecycleScope
 import androidx.activity.compose.setContent
-import es.ariaontheplanet.quasar.action.openColumnList
 import es.ariaontheplanet.quasar.actmain.MainScreen
 import es.ariaontheplanet.quasar.actmain.MainViewModel
 import es.ariaontheplanet.quasar.actmain.isVisibleColumn
@@ -246,21 +245,6 @@ class ActMain : ComponentActivity(),
         }
     }
 
-    val arColumnColor = ActivityResultHandler(log) { r ->
-        if (r.isNotOk) return@ActivityResultHandler
-        appState.saveColumnList()
-        r.data?.int(ActColumnCustomize.EXTRA_COLUMN_INDEX)
-            ?.let { appState.column(it) }
-            ?.let {
-                it.fireColumnColor()
-                it.fireShowContent(
-                    reason = "ActMain column color changed",
-                    reset = true
-                )
-            }
-        updateColumnStrip()
-    }
-
     val arLanguageFilter = ActivityResultHandler(log) { r ->
         LanguageFilterActivity.decodeResult(r)?.let { columnIndex ->
             appState.saveColumnList()
@@ -310,16 +294,6 @@ class ActMain : ComponentActivity(),
         }
     }
 
-    val arColumnList = ActivityResultHandler(log) { r ->
-        if (r.isNotOk) return@ActivityResultHandler
-        r.data?.getIntegerArrayListExtra(ActColumnList.EXTRA_ORDER)
-            ?.takeIf { isOrderChanged(it) }
-            ?.let { setColumnsOrder(it) }
-        r.data?.int(ActColumnList.EXTRA_SELECTION)
-            ?.takeIf { it in 0 until appState.columnCount }
-            ?.let { scrollToColumn(it) }
-    }
-
     val arActText = ActivityResultHandler(log) { r ->
         when (r.resultCode) {
             ActText.RESULT_SEARCH_NOTESTOCK -> searchFromActivityResult(
@@ -363,20 +337,17 @@ class ActMain : ComponentActivity(),
             viewModel.backPressEffect.collectLatest { effect ->
                 when(effect) {
                     MainViewModel.BackPressEffect.Finish -> finish()
-                    MainViewModel.BackPressEffect.OpenColumnList -> openColumnList()
                     is MainViewModel.BackPressEffect.ShowToast -> showToast(effect.isError, effect.textId)
                 }
             }
         }
 
         prNotification.register(this)
-        arColumnColor.register(this)
         arLanguageFilter.register(this)
         arNickname.register(this)
         arAppSetting.register(this)
         arAbout.register(this)
         arAccountSetting.register(this)
-        arColumnList.register(this)
         arActPost.register(this)
         arActText.register(this)
 
@@ -394,17 +365,8 @@ class ActMain : ComponentActivity(),
             MainScreen(
                 viewModel = viewModel,
                 sideMenuAdapter = sideMenuAdapter,
-                onClickMenu = { openDrawer() },
                 onClickToot = { openPost() },
                 onLongClickToot = { viewModel.toggleQuickTootMenu() },
-                onClickColumn = { idx ->
-                    val column = appState.column(idx)
-                    if (column != null) {
-                        // TODO: Implement scrollToTop logic with Compose state
-                        // For now just scroll to column
-                        scrollToColumn(idx)
-                    }
-                },
                 onDrawerClosed = { completionHelper.closeAcctPopup() },
             )
         }

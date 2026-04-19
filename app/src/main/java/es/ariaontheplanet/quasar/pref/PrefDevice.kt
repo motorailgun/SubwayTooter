@@ -34,6 +34,7 @@ class PrefDevice(context: Context) {
         private const val PREF_CAMERA_OPENER_LAST_URI = "cameraOpenerLastUri"
         private const val PREF_CAPTURE_ACTION = "captureAction"
         private const val PREF_CAPTURE_ERROR_CAPTION = "captureErrorCaption"
+        private const val PREF_CURRENT_ACCOUNT_DB_ID = "currentAccountDbId"
 
         const val PUSH_DISTRIBUTOR_FCM = "fcm"
         const val PUSH_DISTRIBUTOR_NONE = "none"
@@ -169,6 +170,12 @@ class PrefDevice(context: Context) {
         get() = string(PREF_CAMERA_OPENER_LAST_URI)?.mayUri()
         set(value) {
             (value?.toString() ?: "").saveTo(PREF_CAMERA_OPENER_LAST_URI)
+        }
+
+    var currentAccountDbId: Long?
+        get() = long(PREF_CURRENT_ACCOUNT_DB_ID)
+        set(value) {
+            value.saveTo(PREF_CURRENT_ACCOUNT_DB_ID)
         }
 
     val captureAction

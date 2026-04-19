@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import es.ariaontheplanet.quasar.App1
+import es.ariaontheplanet.quasar.table.SavedAccount
 import es.ariaontheplanet.quasar.table.daoAcctColor
 import es.ariaontheplanet.quasar.column.Column
 import es.ariaontheplanet.quasar.column.getIconId
@@ -22,19 +23,18 @@ import es.ariaontheplanet.quasar.pref.PrefB
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
-    // Back Press Handling
+    // Back Press Handling — fixed-columns refactor reduces this to "close drawer or
+    // confirm exit". Closing or reordering columns is no longer a back-press gesture.
     sealed class BackPressEffect {
         object Finish : BackPressEffect()
-        object OpenColumnList : BackPressEffect()
         data class ShowToast(val textId: Int, val isError: Boolean = false) : BackPressEffect()
     }
 
     private val _backPressEffect = Channel<BackPressEffect>(Channel.CONFLATED)
     val backPressEffect = _backPressEffect.receiveAsFlow()
 
-    data class BackDialogState(
-        val closableColumn: Column?,
-    )
+    // The confirm-exit dialog; null when hidden.
+    data class BackDialogState(val unused: Unit = Unit)
     private val _showBackDialog = MutableStateFlow<BackDialogState?>(null)
     val showBackDialog = _showBackDialog.asStateFlow()
 
@@ -44,15 +44,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
 
-        if (appState.columnCount == 0) {
-            _backPressEffect.trySend(BackPressEffect.Finish)
-            return
-        }
-        
         // Check if any column setting is open
         var settingClosed = false
         appState.columnList.forEach { column ->
-             column.viewHolder?.let { vh ->
+            column.viewHolder?.let { vh ->
                 if (vh.isColumnSettingShown) {
                     vh.columnUiState.settingsVisible = false
                     settingClosed = true
@@ -61,59 +56,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
         if (settingClosed) return
 
-        // getClosableColumnList logic
-        val visibleColumnList = ArrayList<Column>()
-        val current = _currentPage.value
-        val vr = _visibleRange.value
-        
-        if (vr.first != -1) {
-            for (i in vr.first..vr.last) {
-                appState.column(i)?.let { visibleColumnList.add(it) }
-            }
-        } else {
-            appState.column(current)?.let { visibleColumnList.add(it) }
-        }
-        val closableColumnList = visibleColumnList.filter { !it.dontClose }
-
         when (PrefI.ipBackButtonAction.value) {
             PrefI.BACK_EXIT_APP -> _backPressEffect.trySend(BackPressEffect.Finish)
-            PrefI.BACK_OPEN_COLUMN_LIST -> _backPressEffect.trySend(BackPressEffect.OpenColumnList)
-            PrefI.BACK_CLOSE_COLUMN -> {
-                when (closableColumnList.size) {
-                    0 -> {
-                        if (PrefB.bpExitAppWhenCloseProtectedColumn.value &&
-                            PrefB.bpDontConfirmBeforeCloseColumn.value) {
-                            _backPressEffect.trySend(BackPressEffect.Finish)
-                        } else {
-                             _backPressEffect.trySend(BackPressEffect.ShowToast(R.string.missing_closeable_column))
-                        }
-                    }
-                    1 -> removeColumn(closableColumnList.first())
-                    else -> _backPressEffect.trySend(BackPressEffect.ShowToast(R.string.cant_close_column_by_back_button_when_multiple_column_shown))
-                }
-            }
-            else -> {
-                // Ask Always
-                _showBackDialog.value = BackDialogState(
-                    closableColumn = if (closableColumnList.size == 1) closableColumnList.first() else null
-                )
-            }
+            else -> _showBackDialog.value = BackDialogState()
         }
-    }
-    
-    fun confirmCloseColumn(column: Column) {
-        removeColumn(column)
-        _showBackDialog.value = null
-    }
-
-    fun confirmOpenColumnList() {
-        _backPressEffect.trySend(BackPressEffect.OpenColumnList)
-         _showBackDialog.value = null
     }
 
     fun confirmFinish() {
         _backPressEffect.trySend(BackPressEffect.Finish)
-         _showBackDialog.value = null
+        _showBackDialog.value = null
     }
 
     fun dismissBackDialog() {
@@ -264,6 +215,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 it.removeAt(index).dispose()
             }
         }
+        updateColumnStrip()
+    }
+
+    /**
+     * Swap the current account for [account], rebuild the 4 fixed columns bound to
+     * it, and push the new column list to the UI. Called from the drawer's account
+     * picker.
+     */
+    fun switchAccount(account: SavedAccount) {
+        appState.setCurrentAccount(account)
+        appState.rebuildFixedColumns(account)
         updateColumnStrip()
     }
 

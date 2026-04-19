@@ -19,6 +19,7 @@ import com.bumptech.glide.integration.okhttp3.OkHttpUrlLoader
 import com.bumptech.glide.load.engine.cache.InternalCacheDiskCacheFactory
 import com.bumptech.glide.load.engine.executor.GlideExecutor
 import com.bumptech.glide.load.model.GlideUrl
+import es.ariaontheplanet.quasar.actmain.rebuildFixedColumns
 import es.ariaontheplanet.quasar.api.TootApiClient
 import es.ariaontheplanet.quasar.column.ColumnType
 import es.ariaontheplanet.quasar.emoji.EmojiMap
@@ -194,9 +195,14 @@ class App1 : Application() {
             state = AppState(appContext, handler)
             appStateX = state
 
-            // getAppState()を使える状態にしてからカラム一覧をロードする
-            log.d("load column list...")
-            state.loadColumnList()
+            // Fixed 4-column model: resolve the current account (from PrefDevice or
+            // first real account in DB) and build the 4 fixed columns from it.
+            // If no real account exists yet, the column list is left empty and the
+            // onboarding UI in ActMain prompts the user to add one.
+            log.d("initialize fixed columns...")
+            state.loadCurrentAccount()?.let { account ->
+                state.rebuildFixedColumns(account)
+            }
 
             log.d("prepare() complete! caller=$caller")
 

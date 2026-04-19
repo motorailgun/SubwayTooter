@@ -7,7 +7,6 @@ import androidx.core.view.GravityCompat
 import androidx.work.WorkManager
 import es.ariaontheplanet.quasar.ActMain
 import es.ariaontheplanet.quasar.R
-import es.ariaontheplanet.quasar.action.openColumnList
 import es.ariaontheplanet.quasar.api.entity.TootAccountRef
 import es.ariaontheplanet.quasar.api.entity.TootTag.Companion.findHashtagFromUrl
 import es.ariaontheplanet.quasar.appsetting.appSettingRoot

@@ -8,9 +8,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
 import es.ariaontheplanet.quasar.ActMain
 import es.ariaontheplanet.quasar.R
-import es.ariaontheplanet.quasar.action.conversationOtherInstance
 import es.ariaontheplanet.quasar.action.openActPostImpl
-import es.ariaontheplanet.quasar.action.userProfile
 import es.ariaontheplanet.quasar.api.auth.Auth2Result
 import es.ariaontheplanet.quasar.api.auth.AuthBase
 import es.ariaontheplanet.quasar.api.auth.authRepo
@@ -69,70 +67,29 @@ fun ActMain.handleIntentUri(uri: Uri) {
 fun ActMain.handleOtherUri(uri: Uri): Boolean {
     val url = uri.toString()
 
+    // TODO(fixed-columns): these branches used to open CONVERSATION/PROFILE columns
+    // inline. With the 4-fixed-column model they should open stand-alone screens
+    // (ActConversation/ActProfile); until those exist we show a stub toast.
     if (uri.scheme == "web+activitypub" && uri.authority == "post") {
         val postUri = uri.pathSegments?.elementAtOrNull(0)
-        log.i("postUri=$postUri")
         if (!postUri.isNullOrEmpty()) {
-            conversationOtherInstance(
-                pos = defaultInsertPosition,
-                urlArg = postUri,
-                statusIdOriginal = null,
-                hostAccess = null,
-                statusIdAccess = null,
-                isReference = false,
-            )
+            showToast(false, "TODO: deep-link opens as separate screen")
             return true
         }
     }
 
-    url.findStatusIdFromUrl()?.let { statusInfo ->
-        // ステータスをアプリ内で開く
-        conversationOtherInstance(
-            defaultInsertPosition,
-            statusInfo.url,
-            statusInfo.statusId,
-            statusInfo.host,
-            statusInfo.statusId,
-            isReference = statusInfo.isReference,
-        )
+    url.findStatusIdFromUrl()?.let { _ ->
+        showToast(false, "TODO: deep-link opens as separate screen")
         return true
     }
 
-    TootAccount.reAccountUrl.matcher(url).takeIf { it.find() }?.let { m ->
-        // ユーザページをアプリ内で開く
-        val host = m.groupEx(1)!!
-        val user = m.groupEx(2)!!.decodePercent()
-        val instance = m.groupEx(3)?.decodePercent()
-
-        if (instance?.isNotEmpty() == true) {
-            userProfile(
-                defaultInsertPosition,
-                null,
-                Acct.parse(user, instance),
-                userUrl = "https://$instance/@$user",
-                originalUrl = url
-            )
-        } else {
-            userProfile(
-                defaultInsertPosition,
-                null,
-                acct = Acct.parse(user, host),
-                userUrl = url,
-            )
-        }
+    TootAccount.reAccountUrl.matcher(url).takeIf { it.find() }?.let { _ ->
+        showToast(false, "TODO: deep-link opens as separate screen")
         return true
     }
 
-    TootAccount.reAccountUrl2.matcher(url).takeIf { it.find() }?.let { m ->
-        // intentFilterの都合でこの形式のURLが飛んでくることはないのだが…。
-        val host = m.groupEx(1)!!
-        val user = m.groupEx(2)!!.decodePercent()
-        userProfile(
-            defaultInsertPosition,
-            null,
-            acct = Acct.parse(user, host),
-            userUrl = url,
-        )
+    TootAccount.reAccountUrl2.matcher(url).takeIf { it.find() }?.let { _ ->
+        showToast(false, "TODO: deep-link opens as separate screen")
         return true
     }
 
@@ -212,22 +169,16 @@ private fun ActMain.handleNotificationClick(uri: Uri, dataIdString: String) {
 
         recycleClickedNotification(this, uri)
 
-        val columnList = appState.columnList
-        val column = columnList.firstOrNull {
-            it.type == ColumnType.NOTIFICATIONS &&
-                    it.accessInfo == account &&
-                    !it.systemNotificationNotRelated
-        }?.also {
-            scrollToColumn(columnList.indexOf(it))
-        } ?: addColumn(
-            true,
-            defaultInsertPosition,
-            account,
-            ColumnType.NOTIFICATIONS
-        )
-
-        // 通知を読み直す
-        column.startLoading(ColumnLoadReason.OpenPush)
+        // Fixed-columns refactor: if this notification is for a different account,
+        // switch to it (rebuilding the 4 fixed columns), then scroll to Notifications.
+        if (appState.currentAccount.value != account) {
+            viewModel.switchAccount(account)
+        }
+        val notifIndex = fixedColumnTypes.indexOf(ColumnType.NOTIFICATIONS)
+        if (notifIndex >= 0) {
+            viewModel.requestScrollToColumn(notifIndex)
+            appState.column(notifIndex)?.startLoading(ColumnLoadReason.OpenPush)
+        }
 
     } catch (ex: Throwable) {
         log.e(ex, "handleNotificationClick failed.")
@@ -347,12 +298,10 @@ private suspend fun ActMain.afterAccountAdd(
         daoSavedAccount.save(account)
     }
 
-    // 適当にカラムを追加する
-    addColumn(false, defaultInsertPosition, account, ColumnType.HOME, protect = true)
-    if (daoSavedAccount.isSingleAccount()) {
-        addColumn(false, defaultInsertPosition, account, ColumnType.NOTIFICATIONS, protect = true)
-        addColumn(false, defaultInsertPosition, account, ColumnType.LOCAL, protect = true)
-        addColumn(false, defaultInsertPosition, account, ColumnType.FEDERATE, protect = true)
+    // Fixed-columns refactor: the first added account becomes the current account;
+    // rebuild the 4 fixed columns against it. Subsequent accounts don't auto-switch.
+    if (appState.currentAccount.value == null) {
+        viewModel.switchAccount(account)
     }
 
     // 通知の更新が必要かもしれない

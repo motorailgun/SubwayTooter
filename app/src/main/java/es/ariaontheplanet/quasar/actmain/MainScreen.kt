@@ -1,13 +1,19 @@
 package es.ariaontheplanet.quasar.actmain
 
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
@@ -17,11 +23,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
@@ -31,20 +40,20 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.AlertDialog
 import es.ariaontheplanet.quasar.ActMain
+import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.compose.ColumnWrapper
 import es.ariaontheplanet.quasar.compose.QuickTootMenuDialog
 import es.ariaontheplanet.quasar.action.openPost
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MainScreen(
     viewModel: MainViewModel,
     sideMenuAdapter: SideMenuAdapter,
-    onClickMenu: () -> Unit,
     onClickToot: () -> Unit,
     onLongClickToot: () -> Unit,
-    onClickColumn: (Int) -> Unit,
     onDrawerClosed: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -124,14 +133,24 @@ fun MainScreen(
         },
         content = {
             Scaffold(
-                bottomBar = {
-                    MainFooter(
-                        viewModel = viewModel,
-                        onClickMenu = onClickMenu,
-                        onClickToot = onClickToot,
-                        onLongClickToot = onLongClickToot,
-                        onClickColumn = onClickColumn,
-                    )
+                bottomBar = { MainFooter(viewModel = viewModel) },
+                floatingActionButton = {
+                    FloatingActionButton(onClick = {}) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .combinedClickable(
+                                    onClick = onClickToot,
+                                    onLongClick = onLongClickToot,
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Edit,
+                                contentDescription = stringResource(R.string.toot),
+                            )
+                        }
+                    }
                 },
                 modifier = Modifier
                     .fillMaxSize()
@@ -180,51 +199,24 @@ fun MainScreen(
         )
     }
     
-    // Back Press Dialog
+    // Back Press Dialog — confirm exit
     val backDialogState by viewModel.showBackDialog.collectAsState()
-    backDialogState?.let { state ->
-        BackPressDialog(
-            state = state,
-            onCloseColumn = { viewModel.confirmCloseColumn(it) },
-            onOpenColumnList = { viewModel.confirmOpenColumnList() },
-            onFinish = { viewModel.confirmFinish() },
-            onDismiss = { viewModel.dismissBackDialog() }
+    if (backDialogState != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.dismissBackDialog() },
+            title = { Text(stringResource(R.string.confirm)) },
+            text = { Text(stringResource(R.string.app_exit)) },
+            confirmButton = {
+                TextButton(onClick = { viewModel.confirmFinish() }) {
+                    Text(stringResource(R.string.ok))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { viewModel.dismissBackDialog() }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            }
         )
     }
-}
-
-@Composable
-fun BackPressDialog(
-    state: MainViewModel.BackDialogState,
-    onCloseColumn: (es.ariaontheplanet.quasar.column.Column) -> Unit,
-    onOpenColumnList: () -> Unit,
-    onFinish: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    androidx.compose.material3.AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(androidx.compose.ui.res.stringResource(es.ariaontheplanet.quasar.R.string.confirm)) },
-        text = {
-            androidx.compose.foundation.layout.Column {
-                if (state.closableColumn != null) {
-                    androidx.compose.material3.TextButton(onClick = { onCloseColumn(state.closableColumn) }) {
-                        Text(androidx.compose.ui.res.stringResource(es.ariaontheplanet.quasar.R.string.close_column))
-                    }
-                }
-                androidx.compose.material3.TextButton(onClick = onOpenColumnList) {
-                    Text(androidx.compose.ui.res.stringResource(es.ariaontheplanet.quasar.R.string.open_column_list))
-                }
-                androidx.compose.material3.TextButton(onClick = onFinish) {
-                    Text(androidx.compose.ui.res.stringResource(es.ariaontheplanet.quasar.R.string.app_exit))
-                }
-            }
-        },
-        confirmButton = {},
-        dismissButton = {
-            androidx.compose.material3.TextButton(onClick = onDismiss) {
-                Text(androidx.compose.ui.res.stringResource(android.R.string.cancel))
-            }
-        }
-    )
 }
 

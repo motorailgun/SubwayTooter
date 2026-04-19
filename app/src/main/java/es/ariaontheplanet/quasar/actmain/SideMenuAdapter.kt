@@ -46,20 +46,14 @@ import es.ariaontheplanet.quasar.App1
 import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.action.accountAdd
 import es.ariaontheplanet.quasar.action.accountOpenSetting
-import es.ariaontheplanet.quasar.action.openColumnFromUrl
-import es.ariaontheplanet.quasar.action.openColumnList
-import es.ariaontheplanet.quasar.action.serverProfileDirectoryFromSideMenu
-import es.ariaontheplanet.quasar.action.timeline
 import es.ariaontheplanet.quasar.api.entity.TootStatus
-import es.ariaontheplanet.quasar.column.ColumnType
 import es.ariaontheplanet.quasar.dialog.pickAccount
+import jp.juggler.util.coroutine.launchAndShowError
 import es.ariaontheplanet.quasar.pref.PrefB
 import es.ariaontheplanet.quasar.pref.PrefDevice.Companion.PUSH_DISTRIBUTOR_NONE
 import es.ariaontheplanet.quasar.pref.PrefS
 import es.ariaontheplanet.quasar.pref.prefDevice
 import es.ariaontheplanet.quasar.push.fcmHandler
-import es.ariaontheplanet.quasar.table.SavedAccount
-import es.ariaontheplanet.quasar.table.accountListCanSeeMyReactions
 import es.ariaontheplanet.quasar.ui.ossLicense.ActOSSLicense
 import es.ariaontheplanet.quasar.util.VersionString
 import es.ariaontheplanet.quasar.util.openBrowser
@@ -167,6 +161,18 @@ class SideMenuAdapter(
             accountAdd()
         },
 
+        Item(icon = R.drawable.ic_person_add, title = R.string.choose_account) {
+            launchAndShowError {
+                pickAccount(
+                    bAllowPseudo = false,
+                    bAuto = true,
+                    message = getString(R.string.choose_account),
+                )?.let { account ->
+                    viewModel.switchAccount(account)
+                }
+            }
+        },
+
         Item(icon = R.drawable.ic_settings, title = R.string.account_setting) {
             accountOpenSetting()
         },
@@ -175,159 +181,9 @@ class SideMenuAdapter(
             startActivity(Intent(this, ActPushMessageList::class.java))
         },
 
-        Item(),
-        Item(title = R.string.column),
-
-        Item(icon = R.drawable.ic_list_numbered, title = R.string.column_list) {
-            openColumnList()
-        },
-
-        Item(icon = R.drawable.ic_close, title = R.string.close_all_columns) {
-            closeColumnAll()
-        },
-
-        Item(icon = R.drawable.ic_paste, title = R.string.open_column_from_url) {
-            openColumnFromUrl()
-        },
-
-        Item(icon = R.drawable.ic_home, title = R.string.home) {
-            timeline(defaultInsertPosition, ColumnType.HOME)
-        },
-
-        Item(icon = R.drawable.ic_announcement, title = R.string.notifications) {
-            timeline(defaultInsertPosition, ColumnType.NOTIFICATIONS)
-        },
-
-        Item(icon = R.drawable.ic_mail, title = R.string.direct_messages) {
-            timeline(defaultInsertPosition, ColumnType.DIRECT_MESSAGES)
-        },
-
-        Item(icon = R.drawable.ic_share, title = R.string.misskey_hybrid_timeline_long) {
-            timeline(defaultInsertPosition, ColumnType.MISSKEY_HYBRID)
-        },
-
-        Item(icon = R.drawable.ic_run, title = R.string.local_timeline) {
-            timeline(defaultInsertPosition, ColumnType.LOCAL)
-        },
-
-        Item(icon = R.drawable.ic_bike, title = R.string.federate_timeline) {
-            timeline(defaultInsertPosition, ColumnType.FEDERATE)
-        },
-
-        Item(icon = R.drawable.ic_list_list, title = R.string.lists) {
-            timeline(defaultInsertPosition, ColumnType.LIST_LIST)
-        },
-
-        Item(icon = R.drawable.ic_satellite, title = R.string.antenna_list_misskey) {
-            timeline(defaultInsertPosition, ColumnType.MISSKEY_ANTENNA_LIST)
-        },
-
-        Item(icon = R.drawable.ic_hashtag, title = R.string.followed_tags) {
-            timeline(defaultInsertPosition, ColumnType.FOLLOWED_HASHTAGS)
-        },
-
-        Item(icon = R.drawable.ic_search, title = R.string.search) {
-            timeline(defaultInsertPosition, ColumnType.SEARCH, args = anyArrayOf("", false))
-        },
-
-        Item(icon = R.drawable.ic_trend, title = R.string.trend_tag) {
-            timeline(defaultInsertPosition, ColumnType.TREND_TAG)
-        },
-        Item(icon = R.drawable.ic_trend, title = R.string.trend_link) {
-            timeline(defaultInsertPosition, ColumnType.TREND_LINK)
-        },
-        Item(icon = R.drawable.ic_trend, title = R.string.trend_post) {
-            timeline(defaultInsertPosition, ColumnType.TREND_POST)
-        },
-        Item(icon = R.drawable.ic_star_outline, title = R.string.favourites) {
-            timeline(defaultInsertPosition, ColumnType.FAVOURITES)
-        },
-
-        Item(icon = R.drawable.ic_bookmark, title = R.string.bookmarks) {
-            timeline(defaultInsertPosition, ColumnType.BOOKMARKS)
-        },
-        Item(icon = R.drawable.ic_face, title = R.string.reactioned_posts) {
-            launchAndShowError {
-                accountListCanSeeMyReactions()?.let { list ->
-                    if (list.isEmpty()) {
-                        showToast(false, R.string.not_available_for_current_accounts)
-                    } else {
-                        val columnType = ColumnType.REACTIONS
-                        pickAccount(
-                            accountListArg = list.toMutableList(),
-                            bAuto = true,
-                            message = getString(
-                                R.string.account_picker_add_timeline_of,
-                                columnType.name1(applicationContext)
-                            )
-                        )?.let { addColumn(defaultInsertPosition, it, columnType) }
-                    }
-                }
-            }
-        },
-
-        Item(icon = R.drawable.ic_account_box, title = R.string.profile) {
-            timeline(defaultInsertPosition, ColumnType.PROFILE)
-        },
-
-        Item(icon = R.drawable.ic_follow_wait, title = R.string.follow_requests) {
-            timeline(defaultInsertPosition, ColumnType.FOLLOW_REQUESTS)
-        },
-
-        Item(icon = R.drawable.ic_person_add, title = R.string.follow_suggestion) {
-            timeline(defaultInsertPosition, ColumnType.FOLLOW_SUGGESTION)
-        },
-
-        Item(icon = R.drawable.ic_person_add, title = R.string.endorse_set) {
-            timeline(defaultInsertPosition, ColumnType.ENDORSEMENT)
-        },
-
-        Item(icon = R.drawable.ic_person_add, title = R.string.profile_directory) {
-            serverProfileDirectoryFromSideMenu()
-        },
-
-        Item(icon = R.drawable.ic_volume_off, title = R.string.muted_users) {
-            timeline(defaultInsertPosition, ColumnType.MUTES)
-        },
-
-        Item(icon = R.drawable.ic_block, title = R.string.blocked_users) {
-            timeline(defaultInsertPosition, ColumnType.BLOCKS)
-        },
-
-        Item(icon = R.drawable.ic_volume_off, title = R.string.keyword_filters) {
-            timeline(defaultInsertPosition, ColumnType.KEYWORD_FILTER)
-        },
-
-        Item(icon = R.drawable.ic_cloud_off, title = R.string.blocked_domains) {
-            timeline(defaultInsertPosition, ColumnType.DOMAIN_BLOCKS)
-        },
-
-        Item(icon = R.drawable.ic_timer, title = R.string.scheduled_status_list) {
-            timeline(defaultInsertPosition, ColumnType.SCHEDULED_STATUS)
-        },
-
-        Item(icon = R.drawable.ic_repeat, title = R.string.agg_boosts) {
-            timeline(defaultInsertPosition, ColumnType.AGG_BOOSTS)
-        },
-
-        Item(),
-        Item(title = R.string.toot_search),
-
-//        Item(icon = R.drawable.ic_search, title = R.string.mastodon_search_portal) {
-//            addColumn(defaultInsertPosition, SavedAccount.na, ColumnType.SEARCH_MSP, "")
-//        },
-//        Item(icon = R.drawable.ic_search, title = R.string.tootsearch) {
-//            addColumn(defaultInsertPosition, SavedAccount.na, ColumnType.SEARCH_TS, "")
-//        },
-
-        Item(icon = R.drawable.ic_search, title = R.string.notestock) {
-            addColumn(
-                defaultInsertPosition,
-                SavedAccount.na,
-                ColumnType.SEARCH_NOTESTOCK,
-                params = arrayOf("")
-            )
-        },
+        // Fixed-columns refactor: the "Column" section (column list, close-all, add-from-URL,
+        // open-timeline-as-column × many) and "Post search" section are removed. Those
+        // entries only made sense with user-customizable columns.
 
         Item(),
         Item(title = R.string.setting),

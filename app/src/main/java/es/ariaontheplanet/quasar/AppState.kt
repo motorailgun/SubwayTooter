@@ -16,9 +16,13 @@ import es.ariaontheplanet.quasar.column.Column
 import es.ariaontheplanet.quasar.column.ColumnEncoder
 import es.ariaontheplanet.quasar.column.getBackgroundImageDir
 import es.ariaontheplanet.quasar.column.onMuteUpdated
+import es.ariaontheplanet.quasar.pref.prefDevice
 import es.ariaontheplanet.quasar.span.MyClickableSpan
 import es.ariaontheplanet.quasar.streaming.StreamManager
 import es.ariaontheplanet.quasar.table.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import es.ariaontheplanet.quasar.util.NetworkStateTracker
 import es.ariaontheplanet.quasar.util.PostAttachment
 import jp.juggler.util.coroutine.launchIO
@@ -130,6 +134,30 @@ class AppState(
     internal var mediaThumbHeight: Int = 0
 
     private val _columnList = ArrayList<Column>()
+
+    // The single "current" account that drives the 4 fixed columns.
+    // null when no account has been chosen (first-run / all accounts removed).
+    private val _currentAccount = MutableStateFlow<SavedAccount?>(null)
+    val currentAccount: StateFlow<SavedAccount?> = _currentAccount.asStateFlow()
+
+    fun setCurrentAccount(account: SavedAccount?) {
+        _currentAccount.value = account
+        context.prefDevice.currentAccountDbId = account?.db_id
+    }
+
+    /**
+     * Loads the previously-selected account from prefs, falling back to the first
+     * non-pseudo account in the DB. Returns the loaded account (or null if none exist).
+     */
+    fun loadCurrentAccount(): SavedAccount? {
+        val saved = context.prefDevice.currentAccountDbId
+            ?.let { daoSavedAccount.loadAccount(it) }
+            ?.takeIf { !it.isPseudo }
+        val chosen = saved
+            ?: daoSavedAccount.loadAccountList().firstOrNull { !it.isPseudo }
+        _currentAccount.value = chosen
+        return chosen
+    }
 
     // make shallow copy
     val columnList: List<Column>
@@ -283,9 +311,10 @@ class AppState(
             }
         }.toJsonArray()
 
+    // Fixed-columns refactor: the column list is rebuilt in-memory on every launch and
+    // every account switch, so persisting it is pointless. Existing callers are kept
+    // compiling; this is now a no-op aside from re-evaluating TTS.
     internal fun saveColumnList(bEnableSpeech: Boolean = true) {
-        val array = encodeColumnList()
-        saveColumnList(context, FILE_COLUMN_LIST, array)
         if (bEnableSpeech) enableSpeech()
     }
 

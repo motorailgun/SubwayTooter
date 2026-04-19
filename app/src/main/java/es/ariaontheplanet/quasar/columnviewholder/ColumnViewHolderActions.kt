@@ -1,6 +1,5 @@
 package es.ariaontheplanet.quasar.columnviewholder
 
-import es.ariaontheplanet.quasar.ActColumnCustomize
 import es.ariaontheplanet.quasar.App1
 import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.action.accountResendConfirmMail
@@ -260,11 +259,7 @@ fun ColumnViewHolder.buildColumnCallbacks(): ColumnCallbacks = ColumnCallbacks(
         column?.let { activity.notificationDeleteAll(it.accessInfo) }
     },
     onColorAndBackground = {
-        activity.appState.columnIndex(column)?.let { colIdx ->
-            activity.arColumnColor.launch(
-                ActColumnCustomize.createIntent(activity, colIdx)
-            )
-        }
+        // Fixed-columns refactor: column color/background customization is unreachable.
     },
     onLanguageFilter = {
         activity.appState.columnIndex(column)?.let { colIdx ->

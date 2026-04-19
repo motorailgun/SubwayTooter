@@ -1,10 +1,8 @@
 package es.ariaontheplanet.quasar.action
 
 import android.net.Uri
-import es.ariaontheplanet.quasar.ActColumnList
 import es.ariaontheplanet.quasar.ActMain
 import es.ariaontheplanet.quasar.R
-import es.ariaontheplanet.quasar.actmain.currentColumn
 import es.ariaontheplanet.quasar.actmain.handleOtherUri
 import es.ariaontheplanet.quasar.api.entity.TootApplication
 import es.ariaontheplanet.quasar.dialog.DlgConfirm.confirm
@@ -14,9 +12,9 @@ import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.log.showToast
 import jp.juggler.util.ui.dismissSafe
 
-// カラム一覧を開く
-fun ActMain.openColumnList() =
-    arColumnList.launch(ActColumnList.createIntent(this, currentColumn))
+// Fixed-columns refactor: `fun ActMain.openColumnList()` used to launch ActColumnList
+// via `arColumnList`. Both the launcher and the UI entry points are gone; the
+// function would not compile and has no callers, so it is deleted.
 
 // アプリをミュートする
 fun ActMain.appMute(application: TootApplication?) = launchAndShowError {
