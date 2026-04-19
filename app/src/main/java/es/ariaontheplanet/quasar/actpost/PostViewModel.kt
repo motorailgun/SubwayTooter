@@ -51,6 +51,7 @@ import es.ariaontheplanet.quasar.api.entity.TootAttachment
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.yield
 import kotlinx.coroutines.CancellationException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -652,7 +653,12 @@ class PostViewModel(application: Application) : AndroidViewModel(application), P
     }
 
     fun startCompletionObserver() {
-         viewModelScope.launch {
+        viewModelScope.launch {
+            // `init { startCompletionObserver() }` runs on Main.immediate, which executes
+            // the launched body synchronously up to the first suspension. Without this
+            // yield, snapshotFlow's initial block read happens mid-constructor — before
+            // `val etContent = TextEditState()` below has fired — and NPEs.
+            yield()
             snapshotFlow { etContent.fieldValue }.collectLatest { fv ->
                 delay(100)
                 checkCompletion(fv.text, fv.selection.end)
