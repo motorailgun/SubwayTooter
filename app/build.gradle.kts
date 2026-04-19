@@ -20,7 +20,7 @@ val keystoreProperties = Properties().apply {
 }
 
 android {
-    namespace = "jp.juggler.subwaytooter"
+    namespace = "es.ariaontheplanet.quasar"
 
     defaultConfig {
         applicationId = namespace

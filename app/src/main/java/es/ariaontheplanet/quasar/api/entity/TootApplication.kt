@@ -1,0 +1,26 @@
+package es.ariaontheplanet.quasar.api.entity
+
+import es.ariaontheplanet.quasar.api.TootParser
+import jp.juggler.util.data.JsonObject
+
+class TootApplication(parser: TootParser, src: JsonObject) {
+
+    val name: String?
+
+    @Suppress("unused")
+    private val website: String?
+
+    //	val description : String?
+
+    init {
+        if (parser.serviceType == ServiceType.MISSKEY) {
+            name = src.string("name")
+            website = null
+            //			description = src.string("description")
+        } else {
+            name = src.string("name")
+            website = src.string("website")
+            //			description = website
+        }
+    }
+}

@@ -1,0 +1,122 @@
+package es.ariaontheplanet.quasar.api.auth
+
+import android.content.Context
+import android.database.sqlite.SQLiteDatabase
+import es.ariaontheplanet.quasar.api.TootApiClient
+import es.ariaontheplanet.quasar.api.TootParser
+import es.ariaontheplanet.quasar.api.entity.EntityId
+import es.ariaontheplanet.quasar.notification.checkNotificationImmediate
+import es.ariaontheplanet.quasar.notification.checkNotificationImmediateAll
+import es.ariaontheplanet.quasar.pref.PrefL
+import es.ariaontheplanet.quasar.pref.lazyContext
+import es.ariaontheplanet.quasar.table.*
+import jp.juggler.util.log.LogCategory
+
+val Context.authRepo
+    get() = AuthRepo(
+        context = this,
+        database = appDatabase,
+    )
+
+class AuthRepo(
+    private val context: Context = lazyContext,
+    private val database: SQLiteDatabase = appDatabase,
+    private val daoAcctColor: AcctColor.Access =
+        AcctColor.Access(database),
+    private val daoSavedAccount: SavedAccount.Access =
+        SavedAccount.Access(database, context),
+    private val daoPushMessage: PushMessage.Access =
+        PushMessage.Access(database),
+    private val daoNotificationShown: NotificationShown.Access =
+        NotificationShown.Access(database),
+) {
+    companion object {
+        private val log = LogCategory("AuthRepo")
+    }
+
+    /**
+     * ユーザ登録の確認手順が完了しているかどうか
+     *
+     * - マストドン以外だと何もしないはず
+     */
+    suspend fun checkConfirmed(item: SavedAccount, client: TootApiClient) {
+        // 承認待ち状態ではないならチェックしない
+        if (item.loginAccount?.id != EntityId.CONFIRMING) return
+
+        // DBに保存されていないならチェックしない
+        if (item.isInvalidId) return
+
+        // アクセストークンがないならチェックしない
+        val accessToken = item.bearerAccessToken ?: return
+
+        // ユーザ情報を取得してみる。承認済みなら読めるはず
+        // 読めなければ例外が出る
+        val userJson = client.verifyAccount(
+            accessToken = accessToken,
+            outTokenInfo = null,
+            misskeyVersion = 0, // Mastodon only
+        )
+        // 読めたらアプリ内の記録を更新する
+        TootParser(context, item).account(userJson)?.let { ta ->
+            item.loginAccount = ta
+            daoSavedAccount.save(item)
+            checkNotificationImmediateAll(context, onlyEnqueue = true)
+            checkNotificationImmediate(context, item.db_id)
+        }
+    }
+
+    fun accountRemove(account: SavedAccount) {
+        // if account is default account of tablet mode,
+        // reset default.
+        if (account.db_id == PrefL.lpDefaultPostAccount.value) {
+            PrefL.lpDefaultPostAccount.value = -1L
+        }
+        daoSavedAccount.delete(account.db_id)
+        daoPushMessage.deleteAccount(account.acct)
+        daoNotificationShown.cleayByAcct(account.acct)
+        // appServerUnregister(context.applicationContextSafe, account)
+    }
+
+    fun updateTokenInfo(item: SavedAccount, auth2Result: Auth2Result) {
+        item.tokenJson = auth2Result.tokenJson
+        item.loginAccount = auth2Result.tootAccount
+        item.misskeyVersion = auth2Result.tootInstance.misskeyVersionMajor
+
+    }
+
+    // notification_tagがもう使われてない
+//    private fun appServerUnregister(context: Context, account: SavedAccount) {
+//        launchIO {
+//            try {
+//                val installId = PrefDevice.from(context).getString(PrefDevice.KEY_INSTALL_ID, null)
+//                if (installId?.isEmpty() != false) {
+//                    error("missing install_id")
+//                }
+//
+//                val tag = "" // notification_tagはもう使われてない
+//                if (tag.isNullO) {
+//                    error("missing notification_tag")
+//                }
+//
+//                val call = App1.ok_http_client.newCall(
+//                    "instance_url=${
+//                        "https://${account.apiHost.ascii}".encodePercent()
+//                    }&app_id=${
+//                        context.packageName.encodePercent()
+//                    }&tag=$tag"
+//                        .toFormRequestBody()
+//                        .toPost()
+//                        .url("$APP_SERVER/unregister")
+//                        .build()
+//                )
+//
+//                val response = call.await()
+//                if (!response.isSuccessful) {
+//                    log.e("appServerUnregister: $response")
+//                }
+//            } catch (ex: Throwable) {
+//                log.e(ex, "appServerUnregister failed.")
+//            }
+//        }
+//    }
+}

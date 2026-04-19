@@ -1,0 +1,465 @@
+package es.ariaontheplanet.quasar.actmain
+
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AlertDialog
+import androidx.core.net.toUri
+import es.ariaontheplanet.quasar.ActMain
+import es.ariaontheplanet.quasar.R
+import es.ariaontheplanet.quasar.action.conversationOtherInstance
+import es.ariaontheplanet.quasar.action.openActPostImpl
+import es.ariaontheplanet.quasar.action.userProfile
+import es.ariaontheplanet.quasar.api.auth.Auth2Result
+import es.ariaontheplanet.quasar.api.auth.AuthBase
+import es.ariaontheplanet.quasar.api.auth.authRepo
+import es.ariaontheplanet.quasar.api.entity.Acct
+import es.ariaontheplanet.quasar.api.entity.TootAccount
+import es.ariaontheplanet.quasar.api.entity.TootStatus.Companion.findStatusIdFromUrl
+import es.ariaontheplanet.quasar.api.entity.TootVisibility
+import es.ariaontheplanet.quasar.api.runApiTask2
+import es.ariaontheplanet.quasar.api.showApiError
+import es.ariaontheplanet.quasar.column.ColumnLoadReason
+import es.ariaontheplanet.quasar.column.ColumnType
+import es.ariaontheplanet.quasar.column.startLoading
+import es.ariaontheplanet.quasar.dialog.DlgConfirm.okDialog
+import es.ariaontheplanet.quasar.dialog.actionsDialog
+import es.ariaontheplanet.quasar.dialog.pickAccount
+import es.ariaontheplanet.quasar.dialog.runInProgress
+import es.ariaontheplanet.quasar.notification.checkNotificationImmediate
+import es.ariaontheplanet.quasar.notification.checkNotificationImmediateAll
+import es.ariaontheplanet.quasar.notification.recycleClickedNotification
+import es.ariaontheplanet.quasar.pref.PrefDevice
+import es.ariaontheplanet.quasar.pref.prefDevice
+import es.ariaontheplanet.quasar.push.FcmFlavor
+import es.ariaontheplanet.quasar.push.fcmHandler
+import es.ariaontheplanet.quasar.push.pushRepo
+import es.ariaontheplanet.quasar.table.SavedAccount
+import es.ariaontheplanet.quasar.table.daoSavedAccount
+import jp.juggler.util.coroutine.AppDispatchers
+import jp.juggler.util.coroutine.launchAndShowError
+import jp.juggler.util.coroutine.launchMain
+import jp.juggler.util.data.decodePercent
+import jp.juggler.util.data.groupEx
+import jp.juggler.util.log.LogCategory
+import jp.juggler.util.log.showToast
+import jp.juggler.util.queryIntentActivitiesCompat
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
+import org.unifiedpush.android.connector.UnifiedPush
+
+private val log = LogCategory("ActMainIntent")
+
+// ActOAuthCallbackで受け取ったUriを処理する
+fun ActMain.handleIntentUri(uri: Uri) {
+    try {
+        log.i("handleIntentUri $uri")
+        when (uri.scheme) {
+            FcmFlavor.CUSTOM_SCHEME -> handleCustomSchemaUri(uri)
+            else -> handleOtherUri(uri)
+        }
+    } catch (ex: Throwable) {
+        log.e(ex, "handleIntentUri failed.")
+        showToast(ex, "handleIntentUri failed.")
+    }
+}
+
+fun ActMain.handleOtherUri(uri: Uri): Boolean {
+    val url = uri.toString()
+
+    if (uri.scheme == "web+activitypub" && uri.authority == "post") {
+        val postUri = uri.pathSegments?.elementAtOrNull(0)
+        log.i("postUri=$postUri")
+        if (!postUri.isNullOrEmpty()) {
+            conversationOtherInstance(
+                pos = defaultInsertPosition,
+                urlArg = postUri,
+                statusIdOriginal = null,
+                hostAccess = null,
+                statusIdAccess = null,
+                isReference = false,
+            )
+            return true
+        }
+    }
+
+    url.findStatusIdFromUrl()?.let { statusInfo ->
+        // ステータスをアプリ内で開く
+        conversationOtherInstance(
+            defaultInsertPosition,
+            statusInfo.url,
+            statusInfo.statusId,
+            statusInfo.host,
+            statusInfo.statusId,
+            isReference = statusInfo.isReference,
+        )
+        return true
+    }
+
+    TootAccount.reAccountUrl.matcher(url).takeIf { it.find() }?.let { m ->
+        // ユーザページをアプリ内で開く
+        val host = m.groupEx(1)!!
+        val user = m.groupEx(2)!!.decodePercent()
+        val instance = m.groupEx(3)?.decodePercent()
+
+        if (instance?.isNotEmpty() == true) {
+            userProfile(
+                defaultInsertPosition,
+                null,
+                Acct.parse(user, instance),
+                userUrl = "https://$instance/@$user",
+                originalUrl = url
+            )
+        } else {
+            userProfile(
+                defaultInsertPosition,
+                null,
+                acct = Acct.parse(user, host),
+                userUrl = url,
+            )
+        }
+        return true
+    }
+
+    TootAccount.reAccountUrl2.matcher(url).takeIf { it.find() }?.let { m ->
+        // intentFilterの都合でこの形式のURLが飛んでくることはないのだが…。
+        val host = m.groupEx(1)!!
+        val user = m.groupEx(2)!!.decodePercent()
+        userProfile(
+            defaultInsertPosition,
+            null,
+            acct = Acct.parse(user, host),
+            userUrl = url,
+        )
+        return true
+    }
+
+    // このアプリでは処理できないURLだった
+    // 外部ブラウザを開きなおそうとすると無限ループの恐れがある
+    // アプリケーションチューザーを表示する
+
+    val errorMessage = getString(R.string.cant_handle_uri_of, url)
+
+    try {
+        // Android 6.0以降
+        // MATCH_DEFAULT_ONLY だと標準の設定に指定されたアプリがあるとソレしか出てこない
+        // MATCH_ALL を指定すると 以前と同じ挙動になる
+        val queryFlag = PackageManager.MATCH_ALL
+
+        // queryIntentActivities に渡すURLは実在しないホストのものにする
+        val intent = Intent(Intent.ACTION_VIEW, "https://dummy.subwaytooter.club/".toUri())
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+
+        val myName = packageName
+        val resolveInfoList = packageManager.queryIntentActivitiesCompat(intent, queryFlag)
+            .filter { myName != it.activityInfo.packageName }
+
+        if (resolveInfoList.isEmpty()) error("resolveInfoList is empty.")
+
+        // このアプリ以外の選択肢を集める
+        val choiceList = resolveInfoList
+            .map {
+                Intent(Intent.ACTION_VIEW, uri).apply {
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    `package` = it.activityInfo.packageName
+                    setClassName(it.activityInfo.packageName, it.activityInfo.name)
+                }
+            }.toMutableList()
+
+        val chooser = Intent.createChooser(choiceList.removeAt(0), errorMessage)
+        // 2つめ以降はEXTRAに渡す
+        chooser.putExtra(Intent.EXTRA_INITIAL_INTENTS, choiceList.toTypedArray())
+
+        // 指定した選択肢でチューザーを作成して開く
+        startActivity(chooser)
+        return true
+    } catch (ex: Throwable) {
+        log.e(ex, "can't open app to handle intent.")
+    }
+
+    AlertDialog.Builder(this)
+        .setCancelable(true)
+        .setMessage(errorMessage)
+        .setPositiveButton(R.string.close, null)
+        .show()
+    return false
+}
+
+private fun ActMain.handleCustomSchemaUri(uri: Uri) = launchAndShowError {
+    val dataIdString = uri.getQueryParameter("db_id")
+    if (dataIdString == null) {
+        // OAuth2 認証コールバック
+        // subwaytooter://oauth(\d*)/?...
+        handleOAuth2Callback(uri)
+    } else {
+        // ${FcmFlavor.customScheme}://notification_click/?db_id=(db_id)
+        handleNotificationClick(uri, dataIdString)
+    }
+}
+
+private fun ActMain.handleNotificationClick(uri: Uri, dataIdString: String) {
+    try {
+        val account = dataIdString.toLongOrNull()
+            ?.let { daoSavedAccount.loadAccount(it) }
+        if (account == null) {
+            showToast(true, "handleNotificationClick: missing SavedAccount. id=$dataIdString")
+            return
+        }
+
+        pushRepo.onTapNotification(account)
+
+        recycleClickedNotification(this, uri)
+
+        val columnList = appState.columnList
+        val column = columnList.firstOrNull {
+            it.type == ColumnType.NOTIFICATIONS &&
+                    it.accessInfo == account &&
+                    !it.systemNotificationNotRelated
+        }?.also {
+            scrollToColumn(columnList.indexOf(it))
+        } ?: addColumn(
+            true,
+            defaultInsertPosition,
+            account,
+            ColumnType.NOTIFICATIONS
+        )
+
+        // 通知を読み直す
+        column.startLoading(ColumnLoadReason.OpenPush)
+
+    } catch (ex: Throwable) {
+        log.e(ex, "handleNotificationClick failed.")
+    }
+}
+
+private fun ActMain.handleOAuth2Callback(uri: Uri) {
+    launchMain {
+        try {
+            val auth2Result = runApiTask2 { client ->
+                AuthBase.findAuthForAuthCallback(client, uri.toString())
+                    .authStep2(uri)
+            }
+            afterAccountVerify(auth2Result)
+        } catch (ex: Throwable) {
+            showApiError(ex)
+        }
+    }
+}
+
+val accountVerifyMutex = Mutex()
+
+/**
+ * アカウントを確認した後に呼ばれる
+ * @return 何かデータを更新したら真
+ */
+suspend fun ActMain.afterAccountVerify(auth2Result: Auth2Result): Boolean = auth2Result.run {
+    accountVerifyMutex.withLock {
+        // ユーザ情報中のacctはfull acct ではないので、組み立てる
+        val newAcct = Acct.parse(tootAccount.username, apDomain)
+
+        // full acctだよな？
+        """\A[^@]+@[^@]+\z""".toRegex().find(newAcct.ascii)
+            ?: error("afterAccountAdd: incorrect userAcct. ${newAcct.ascii}")
+
+        // 「アカウント追加のハズが既存アカウントで認証していた」
+        // 「アクセストークン更新のハズが別アカウントで認証していた」
+        // などを防止するため、full acctでアプリ内DBを検索
+        when (val sa = daoSavedAccount.loadAccountByAcct(newAcct)) {
+            null -> afterAccountAdd(newAcct, auth2Result)
+            else -> afterAccessTokenUpdate(auth2Result, sa)
+        }
+    }
+}
+
+private suspend fun ActMain.afterAccessTokenUpdate(
+    auth2Result: Auth2Result,
+    sa: SavedAccount,
+): Boolean {
+    log.i("afterAccessTokenUpdate token ${sa.bearerAccessToken ?: sa.misskeyApiToken} =>${auth2Result.tokenJson}")
+    // DBの情報を更新する
+    sa.disableNotificationsByServer(auth2Result.tootInstance)
+    authRepo.updateTokenInfo(sa, auth2Result)
+    daoSavedAccount.save(sa)
+    // 各カラムの持つアカウント情報をリロードする
+    reloadAccountSetting(daoSavedAccount.loadAccountList())
+
+    // 自動でリロードする
+    appState.columnList
+        .filter { it.accessInfo == sa }
+        .forEach { it.startLoading(ColumnLoadReason.TokenUpdated) }
+
+    // 通知の更新が必要かもしれない
+    checkNotificationImmediateAll(this, onlyEnqueue = true)
+    checkNotificationImmediate(this, sa.db_id)
+    updatePushDistributer()
+
+    showToast(false, R.string.access_token_updated_for, sa.acct.pretty)
+    return true
+}
+
+private suspend fun ActMain.afterAccountAdd(
+    newAcct: Acct,
+    auth2Result: Auth2Result,
+): Boolean {
+    val ta = auth2Result.tootAccount
+
+    val rowId = daoSavedAccount.saveNew(
+        acct = newAcct.ascii,
+        host = auth2Result.apiHost.ascii,
+        domain = auth2Result.apDomain.ascii,
+        account = auth2Result.accountJson,
+        token = auth2Result.tokenJson,
+        misskeyVersion = auth2Result.tootInstance.misskeyVersionMajor,
+    )
+    val account = daoSavedAccount.loadAccount(rowId)
+    if (account == null) {
+        showToast(false, "loadAccount failed.")
+        return false
+    }
+
+    var bModified = false
+
+    if (account.loginAccount?.locked == true) {
+        bModified = true
+        account.visibility = TootVisibility.PrivateFollowers
+    }
+    if (account.disableNotificationsByServer(auth2Result.tootInstance)) {
+        bModified = true
+    }
+    if (!account.isMisskey) {
+        val source = ta.source
+        if (source != null) {
+            val privacy = TootVisibility.parseMastodon(source.privacy)
+            if (privacy != null) {
+                bModified = true
+                account.visibility = privacy
+            }
+
+            // XXX ta.source.sensitive パラメータを読んで「添付画像をデフォルトでNSFWにする」を実現する
+            // 現在、アカウント設定にはこの項目はない( 「NSFWな添付メディアを隠さない」はあるが全く別の効果)
+        }
+        // fedibird拡張の
+    }
+
+    if (bModified) {
+        daoSavedAccount.save(account)
+    }
+
+    // 適当にカラムを追加する
+    addColumn(false, defaultInsertPosition, account, ColumnType.HOME, protect = true)
+    if (daoSavedAccount.isSingleAccount()) {
+        addColumn(false, defaultInsertPosition, account, ColumnType.NOTIFICATIONS, protect = true)
+        addColumn(false, defaultInsertPosition, account, ColumnType.LOCAL, protect = true)
+        addColumn(false, defaultInsertPosition, account, ColumnType.FEDERATE, protect = true)
+    }
+
+    // 通知の更新が必要かもしれない
+    checkNotificationImmediateAll(this, onlyEnqueue = true)
+    checkNotificationImmediate(this, account.db_id)
+    updatePushDistributer()
+    showToast(false, R.string.account_confirmed)
+    return true
+}
+
+fun ActMain.handleSharedIntent(intent: Intent) {
+    launchMain {
+        ActMain.sharedIntent2 = intent
+        val ai = pickAccount(
+            bAllowPseudo = false,
+            bAuto = true,
+            message = getString(R.string.account_picker_toot),
+        )
+        ActMain.sharedIntent2 = null
+        ai?.let { openActPostImpl(it.db_id, sharedIntent = intent) }
+    }
+}
+
+// アカウントを追加/更新したらappServerHashの取得をやりなおす
+suspend fun ActMain.updatePushDistributer() {
+    when {
+        fcmHandler.noFcm(this) && prefDevice.pushDistributor.isNullOrEmpty() -> {
+            selectPushDistributor()
+            // 選択しなかった場合は購読の更新を行わない
+        }
+
+        else -> {
+            runInProgress(cancellable = false) { reporter ->
+                withContext(AppDispatchers.DEFAULT) {
+                    pushRepo.switchDistributor(
+                        prefDevice.pushDistributor,
+                        reporter = reporter
+                    )
+                }
+            }
+        }
+    }
+}
+
+fun ComponentActivity.selectPushDistributor() {
+    val context = this
+    launchAndShowError {
+        val prefDevice = prefDevice
+        val lastDistributor = prefDevice.pushDistributor
+
+        fun String.appendChecked(checked: Boolean) = when (checked) {
+            true -> "$this ✅"
+            else -> this
+        }
+
+        val upDistrobutors = UnifiedPush.getDistributors(
+            context,
+            features = ArrayList(listOf(UnifiedPush.FEATURE_BYTES_MESSAGE))
+        )
+        val hasFcm = fcmHandler.hasFcm(context)
+        if (upDistrobutors.isEmpty() && !hasFcm) {
+            okDialog(R.string.push_distributor_not_available)
+        } else {
+            actionsDialog(getString(R.string.select_push_delivery_service)) {
+                if (hasFcm) {
+                    action(
+                        getString(R.string.firebase_cloud_messaging)
+                            .appendChecked(lastDistributor == PrefDevice.PUSH_DISTRIBUTOR_FCM)
+                    ) {
+                        runInProgress(cancellable = false) { reporter ->
+                            withContext(AppDispatchers.DEFAULT) {
+                                pushRepo.switchDistributor(
+                                    PrefDevice.PUSH_DISTRIBUTOR_FCM,
+                                    reporter = reporter
+                                )
+                            }
+                        }
+                    }
+                }
+                for (packageName in upDistrobutors) {
+                    action(
+                        packageName.appendChecked(lastDistributor == packageName)
+                    ) {
+                        runInProgress(cancellable = false) { reporter ->
+                            withContext(AppDispatchers.DEFAULT) {
+                                pushRepo.switchDistributor(
+                                    packageName,
+                                    reporter = reporter
+                                )
+                            }
+                        }
+                    }
+                }
+                action(
+                    getString(R.string.none)
+                        .appendChecked(lastDistributor == PrefDevice.PUSH_DISTRIBUTOR_NONE)
+                ) {
+                    runInProgress(cancellable = false) { reporter ->
+                        withContext(AppDispatchers.DEFAULT) {
+                            pushRepo.switchDistributor(
+                                PrefDevice.PUSH_DISTRIBUTOR_NONE,
+                                reporter = reporter
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

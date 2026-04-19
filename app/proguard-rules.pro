@@ -49,12 +49,12 @@
     kotlinx.serialization.KSerializer serializer(...);
 }
 
-# jp.juggler.subwaytooter
--keep,includedescriptorclasses class jp.juggler.subwaytooter.**$$serializer { *; }
--keepclassmembers class jp.juggler.subwaytooter.** {
+# es.ariaontheplanet.quasar
+-keep,includedescriptorclasses class es.ariaontheplanet.quasar.**$$serializer { *; }
+-keepclassmembers class es.ariaontheplanet.quasar.** {
     *** Companion;
 }
--keepclasseswithmembers class jp.juggler.subwaytooter.** {
+-keepclasseswithmembers class es.ariaontheplanet.quasar.** {
     kotlinx.serialization.KSerializer serializer(...);
 }
 

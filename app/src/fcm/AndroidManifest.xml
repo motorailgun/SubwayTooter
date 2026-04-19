@@ -4,7 +4,7 @@
 
     <application tools:ignore="MissingApplicationIcon">
         <service
-            android:name="jp.juggler.subwaytooter.push.MyFcmService"
+            android:name="es.ariaontheplanet.quasar.push.MyFcmService"
             android:foregroundServiceType="dataSync"
             android:exported="false">
             <intent-filter>

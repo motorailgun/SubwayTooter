@@ -1,0 +1,106 @@
+package es.ariaontheplanet.quasar.actpost
+
+import es.ariaontheplanet.quasar.ActPost
+import es.ariaontheplanet.quasar.App1
+import es.ariaontheplanet.quasar.R
+import es.ariaontheplanet.quasar.api.entity.TootVisibility
+import es.ariaontheplanet.quasar.dialog.pickAccount
+import es.ariaontheplanet.quasar.table.SavedAccount
+import es.ariaontheplanet.quasar.table.daoAcctColor
+import es.ariaontheplanet.quasar.table.daoSavedAccount
+import es.ariaontheplanet.quasar.table.sortedByNickname
+import es.ariaontheplanet.quasar.util.AccountCache
+import jp.juggler.util.coroutine.launchMain
+import jp.juggler.util.data.notZero
+import jp.juggler.util.log.LogCategory
+import jp.juggler.util.log.showToast
+import kotlin.math.max
+
+private val log = LogCategory("ActPostAccount")
+
+fun ActPost.selectAccount(a: SavedAccount?) {
+    this.account = a
+
+    if (a == null) {
+        accountButtonText = getString(R.string.not_selected_2)
+    } else {
+        // 先読みしてキャッシュを温める。この時点では取得結果を使わない
+        App1.custom_emoji_lister.tryGetList(a)
+
+        selectedLanguageIndex = max(0, languages.indexOfFirst { it.first == a.lang })
+
+        val ac = daoAcctColor.load(a)
+        accountButtonText = ac.nickname
+    }
+    updateTextCount()
+    updateFeaturedTags()
+
+    launchMain {
+        try {
+            val ta = AccountCache.load(this@selectAccount, a)
+            accountAvatarStaticUrl = ta?.avatar_static
+            accountAvatarAnimatedUrl = ta?.avatar
+        } catch (ex: Throwable) {
+            log.e(ex, "failed.")
+        }
+    }
+}
+
+fun ActPost.canSwitchAccount(): Boolean {
+    val errStringId = when {
+        // 予約投稿の再編集はアカウント切り替えできない
+        scheduledStatus != null ->
+            R.string.cant_change_account_when_editing_scheduled_status
+        // 削除して再投稿はアカウント切り替えできない
+        states.redraftStatusId != null ->
+            R.string.cant_change_account_when_redraft
+        // 投稿の編集中はアカウント切り替えできない
+        states.editStatusId != null ->
+            R.string.cant_change_account_when_edit
+        // 添付ファイルがあったらはアカウント切り替えできない
+        attachmentList.isNotEmpty() ->
+            R.string.cant_change_account_when_attachment_specified
+        else -> null
+    } ?: return true
+
+    showToast(true, errStringId)
+    return false
+}
+
+fun ActPost.performAccountChooser() {
+    if (!canSwitchAccount()) return
+
+    if (isMultiWindowPost) {
+        accountList = daoSavedAccount.loadAccountList().sortedByNickname()
+    }
+
+    launchMain {
+        pickAccount(
+            bAllowPseudo = false,
+            bAuto = false,
+            message = getString(R.string.choose_account)
+        )?.let { ai ->
+            // 別タンスのアカウントに変更したならならin_reply_toの変換が必要
+            if (states.inReplyToId != null && ai.apiHost != account?.apiHost) {
+                startReplyConversion(ai)
+            } else {
+                setAccountWithVisibilityConversion(ai)
+            }
+        }
+    }
+}
+
+internal fun ActPost.setAccountWithVisibilityConversion(a: SavedAccount) {
+    selectAccount(a)
+    try {
+        if (TootVisibility.isVisibilitySpoilRequired(states.visibility, a.visibility)) {
+            showToast(true, R.string.spoil_visibility_for_account)
+            states.visibility = a.visibility
+        }
+    } catch (ex: Throwable) {
+        log.e(ex, "setAccountWithVisibilityConversion failed.")
+    }
+    showVisibility()
+    showQuotedRenote()
+    updateTextCount()
+}

@@ -1,0 +1,35 @@
+package es.ariaontheplanet.quasar
+
+import es.ariaontheplanet.quasar.util.PostImpl
+import kotlin.test.Test
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+
+class TestPostImplTagAscii {
+    @Test
+    fun testPostImplTagAscii() {
+        val reTagNumber = """[0-9]""".toRegex()
+        for (cp in 0..<0x100) {
+            val str = "" + cp.toChar()
+            when {
+                cp >= 0x80 -> {
+                    assertTrue(PostImpl.reTagNonAscii.containsMatchIn(str))
+                    assertFalse(PostImpl.reTagAsciiNotNumber.containsMatchIn(str))
+                    assertFalse(reTagNumber.containsMatchIn(str))
+                }
+
+                cp in '0'.code..'9'.code -> {
+                    assertFalse(PostImpl.reTagNonAscii.containsMatchIn(str))
+                    assertFalse(PostImpl.reTagAsciiNotNumber.containsMatchIn(str))
+                    assertTrue(reTagNumber.containsMatchIn(str))
+                }
+
+                else -> {
+                    assertFalse(PostImpl.reTagNonAscii.containsMatchIn(str))
+                    assertTrue(PostImpl.reTagAsciiNotNumber.containsMatchIn(str))
+                    assertFalse(reTagNumber.containsMatchIn(str))
+                }
+            }
+        }
+    }
+}

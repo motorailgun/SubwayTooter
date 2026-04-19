@@ -331,15 +331,15 @@
             android:label="@string/exit_reasons"
             android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
         <activity
-            android:name="jp.juggler.subwaytooter.ActPushMessageList"
+            android:name="es.ariaontheplanet.quasar.ActPushMessageList"
             android:exported="false"
             android:label="@string/push_message_history" />
         <activity
-            android:name="jp.juggler.subwaytooter.ActAlert"
+            android:name="es.ariaontheplanet.quasar.ActAlert"
             android:exported="false"
             android:label="@string/alert" />
         <activity
-            android:name="jp.juggler.subwaytooter.ActGlideTest"
+            android:name="es.ariaontheplanet.quasar.ActGlideTest"
             android:exported="false"
             android:label="@string/glide_test" />
 
@@ -391,16 +391,16 @@
             android:exported="false"
             tools:node="merge">
             <meta-data
-                android:name="jp.juggler.subwaytooter.pref.LazyContextInitializer"
+                android:name="es.ariaontheplanet.quasar.pref.LazyContextInitializer"
                 android:value="androidx.startup" />
             <meta-data
-                android:name="jp.juggler.subwaytooter.pref.PrefDeviceInitializer"
+                android:name="es.ariaontheplanet.quasar.pref.PrefDeviceInitializer"
                 android:value="androidx.startup" />
             <meta-data
-                android:name="jp.juggler.subwaytooter.notification.NotificationChannelsInitializer"
+                android:name="es.ariaontheplanet.quasar.notification.NotificationChannelsInitializer"
                 android:value="androidx.startup" />
             <meta-data
-                android:name="jp.juggler.subwaytooter.table.AppDatabaseHolderIniitalizer"
+                android:name="es.ariaontheplanet.quasar.table.AppDatabaseHolderIniitalizer"
                 android:value="androidx.startup" />
         </provider>
 
@@ -415,7 +415,7 @@
                 <action android:name="org.unifiedpush.android.connector.REGISTRATION_REFUSED" />
             </intent-filter>
         </receiver>
-        <receiver android:name="jp.juggler.subwaytooter.notification.NotificationDeleteReceiver" />
+        <receiver android:name="es.ariaontheplanet.quasar.notification.NotificationDeleteReceiver" />
 
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
