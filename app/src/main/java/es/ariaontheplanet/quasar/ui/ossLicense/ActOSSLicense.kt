@@ -43,12 +43,12 @@ import android.content.res.Configuration
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import es.ariaontheplanet.quasar.util.openBrowser
-import es.ariaontheplanet.quasar.util.provideViewModel
 import es.ariaontheplanet.quasar.util.toAnnotatedString
 import jp.juggler.util.data.notEmpty
 import jp.juggler.util.log.LogCategory
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class ActOSSLicense : ComponentActivity() {
 
@@ -56,11 +56,7 @@ class ActOSSLicense : ComponentActivity() {
         private val log = LogCategory("ActOSSLicense")
     }
 
-    private val viewModel by lazy {
-        provideViewModel(this) {
-            ActOSSLicenseViewModel(application)
-        }
-    }
+    private val viewModel: ActOSSLicenseViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

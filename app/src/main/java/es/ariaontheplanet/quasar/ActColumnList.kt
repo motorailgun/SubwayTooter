@@ -43,12 +43,13 @@ import es.ariaontheplanet.quasar.actcolumnlist.ColumnListViewModel
 import es.ariaontheplanet.quasar.api.showApiError
 import es.ariaontheplanet.quasar.column.ColumnEncoder
 import es.ariaontheplanet.quasar.dialog.DlgConfirm.confirm
-import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.int
 import jp.juggler.util.log.LogCategory
+import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.core.parameter.parametersOf
 
 class ActColumnList : ComponentActivity() {
 
@@ -73,11 +74,7 @@ class ActColumnList : ComponentActivity() {
         intent?.int(EXTRA_SELECTION) ?: -1
     }
 
-    private val viewModel by lazy {
-        provideViewModel(this) {
-            ColumnListViewModel(application, initialSelection)
-        }
-    }
+    private val viewModel: ColumnListViewModel by viewModel { parametersOf(initialSelection) }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         backPressed {

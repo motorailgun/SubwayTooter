@@ -44,7 +44,6 @@ import es.ariaontheplanet.quasar.table.daoLogData
 import es.ariaontheplanet.quasar.util.CustomShare
 import es.ariaontheplanet.quasar.util.CustomShareTarget
 import es.ariaontheplanet.quasar.util.cn
-import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.launchProgress
@@ -64,6 +63,7 @@ import jp.juggler.util.ui.ActivityResultHandler
 import jp.juggler.util.ui.isNotOk
 import jp.juggler.util.ui.launch
 import kotlinx.coroutines.delay
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -90,9 +90,7 @@ class ActAppSetting : ComponentActivity() {
     }
 
     // ---- Compose state ----
-    private val viewModel by lazy {
-        provideViewModel(this) { AppSettingViewModel(application) }
-    }
+    private val viewModel: AppSettingViewModel by viewModel()
 
     // ---- State ----
     lateinit var handler: Handler

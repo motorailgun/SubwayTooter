@@ -21,7 +21,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.ariaontheplanet.quasar.actnickname.NicknameViewModel
 import es.ariaontheplanet.quasar.api.entity.Acct
 import es.ariaontheplanet.quasar.dialog.dialogColorPicker
-import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.backPressed
 import jp.juggler.util.boolean
 import jp.juggler.util.coroutine.launchAndShowError
@@ -32,6 +31,8 @@ import jp.juggler.util.log.LogCategory
 import jp.juggler.util.string
 import jp.juggler.util.ui.ActivityResultHandler
 import jp.juggler.util.ui.decodeRingtonePickerResult
+import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.core.parameter.parametersOf
 
 class ActNickname : ComponentActivity() {
 
@@ -59,9 +60,7 @@ class ActNickname : ComponentActivity() {
         intent?.boolean(EXTRA_SHOW_NOTIFICATION_SOUND) ?: false
     }
 
-    private val viewModel by lazy {
-        provideViewModel(this) { NicknameViewModel(acctAscii) }
-    }
+    private val viewModel: NicknameViewModel by viewModel { parametersOf(acctAscii) }
 
     private val arNotificationSound = ActivityResultHandler(log) { r ->
         r.decodeRingtonePickerResult?.let { uri ->

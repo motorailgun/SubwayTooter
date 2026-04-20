@@ -28,7 +28,6 @@ import es.ariaontheplanet.quasar.actmain.MainViewModel
 import es.ariaontheplanet.quasar.actmain.isVisibleColumn
 import es.ariaontheplanet.quasar.actmain.scrollToColumn
 import es.ariaontheplanet.quasar.columnviewholder.scrollToTop2
-import es.ariaontheplanet.quasar.util.provideViewModel
 import kotlinx.coroutines.launch
 import es.ariaontheplanet.quasar.action.accessTokenPrompt
 import es.ariaontheplanet.quasar.action.timeline
@@ -113,6 +112,7 @@ import jp.juggler.util.ui.setContentViewAndInsets
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.lang.ref.WeakReference
 import java.util.LinkedList
 import com.google.android.material.R as MR
@@ -120,9 +120,7 @@ import com.google.android.material.R as MR
 class ActMain : ComponentActivity(),
     MyClickableSpanHandler {
 
-    val viewModel by lazy {
-        provideViewModel(this) { MainViewModel(application) }
-    }
+    val viewModel: MainViewModel by viewModel()
 
     val isDrawerOpen: Boolean
         get() = viewModel.isDrawerOpen.value

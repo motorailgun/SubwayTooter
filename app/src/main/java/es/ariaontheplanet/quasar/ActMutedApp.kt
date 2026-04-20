@@ -12,10 +12,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.ariaontheplanet.quasar.actmutedapp.MutedAppViewModel
 import es.ariaontheplanet.quasar.dialog.DlgConfirm.confirm
 import es.ariaontheplanet.quasar.table.MutedApp
-import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.log.LogCategory
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class ActMutedApp : ComponentActivity() {
 
@@ -23,9 +23,7 @@ class ActMutedApp : ComponentActivity() {
         private val log = LogCategory("ActMutedApp")
     }
 
-    private val viewModel by lazy {
-        provideViewModel(this) { MutedAppViewModel(application) }
-    }
+    private val viewModel: MutedAppViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

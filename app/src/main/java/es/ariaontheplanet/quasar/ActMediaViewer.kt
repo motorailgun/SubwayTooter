@@ -23,7 +23,6 @@ import es.ariaontheplanet.quasar.api.entity.TootAttachment.Companion.tootAttachm
 import es.ariaontheplanet.quasar.dialog.actionsDialog
 import es.ariaontheplanet.quasar.util.permissionSpecMediaDownload
 import es.ariaontheplanet.quasar.util.requester
-import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.asciiRegex
 import jp.juggler.util.data.decodeJsonArray
@@ -35,6 +34,7 @@ import jp.juggler.util.overrideActivityTransitionCompat
 import jp.juggler.util.TransitionOverrideType
 import jp.juggler.util.data.mayUri
 import jp.juggler.util.network.MySslSocketFactory
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.nio.charset.StandardCharsets
 import java.util.ArrayList
 import java.util.LinkedList
@@ -87,9 +87,7 @@ class ActMediaViewer : ComponentActivity() {
 
     class DownloadHistory(val time: Long, val url: String)
 
-    private val viewModel: MediaViewerViewModel by lazy {
-        provideViewModel(this) { MediaViewerViewModel(application) }
-    }
+    private val viewModel: MediaViewerViewModel by viewModel()
 
     private val prDownload = permissionSpecMediaDownload.requester { 
         val state = viewModel.state.value

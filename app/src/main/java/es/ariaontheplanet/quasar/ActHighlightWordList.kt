@@ -24,7 +24,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.ariaontheplanet.quasar.acthighlightwordlist.HighlightWordListViewModel
 import es.ariaontheplanet.quasar.dialog.DlgConfirm.confirm
 import es.ariaontheplanet.quasar.table.HighlightWord
-import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.mayUri
 import jp.juggler.util.data.notBlank
@@ -32,6 +31,7 @@ import jp.juggler.util.data.notZero
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.ActivityResultHandler
 import jp.juggler.util.ui.isNotOk
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.lang.ref.WeakReference
 
 class ActHighlightWordList : ComponentActivity() {
@@ -88,9 +88,7 @@ class ActHighlightWordList : ComponentActivity() {
         }
     }
 
-    private val viewModel by lazy {
-        provideViewModel(this) { HighlightWordListViewModel(application) }
-    }
+    private val viewModel: HighlightWordListViewModel by viewModel()
 
     private val arEdit = ActivityResultHandler(log) { r ->
         if (r.isNotOk) return@ActivityResultHandler

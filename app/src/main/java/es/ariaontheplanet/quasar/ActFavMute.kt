@@ -17,10 +17,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.ariaontheplanet.quasar.actfavmute.FavMuteItem
 import es.ariaontheplanet.quasar.actfavmute.FavMuteViewModel
 import es.ariaontheplanet.quasar.dialog.DlgConfirm.confirm
-import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.log.LogCategory
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class ActFavMute : ComponentActivity() {
 
@@ -28,9 +28,7 @@ class ActFavMute : ComponentActivity() {
         private val log = LogCategory("ActFavMute")
     }
 
-    private val viewModel by lazy {
-        provideViewModel(this) { FavMuteViewModel() }
-    }
+    private val viewModel: FavMuteViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

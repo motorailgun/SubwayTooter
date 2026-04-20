@@ -26,10 +26,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.ariaontheplanet.quasar.actmutedword.MutedWordViewModel
 import es.ariaontheplanet.quasar.dialog.DlgConfirm.confirm
 import es.ariaontheplanet.quasar.table.MutedWord
-import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.log.LogCategory
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class ActMutedWord : ComponentActivity() {
 
@@ -37,9 +37,7 @@ class ActMutedWord : ComponentActivity() {
         private val log = LogCategory("ActMutedWord")
     }
 
-    private val viewModel by lazy {
-        provideViewModel(this) { MutedWordViewModel() }
-    }
+    private val viewModel: MutedWordViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

@@ -76,7 +76,6 @@ import es.ariaontheplanet.quasar.compose.NetworkImage
 
 import es.ariaontheplanet.quasar.action.saveWindowSize
 import es.ariaontheplanet.quasar.actpost.PostViewModel
-import es.ariaontheplanet.quasar.util.provideViewModel
 import es.ariaontheplanet.quasar.actpost.ActPostStates
 import es.ariaontheplanet.quasar.actpost.AttachmentSlotUi
 import es.ariaontheplanet.quasar.actpost.FeaturedTagCache
@@ -156,6 +155,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.lang.ref.WeakReference
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
@@ -249,9 +249,7 @@ class ActPost : ComponentActivity(),
     }
 
     // Text states
-    val viewModel by lazy {
-        provideViewModel(this) { PostViewModel(application) }
-    }
+    val viewModel: PostViewModel by viewModel()
     
     val etContent get() = viewModel.etContent
     val etContentWarning get() = viewModel.etContentWarning

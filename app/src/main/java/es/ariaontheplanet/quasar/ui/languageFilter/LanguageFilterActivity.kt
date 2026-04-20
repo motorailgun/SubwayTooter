@@ -61,7 +61,6 @@ import es.ariaontheplanet.quasar.dialog.actionsDialog
 import es.ariaontheplanet.quasar.pref.FILE_PROVIDER_AUTHORITY
 import es.ariaontheplanet.quasar.util.collectOnLifeCycle
 import es.ariaontheplanet.quasar.util.fireBackPressed
-import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.checkMimeTypeAndGrant
@@ -80,6 +79,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class LanguageFilterActivity : ComponentActivity() {
 
@@ -106,11 +106,7 @@ class LanguageFilterActivity : ComponentActivity() {
             }
     }
 
-    private val viewModel by lazy {
-        provideViewModel(this) {
-            LanguageFilterViewModel(application)
-        }
-    }
+    private val viewModel: LanguageFilterViewModel by viewModel()
 
     private val arImport = ActivityResultHandler(log) { r ->
         if (r.isNotOk) return@ActivityResultHandler

@@ -60,7 +60,6 @@ import es.ariaontheplanet.quasar.column.ColumnType
 import es.ariaontheplanet.quasar.table.SavedAccount
 import es.ariaontheplanet.quasar.table.daoAcctColor
 import es.ariaontheplanet.quasar.table.daoSavedAccount
-import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.launchMain
@@ -72,6 +71,7 @@ import jp.juggler.util.network.toPostRequestBuilder
 import jp.juggler.util.network.toPut
 import jp.juggler.util.network.toRequestBody
 import jp.juggler.util.string
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class ActKeywordFilter : ComponentActivity() {
 
@@ -110,9 +110,7 @@ class ActKeywordFilter : ComponentActivity() {
 
     val authRepo by lazy { AuthRepo(this) }
 
-    private val viewModel by lazy {
-        provideViewModel(this) { KeywordFilterViewModel() }
-    }
+    private val viewModel: KeywordFilterViewModel by viewModel()
 
     ///////////////////////////////////////////////////
 

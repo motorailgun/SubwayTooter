@@ -18,8 +18,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.ariaontheplanet.quasar.actdrawablelist.DrawableListViewModel
-import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.log.LogCategory
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class ActDrawableList : ComponentActivity() {
 
@@ -27,9 +27,7 @@ class ActDrawableList : ComponentActivity() {
         private val log = LogCategory("ActDrawableList")
     }
 
-    private val viewModel by lazy {
-        provideViewModel(this) { DrawableListViewModel(application) }
-    }
+    private val viewModel: DrawableListViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
