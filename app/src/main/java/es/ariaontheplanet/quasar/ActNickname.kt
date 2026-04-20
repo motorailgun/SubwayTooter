@@ -12,16 +12,16 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import es.ariaontheplanet.quasar.dialog.dialogColorPicker
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import es.ariaontheplanet.quasar.actnickname.NicknameViewModel
 import es.ariaontheplanet.quasar.api.entity.Acct
-import es.ariaontheplanet.quasar.table.AcctColor
-import es.ariaontheplanet.quasar.table.daoAcctColor
+import es.ariaontheplanet.quasar.dialog.dialogColorPicker
+import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.backPressed
 import jp.juggler.util.boolean
 import jp.juggler.util.coroutine.launchAndShowError
@@ -53,24 +53,19 @@ class ActNickname : ComponentActivity() {
         }
     }
 
-    private val acctAscii by lazy {
-        intent?.string(EXTRA_ACCT_ASCII)!!
-    }
-    private val acctPretty by lazy {
-        intent?.string(EXTRA_ACCT_PRETTY)!!
-    }
+    private val acctAscii by lazy { intent?.string(EXTRA_ACCT_ASCII)!! }
+    private val acctPretty by lazy { intent?.string(EXTRA_ACCT_PRETTY)!! }
     private val showNotificationSound by lazy {
         intent?.boolean(EXTRA_SHOW_NOTIFICATION_SOUND) ?: false
     }
 
-    private val nicknameState = mutableStateOf("")
-    private val colorFgState = mutableIntStateOf(0)
-    private val colorBgState = mutableIntStateOf(0)
-    private var notificationSoundUri: String? = null
+    private val viewModel by lazy {
+        provideViewModel(this) { NicknameViewModel(acctAscii) }
+    }
 
     private val arNotificationSound = ActivityResultHandler(log) { r ->
         r.decodeRingtonePickerResult?.let { uri ->
-            notificationSoundUri = uri.toString()
+            viewModel.setNotificationSoundUri(uri.toString())
         }
     }
 
@@ -83,21 +78,14 @@ class ActNickname : ComponentActivity() {
         arNotificationSound.register(this)
         App1.setActivityTheme(this)
 
-        load()
-
         setContent {
-            val subtitle = stringResource(
-                when {
-                    showNotificationSound -> R.string.nickname_and_color_and_notification_sound
-                    else -> R.string.nickname_and_color
-                }
-            )
             NicknameContent(Modifier)
         }
     }
 
     @Composable
     private fun NicknameContent(modifier: Modifier) {
+        val state by viewModel.uiState.collectAsStateWithLifecycle()
         Column(modifier = modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
@@ -108,16 +96,13 @@ class ActNickname : ComponentActivity() {
             ) {
                 // Preview
                 Text(stringResource(R.string.preview))
-                val nickname by nicknameState
-                val fgColor = colorFgState.intValue
-                val bgColor = colorBgState.intValue
-                val previewText = nickname.trim().notEmpty() ?: acctPretty
-                val textColor = fgColor.notZero()
+                val previewText = state.nickname.trim().notEmpty() ?: acctPretty
+                val textColor = state.colorFg.notZero()
                     ?.let { androidx.compose.ui.graphics.Color(it.toLong() or 0xFF000000L) }
                     ?: MaterialTheme.colorScheme.onSurface
-                val bgComposeColor = when (bgColor) {
+                val bgComposeColor = when (state.colorBg) {
                     0 -> androidx.compose.ui.graphics.Color.Transparent
-                    else -> androidx.compose.ui.graphics.Color(bgColor.toLong() or 0xFF000000L)
+                    else -> androidx.compose.ui.graphics.Color(state.colorBg.toLong() or 0xFF000000L)
                 }
                 Text(
                     text = previewText,
@@ -137,8 +122,8 @@ class ActNickname : ComponentActivity() {
                 HorizontalDivider()
                 Text(stringResource(R.string.nickname))
                 OutlinedTextField(
-                    value = nickname,
-                    onValueChange = { nicknameState.value = it },
+                    value = state.nickname,
+                    onValueChange = { viewModel.setNickname(it) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                 )
@@ -149,14 +134,16 @@ class ActNickname : ComponentActivity() {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = {
                         launchAndShowError {
-                            colorFgState.intValue = Color.BLACK or dialogColorPicker(
-                                colorInitial = colorFgState.intValue.notZero(),
-                                alphaEnabled = false,
+                            viewModel.setColorFg(
+                                Color.BLACK or dialogColorPicker(
+                                    colorInitial = state.colorFg.notZero(),
+                                    alphaEnabled = false,
+                                )
                             )
                         }
                     }) { Text(stringResource(R.string.edit)) }
                     Button(onClick = {
-                        colorFgState.intValue = 0
+                        viewModel.setColorFg(0)
                     }) { Text(stringResource(R.string.reset)) }
                 }
 
@@ -166,14 +153,16 @@ class ActNickname : ComponentActivity() {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = {
                         launchAndShowError {
-                            colorBgState.intValue = Color.BLACK or dialogColorPicker(
-                                colorInitial = colorBgState.intValue.notZero(),
-                                alphaEnabled = false,
+                            viewModel.setColorBg(
+                                Color.BLACK or dialogColorPicker(
+                                    colorInitial = state.colorBg.notZero(),
+                                    alphaEnabled = false,
+                                )
                             )
                         }
                     }) { Text(stringResource(R.string.edit)) }
                     Button(onClick = {
-                        colorBgState.intValue = 0
+                        viewModel.setColorBg(0)
                     }) { Text(stringResource(R.string.reset)) }
                 }
 
@@ -182,10 +171,10 @@ class ActNickname : ComponentActivity() {
                     HorizontalDivider()
                     Text(stringResource(R.string.notification_sound))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { openNotificationSoundPicker() }) {
+                        Button(onClick = { openNotificationSoundPicker(state.notificationSoundUri) }) {
                             Text(stringResource(R.string.edit))
                         }
-                        Button(onClick = { notificationSoundUri = "" }) {
+                        Button(onClick = { viewModel.setNotificationSoundUri("") }) {
                             Text(stringResource(R.string.reset))
                         }
                     }
@@ -214,9 +203,11 @@ class ActNickname : ComponentActivity() {
                 ) { Text(stringResource(R.string.discard)) }
                 TextButton(
                     onClick = {
-                        save()
-                        setResult(Activity.RESULT_OK)
-                        finish()
+                        launchAndShowError {
+                            viewModel.save()
+                            setResult(Activity.RESULT_OK)
+                            finish()
+                        }
                     },
                     modifier = Modifier.weight(1f),
                 ) { Text(stringResource(R.string.save)) }
@@ -224,36 +215,13 @@ class ActNickname : ComponentActivity() {
         }
     }
 
-    private fun load() {
-        val ac = daoAcctColor.load(acctAscii)
-        colorBgState.intValue = ac.colorBg
-        colorFgState.intValue = ac.colorFg
-        nicknameState.value = ac.nickname ?: ""
-        notificationSoundUri = ac.notificationSound
-    }
-
-    private fun save() {
-        launchAndShowError {
-            daoAcctColor.save(
-                System.currentTimeMillis(),
-                AcctColor(
-                    acctAscii = acctAscii,
-                    nicknameSave = nicknameState.value.trim { it <= ' ' },
-                    colorFg = colorFgState.intValue,
-                    colorBg = colorBgState.intValue,
-                    notificationSoundSaved = notificationSoundUri ?: "",
-                )
-            )
-        }
-    }
-
-    private fun openNotificationSoundPicker() {
+    private fun openNotificationSoundPicker(existingUri: String?) {
         val intent = Intent(RingtoneManager.ACTION_RINGTONE_PICKER)
         intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TYPE, RingtoneManager.TYPE_NOTIFICATION)
         intent.putExtra(RingtoneManager.EXTRA_RINGTONE_TITLE, R.string.notification_sound)
         intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_SILENT, false)
         intent.putExtra(RingtoneManager.EXTRA_RINGTONE_SHOW_DEFAULT, false)
-        notificationSoundUri.mayUri()?.let {
+        existingUri.mayUri()?.let {
             intent.putExtra(RingtoneManager.EXTRA_RINGTONE_EXISTING_URI, it)
         }
         val chooser = Intent.createChooser(intent, getString(R.string.notification_sound))
