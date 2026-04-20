@@ -1,6 +1,5 @@
 package es.ariaontheplanet.quasar.compose
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
@@ -51,6 +50,16 @@ val DarkStExtendedColors = StExtendedColors(
     conversationMainTootBg = StColorTokens.AccentBlueBrightTint,
 )
 
+val MastodonStExtendedColors = StExtendedColors(
+    buttonAccentBoost = StColorTokens.MastodonBoost,
+    buttonAccentFavourite = StColorTokens.MastodonFavourite,
+    buttonAccentBookmark = StColorTokens.MastodonBookmark,
+    buttonAccentFollow = StColorTokens.MastodonFollow,
+    buttonAccentFollowRequest = StColorTokens.SemanticAlert,
+    buttonAccentReaction = StColorTokens.MastodonReaction,
+    conversationMainTootBg = StColorTokens.MastodonBoostTint,
+)
+
 val LocalStExtendedColors = staticCompositionLocalOf { LightStExtendedColors }
 
 /**
@@ -65,8 +74,12 @@ object StThemeEx {
 }
 
 /**
- * Returns the appropriate [StExtendedColors] based on system dark-mode state.
+ * Returns the [StExtendedColors] palette for the currently active [UiTheme].
+ * Shares a source with [stColorScheme] so the two halves of the theme cannot drift.
  */
 @Composable
-fun stExtendedColors(): StExtendedColors =
-    if (isSystemInDarkTheme()) DarkStExtendedColors else LightStExtendedColors
+fun stExtendedColors(): StExtendedColors = when (currentUiTheme()) {
+    UiTheme.Light -> LightStExtendedColors
+    UiTheme.Dark -> DarkStExtendedColors
+    UiTheme.Mastodon -> MastodonStExtendedColors
+}

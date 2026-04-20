@@ -1,6 +1,5 @@
 package es.ariaontheplanet.quasar.compose
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.material.icons.Icons
@@ -24,12 +23,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import es.ariaontheplanet.quasar.R
 
-// Material3 ColorScheme selected by system dark-mode state.
+// Material3 ColorScheme derived from the active [UiTheme].
 // Kept alongside stExtendedColors() so both theme halves read the same source.
-// Phase 1 will replace the defaults with tokens from StColorTokens.
+// M3 color tokens still use the framework defaults — Phase 1c/later will
+// derive seed colors from StColorTokens once a user-facing theme pref exists.
 @Composable
-internal fun stColorScheme(): ColorScheme =
-    if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme()
+internal fun stColorScheme(): ColorScheme = when (currentUiTheme()) {
+    UiTheme.Light -> lightColorScheme()
+    UiTheme.Dark, UiTheme.Mastodon -> darkColorScheme()
+}
 
 /**
  * Common themed screen wrapper.
