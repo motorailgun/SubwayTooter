@@ -4,19 +4,18 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import es.ariaontheplanet.quasar.actmutedpseudoaccount.MutedPseudoAccountViewModel
 import es.ariaontheplanet.quasar.dialog.DlgConfirm.confirm
 import es.ariaontheplanet.quasar.table.UserRelation
-import es.ariaontheplanet.quasar.table.daoUserRelation
+import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.backPressed
-import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.log.LogCategory
-import kotlinx.coroutines.withContext
 
 class ActMutedPseudoAccount : ComponentActivity() {
 
@@ -24,7 +23,9 @@ class ActMutedPseudoAccount : ComponentActivity() {
         private val log = LogCategory("ActMutedPseudoAccount")
     }
 
-    private val items = mutableStateListOf<UserRelation>()
+    private val viewModel by lazy {
+        provideViewModel(this) { MutedPseudoAccountViewModel() }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,29 +35,21 @@ class ActMutedPseudoAccount : ComponentActivity() {
         }
         App1.setActivityTheme(this)
         setContent {
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
             ) {
-                items(items, key = { it.id }) { item ->
-                    MuteItemRow(item.whoId) { delete(item) }
+                items(state.items, key = { it.id }) { item ->
+                    MuteItemRow(item.whoId) { onDelete(item) }
                 }
             }
         }
-        launchAndShowError {
-            val list = withContext(AppDispatchers.IO) {
-                daoUserRelation.listPseudoMuted()
-            }
-            items.clear()
-            items.addAll(list)
-        }
     }
 
-    private fun delete(item: UserRelation) {
+    private fun onDelete(item: UserRelation) {
         launchAndShowError {
             confirm(R.string.delete_confirm, item.whoId)
-            daoUserRelation.deletePseudo(item.id)
-            items.remove(item)
+            viewModel.delete(item)
         }
     }
 }
