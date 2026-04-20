@@ -17,6 +17,7 @@ import es.ariaontheplanet.quasar.column.ColumnEncoder
 import es.ariaontheplanet.quasar.column.getBackgroundImageDir
 import es.ariaontheplanet.quasar.column.onMuteUpdated
 import es.ariaontheplanet.quasar.pref.prefDevice
+import es.ariaontheplanet.quasar.services.AppBusyState
 import es.ariaontheplanet.quasar.span.MyClickableSpan
 import es.ariaontheplanet.quasar.streaming.StreamManager
 import es.ariaontheplanet.quasar.table.*
@@ -31,6 +32,8 @@ import jp.juggler.util.data.*
 import jp.juggler.util.idCompat
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 import java.io.File
 import java.io.FileNotFoundException
 import java.lang.ref.WeakReference
@@ -51,7 +54,10 @@ class DedupItem(
 class AppState(
     internal val context: Context,
     internal val handler: Handler,
-) {
+) : KoinComponent {
+
+    private val busyState: AppBusyState by inject()
+
     // Reference to MainViewModel for accessing view holder registry
     // Set by ActMain during initialization
     var mainViewModel: es.ariaontheplanet.quasar.actmain.MainViewModel? = null
@@ -179,9 +185,6 @@ class AppState(
         }
     }
 
-    private val mapBusyFav = HashSet<String>()
-    private val mapBusyBookmark = HashSet<String>()
-    private val mapBusyBoost = HashSet<String>()
     internal var attachmentList: ArrayList<PostAttachment>? = null
 
     private var willSpeechEnabled: Boolean = false
@@ -353,50 +356,32 @@ class AppState(
         }
     }
 
-    fun isBusyFav(account: SavedAccount, status: TootStatus): Boolean {
-        val key = account.acct.ascii + ":" + status.busyKey
-        return mapBusyFav.contains(key)
-    }
+    fun isBusyFav(account: SavedAccount, status: TootStatus) =
+        busyState.isBusyFav(account, status)
 
-    fun setBusyFav(account: SavedAccount, status: TootStatus) {
-        val key = account.acct.ascii + ":" + status.busyKey
-        mapBusyFav.add(key)
-    }
+    fun setBusyFav(account: SavedAccount, status: TootStatus) =
+        busyState.setBusyFav(account, status)
 
-    fun resetBusyFav(account: SavedAccount, status: TootStatus) {
-        val key = account.acct.ascii + ":" + status.busyKey
-        mapBusyFav.remove(key)
-    }
+    fun resetBusyFav(account: SavedAccount, status: TootStatus) =
+        busyState.resetBusyFav(account, status)
 
-    fun isBusyBookmark(account: SavedAccount, status: TootStatus): Boolean {
-        val key = account.acct.ascii + ":" + status.busyKey
-        return mapBusyBookmark.contains(key)
-    }
+    fun isBusyBookmark(account: SavedAccount, status: TootStatus) =
+        busyState.isBusyBookmark(account, status)
 
-    fun setBusyBookmark(account: SavedAccount, status: TootStatus) {
-        val key = account.acct.ascii + ":" + status.busyKey
-        mapBusyBookmark.add(key)
-    }
+    fun setBusyBookmark(account: SavedAccount, status: TootStatus) =
+        busyState.setBusyBookmark(account, status)
 
-    fun resetBusyBookmark(account: SavedAccount, status: TootStatus) {
-        val key = account.acct.ascii + ":" + status.busyKey
-        mapBusyBookmark.remove(key)
-    }
+    fun resetBusyBookmark(account: SavedAccount, status: TootStatus) =
+        busyState.resetBusyBookmark(account, status)
 
-    fun isBusyBoost(account: SavedAccount, status: TootStatus): Boolean {
-        val key = account.acct.ascii + ":" + status.busyKey
-        return mapBusyBoost.contains(key)
-    }
+    fun isBusyBoost(account: SavedAccount, status: TootStatus) =
+        busyState.isBusyBoost(account, status)
 
-    fun setBusyBoost(account: SavedAccount, status: TootStatus) {
-        val key = account.acct.ascii + ":" + status.busyKey
-        mapBusyBoost.add(key)
-    }
+    fun setBusyBoost(account: SavedAccount, status: TootStatus) =
+        busyState.setBusyBoost(account, status)
 
-    fun resetBusyBoost(account: SavedAccount, status: TootStatus) {
-        val key = account.acct.ascii + ":" + status.busyKey
-        mapBusyBoost.remove(key)
-    }
+    fun resetBusyBoost(account: SavedAccount, status: TootStatus) =
+        busyState.resetBusyBoost(account, status)
 
     @SuppressLint("StaticFieldLeak")
     fun enableSpeech() {
