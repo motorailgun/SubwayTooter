@@ -347,7 +347,7 @@ fun AccountSettingContent(
             onCheckedChange = { viewModel.updateNotificationPush(it) }
         )
 
-        SettingSectionHeader("Behavior") // TODO: Find resource
+        SettingSectionHeader(stringResource(R.string.behavior))
         SettingSwitch(
             label = stringResource(R.string.mark_sensitive_by_default),
             checked = account.defaultSensitive,
