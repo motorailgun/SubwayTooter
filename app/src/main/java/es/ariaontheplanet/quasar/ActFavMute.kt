@@ -8,18 +8,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import es.ariaontheplanet.quasar.api.entity.Acct
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import es.ariaontheplanet.quasar.actfavmute.FavMuteItem
+import es.ariaontheplanet.quasar.actfavmute.FavMuteViewModel
 import es.ariaontheplanet.quasar.dialog.DlgConfirm.confirm
-import es.ariaontheplanet.quasar.table.daoFavMute
+import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.backPressed
-import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.log.LogCategory
-import kotlinx.coroutines.withContext
 
 class ActFavMute : ComponentActivity() {
 
@@ -27,9 +28,9 @@ class ActFavMute : ComponentActivity() {
         private val log = LogCategory("ActFavMute")
     }
 
-    internal class MyItem(val id: Long, val acct: Acct)
-
-    private val items = mutableStateListOf<MyItem>()
+    private val viewModel by lazy {
+        provideViewModel(this) { FavMuteViewModel() }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,45 +40,28 @@ class ActFavMute : ComponentActivity() {
         }
         App1.setActivityTheme(this)
         setContent {
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
+                modifier = Modifier.fillMaxSize()
             ) {
-                items(items, key = { it.id }) { item ->
-                    MuteItemRow(item.acct.pretty) { delete(item) }
+                items(state.items, key = { it.id }) { item ->
+                    MuteItemRow(item.acct.pretty) { onDelete(item) }
                 }
                 item {
                     Text(
                         text = stringResource(R.string.fav_muted_user_desc),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp),
+                        fontSize = 12.sp,
                     )
                 }
             }
         }
-        loadData()
     }
 
-    private fun loadData() {
-        launchAndShowError {
-            val list = withContext(AppDispatchers.IO) {
-                daoFavMute.listAll().map {
-                    MyItem(
-                        id = it.id,
-                        acct = Acct.parse(it.acct),
-                    )
-                }
-            }
-            items.clear()
-            items.addAll(list)
-        }
-    }
-
-    private fun delete(item: MyItem) {
+    private fun onDelete(item: FavMuteItem) {
         launchAndShowError {
             confirm(R.string.delete_confirm, item.acct.pretty)
-            daoFavMute.delete(item.acct)
-            items.remove(item)
+            viewModel.delete(item)
         }
     }
 }
