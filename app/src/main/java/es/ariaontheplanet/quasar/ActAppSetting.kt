@@ -95,12 +95,7 @@ class ActAppSetting : ComponentActivity() {
     }
 
     // ---- State ----
-    private var customShareTarget: CustomShareTarget? = null
     lateinit var handler: Handler
-
-    val defaultLineSpacingExtra = HashMap<String, Float>()
-    val defaultLineSpacingMultiplier = HashMap<String, Float>()
-
 
     fun refreshUi() {
         viewModel.refreshUi()
@@ -169,7 +164,9 @@ class ActAppSetting : ComponentActivity() {
         if (savedInstanceState != null) {
             try {
                 savedInstanceState.getString(STATE_CHOOSE_INTENT_TARGET)?.let { target ->
-                    customShareTarget = CustomShareTarget.entries.find { it.name == target }
+                    viewModel.setCustomShareTarget(
+                        CustomShareTarget.entries.find { it.name == target }
+                    )
                 }
             } catch (ex: Throwable) {
                 log.e(ex, "can't restore customShareTarget.")
@@ -185,7 +182,7 @@ class ActAppSetting : ComponentActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        customShareTarget?.name?.let {
+        viewModel.customShareTarget.value?.name?.let {
             outState.putString(STATE_CHOOSE_INTENT_TARGET, it)
         }
     }

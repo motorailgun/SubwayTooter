@@ -2,6 +2,7 @@ package es.ariaontheplanet.quasar.appsetting
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import es.ariaontheplanet.quasar.util.CustomShareTarget
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +25,15 @@ class AppSettingViewModel(application: Application) : AndroidViewModel(applicati
 
     private val _colorPickerItem = MutableStateFlow<AppSettingItem?>(null)
     val colorPickerItem: StateFlow<AppSettingItem?> = _colorPickerItem.asStateFlow()
+
+    // Survives config change. Persisted across process death via onSaveInstanceState
+    // on the Activity side (AppSettingViewModel is not SavedStateHandle-backed yet).
+    private val _customShareTarget = MutableStateFlow<CustomShareTarget?>(null)
+    val customShareTarget: StateFlow<CustomShareTarget?> = _customShareTarget.asStateFlow()
+
+    fun setCustomShareTarget(value: CustomShareTarget?) {
+        _customShareTarget.value = value
+    }
 
     // Mutation methods
     fun setSection(item: AppSettingItem?) {
