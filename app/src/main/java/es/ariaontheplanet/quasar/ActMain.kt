@@ -32,6 +32,7 @@ import es.ariaontheplanet.quasar.util.provideViewModel
 import kotlinx.coroutines.launch
 import es.ariaontheplanet.quasar.action.accessTokenPrompt
 import es.ariaontheplanet.quasar.action.timeline
+import es.ariaontheplanet.quasar.actmain.ActMainRegistry
 import es.ariaontheplanet.quasar.actmain.SideMenuAdapter
 import es.ariaontheplanet.quasar.actmain.afterNotificationGranted
 import es.ariaontheplanet.quasar.actmain.closePopup
@@ -142,9 +143,6 @@ class ActMain : ComponentActivity(),
         const val STATE_CURRENT_PAGE = "current_page"
 
         const val RESULT_APP_DATA_IMPORT = Activity.RESULT_FIRST_USER
-
-        // ActPostから参照される
-        var refActMain: WeakReference<ActMain>? = null
 
         // 外部からインテントを受信した後、アカウント選択中に画面回転したらアカウント選択からやり直す
         internal var sharedIntent2: Intent? = null
@@ -325,7 +323,7 @@ class ActMain : ComponentActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
         log.d("onCreate")
         installSplashScreen()
-        refActMain = WeakReference(this)
+        ActMainRegistry.ref = WeakReference(this)
         // supportRequestWindowFeature not needed without AppCompat
         super.onCreate(savedInstanceState)
         
@@ -416,7 +414,7 @@ class ActMain : ComponentActivity(),
     override fun onDestroy() {
         log.d("onDestroy")
         super.onDestroy()
-        refActMain = null
+        ActMainRegistry.ref = null
         completionHelper.onDestroy()
 
         // 子画面を全て閉じる

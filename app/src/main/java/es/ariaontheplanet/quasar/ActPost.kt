@@ -102,6 +102,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.Checkbox
 import androidx.compose.ui.Alignment
 import androidx.lifecycle.lifecycleScope
+import es.ariaontheplanet.quasar.actmain.ActMainRegistry
 import es.ariaontheplanet.quasar.actmain.onCompleteActPost
 import es.ariaontheplanet.quasar.actpost.editAttachmentDescription
 import es.ariaontheplanet.quasar.actpost.openFocusPoint
@@ -428,7 +429,7 @@ class ActPost : ComponentActivity(),
                 saveDraft()
             }
         }
-        if (isMultiWindowPost) ActMain.refActMain?.get()?.closeList?.add(WeakReference(this))
+        if (isMultiWindowPost) ActMainRegistry.current?.closeList?.add(WeakReference(this))
         appState = App1.getAppState(this)
         handler = appState.handler
         attachmentPicker = AttachmentPicker(this, object : AttachmentPicker.Callback {
@@ -534,7 +535,7 @@ class ActPost : ComponentActivity(),
                     is PostViewModel.Effect.OpenFocusPoint -> openFocusPoint(effect.pa)
                     is PostViewModel.Effect.ShowAttachmentMenu -> performAttachmentClick(effect.pa)
                     is PostViewModel.Effect.PostComplete -> {
-                        ActMain.refActMain?.get()?.onCompleteActPost(effect.intent)
+                        ActMainRegistry.current?.onCompleteActPost(effect.intent)
                         if (effect.isMultiWindowPost) {
                              resetText()
                              launchAndShowError {
