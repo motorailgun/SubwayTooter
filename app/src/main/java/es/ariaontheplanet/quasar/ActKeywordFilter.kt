@@ -24,22 +24,19 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,12 +44,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import es.ariaontheplanet.quasar.actkeywordfilter.KeywordEntry
+import es.ariaontheplanet.quasar.actkeywordfilter.KeywordFilterViewModel
 import es.ariaontheplanet.quasar.api.ApiPath
 import es.ariaontheplanet.quasar.api.TootApiResult
 import es.ariaontheplanet.quasar.api.auth.AuthRepo
 import es.ariaontheplanet.quasar.api.entity.EntityId
 import es.ariaontheplanet.quasar.api.entity.TootFilter
-import es.ariaontheplanet.quasar.api.entity.TootFilterContext
 import es.ariaontheplanet.quasar.api.entity.TootFilterKeyword
 import es.ariaontheplanet.quasar.api.entity.TootInstance
 import es.ariaontheplanet.quasar.api.entity.TootStatus
@@ -61,12 +60,10 @@ import es.ariaontheplanet.quasar.column.ColumnType
 import es.ariaontheplanet.quasar.table.SavedAccount
 import es.ariaontheplanet.quasar.table.daoAcctColor
 import es.ariaontheplanet.quasar.table.daoSavedAccount
+import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.coroutine.launchMain
-import jp.juggler.util.data.JsonArray
-import jp.juggler.util.data.buildJsonArray
-import jp.juggler.util.data.buildJsonObject
 import jp.juggler.util.data.notEmpty
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
@@ -111,52 +108,25 @@ class ActKeywordFilter : ComponentActivity() {
         )
     }
 
-    private var account: SavedAccount? = null
-    private var filterId: EntityId? = null
-    private var filterExpire: Long = 0L
-    private var loading = false
-    private val deleteIds = mutableSetOf<String>()
-
     val authRepo by lazy { AuthRepo(this) }
 
-    // Compose state
-    private val accountText = mutableStateOf("")
-    private val titleText = mutableStateOf("")
-    private val keywords = mutableStateListOf<KeywordState>()
-    private val actionHide = mutableStateOf(false)
-    private val contextHome = mutableStateOf(true)
-    private val contextNotification = mutableStateOf(true)
-    private val contextPublic = mutableStateOf(true)
-    private val contextThread = mutableStateOf(true)
-    private val contextProfile = mutableStateOf(true)
-    private val expireSelection = mutableIntStateOf(0)
-    private val expireText = mutableStateOf("")
-    private val showBackDialog = mutableStateOf(false)
-
-    private var nextKeywordStateId = 0L
-
-    private class KeywordState(
-        val stateId: Long,
-        val serverKeywordId: String?,
-        keyword: String,
-        wholeWord: Boolean,
-    ) {
-        val keyword = mutableStateOf(keyword)
-        val wholeWord = mutableStateOf(wholeWord)
+    private val viewModel by lazy {
+        provideViewModel(this) { KeywordFilterViewModel() }
     }
 
     ///////////////////////////////////////////////////
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        backPressed { showBackDialog.value = true }
+        backPressed { viewModel.setShowBackDialog(true) }
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
 
-        filterId = EntityId.entityId(intent, EXTRA_FILTER_ID)
+        viewModel.filterId = EntityId.entityId(intent, EXTRA_FILTER_ID)
 
         setContent {
             FilterContent(modifier = Modifier)
-            if (showBackDialog.value) {
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
+            if (state.showBackDialog) {
                 ConfirmBackDialog()
             }
         }
@@ -168,17 +138,16 @@ class ActKeywordFilter : ComponentActivity() {
                 finish()
                 return@launchAndShowError
             }
-            account = a
-            accountText.value =
-                daoAcctColor.getNicknameWithColor(a.acct).toString()
+            viewModel.account = a
+            viewModel.setAccountText(daoAcctColor.getNicknameWithColor(a.acct).toString())
 
-            if (filterId != null) {
+            if (viewModel.filterId != null) {
                 startLoading()
             } else {
-                expireSelection.intValue = 1
+                viewModel.setExpireSelection(1)
                 val initialText = intent.string(EXTRA_INITIAL_PHRASE)?.trim() ?: ""
-                titleText.value = initialText
-                addKeyword(TootFilterKeyword(keyword = initialText))
+                viewModel.setTitleText(initialText)
+                viewModel.addKeyword(TootFilterKeyword(keyword = initialText))
             }
         }
     }
@@ -186,7 +155,7 @@ class ActKeywordFilter : ComponentActivity() {
     @Composable
     private fun ConfirmBackDialog() {
         AlertDialog(
-            onDismissRequest = { showBackDialog.value = false },
+            onDismissRequest = { viewModel.setShowBackDialog(false) },
             text = { Text(stringResource(R.string.keyword_filter_quit_waring)) },
             confirmButton = {
                 TextButton(onClick = { finish() }) {
@@ -194,7 +163,7 @@ class ActKeywordFilter : ComponentActivity() {
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showBackDialog.value = false }) {
+                TextButton(onClick = { viewModel.setShowBackDialog(false) }) {
                     Text(stringResource(R.string.cancel))
                 }
             },
@@ -204,6 +173,7 @@ class ActKeywordFilter : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun FilterContent(modifier: Modifier) {
+        val state by viewModel.uiState.collectAsStateWithLifecycle()
         Column(modifier = modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
@@ -218,7 +188,7 @@ class ActKeywordFilter : ComponentActivity() {
                     stringResource(R.string.account),
                     style = MaterialTheme.typography.labelLarge,
                 )
-                Text(accountText.value)
+                Text(state.accountText)
 
                 // Title
                 HorizontalDivider()
@@ -227,8 +197,8 @@ class ActKeywordFilter : ComponentActivity() {
                     style = MaterialTheme.typography.labelLarge,
                 )
                 OutlinedTextField(
-                    value = titleText.value,
-                    onValueChange = { titleText.value = it },
+                    value = state.titleText,
+                    onValueChange = { viewModel.setTitleText(it) },
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
                 )
@@ -239,7 +209,7 @@ class ActKeywordFilter : ComponentActivity() {
                     stringResource(R.string.filter_phrase),
                     style = MaterialTheme.typography.labelLarge,
                 )
-                keywords.forEach { ks ->
+                state.keywords.forEach { ks ->
                     KeywordRow(ks)
                 }
                 TextButton(onClick = { onAddKeyword() }) {
@@ -256,8 +226,8 @@ class ActKeywordFilter : ComponentActivity() {
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(
-                        selected = !actionHide.value,
-                        onClick = { actionHide.value = false },
+                        selected = !state.actionHide,
+                        onClick = { viewModel.setActionHide(false) },
                     )
                     Text(
                         stringResource(R.string.filter_action_warn),
@@ -266,8 +236,8 @@ class ActKeywordFilter : ComponentActivity() {
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     RadioButton(
-                        selected = actionHide.value,
-                        onClick = { actionHide.value = true },
+                        selected = state.actionHide,
+                        onClick = { viewModel.setActionHide(true) },
                     )
                     Text(
                         stringResource(R.string.filter_action_hide),
@@ -281,11 +251,11 @@ class ActKeywordFilter : ComponentActivity() {
                     stringResource(R.string.filter_context),
                     style = MaterialTheme.typography.labelLarge,
                 )
-                ContextCheckbox(contextHome, R.string.filter_home)
-                ContextCheckbox(contextNotification, R.string.filter_notification)
-                ContextCheckbox(contextPublic, R.string.filter_public)
-                ContextCheckbox(contextThread, R.string.filter_thread)
-                ContextCheckbox(contextProfile, R.string.filter_profile)
+                ContextCheckbox(state.contextHome, R.string.filter_home, viewModel::setContextHome)
+                ContextCheckbox(state.contextNotification, R.string.filter_notification, viewModel::setContextNotification)
+                ContextCheckbox(state.contextPublic, R.string.filter_public, viewModel::setContextPublic)
+                ContextCheckbox(state.contextThread, R.string.filter_thread, viewModel::setContextThread)
+                ContextCheckbox(state.contextProfile, R.string.filter_profile, viewModel::setContextProfile)
 
                 // Expire
                 HorizontalDivider()
@@ -293,9 +263,8 @@ class ActKeywordFilter : ComponentActivity() {
                     stringResource(R.string.filter_expires_at),
                     style = MaterialTheme.typography.labelLarge,
                 )
-                val currentExpireText = expireText.value
-                if (currentExpireText.isNotEmpty()) {
-                    Text(currentExpireText)
+                if (state.expireText.isNotEmpty()) {
+                    Text(state.expireText)
                 }
 
                 // Expire dropdown
@@ -310,7 +279,7 @@ class ActKeywordFilter : ComponentActivity() {
                     stringResource(R.string.filter_expire_1week),
                 )
                 var expanded by remember { mutableStateOf(false) }
-                val selectedIndex = expireSelection.intValue
+                val selectedIndex = state.expireSelection
                 ExposedDropdownMenuBox(
                     expanded = expanded,
                     onExpandedChange = { expanded = it },
@@ -334,7 +303,7 @@ class ActKeywordFilter : ComponentActivity() {
                             DropdownMenuItem(
                                 text = { Text(label) },
                                 onClick = {
-                                    expireSelection.intValue = index
+                                    viewModel.setExpireSelection(index)
                                     expanded = false
                                 },
                             )
@@ -359,7 +328,7 @@ class ActKeywordFilter : ComponentActivity() {
     }
 
     @Composable
-    private fun KeywordRow(ks: KeywordState) {
+    private fun KeywordRow(ks: KeywordEntry) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -370,8 +339,8 @@ class ActKeywordFilter : ComponentActivity() {
                 style = MaterialTheme.typography.bodySmall,
             )
             OutlinedTextField(
-                value = ks.keyword.value,
-                onValueChange = { ks.keyword.value = it },
+                value = ks.keyword,
+                onValueChange = { viewModel.updateKeyword(ks.stateId, keyword = it) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
@@ -380,15 +349,15 @@ class ActKeywordFilter : ComponentActivity() {
                 modifier = Modifier.padding(bottom = 8.dp),
             ) {
                 Checkbox(
-                    checked = ks.wholeWord.value,
-                    onCheckedChange = { ks.wholeWord.value = it },
+                    checked = ks.wholeWord,
+                    onCheckedChange = { viewModel.updateKeyword(ks.stateId, wholeWord = it) },
                 )
                 Text(
                     stringResource(R.string.filter_word_match_long),
                     modifier = Modifier.weight(1f),
                     style = MaterialTheme.typography.bodySmall,
                 )
-                IconButton(onClick = { deleteKeyword(ks) }) {
+                IconButton(onClick = { viewModel.deleteKeyword(ks) }) {
                     Icon(
                         Icons.Outlined.Delete,
                         contentDescription = stringResource(R.string.delete),
@@ -399,49 +368,36 @@ class ActKeywordFilter : ComponentActivity() {
     }
 
     @Composable
-    private fun ContextCheckbox(state: MutableState<Boolean>, labelRes: Int) {
+    private fun ContextCheckbox(checked: Boolean, labelRes: Int, onChange: (Boolean) -> Unit) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Checkbox(
-                checked = state.value,
-                onCheckedChange = { state.value = it },
+                checked = checked,
+                onCheckedChange = onChange,
             )
             Text(stringResource(labelRes))
         }
     }
 
-    private fun addKeyword(fk: TootFilterKeyword) {
-        keywords.add(
-            KeywordState(
-                stateId = nextKeywordStateId++,
-                serverKeywordId = fk.id?.toString()?.notEmpty(),
-                keyword = fk.keyword.trim(),
-                wholeWord = fk.whole_word,
-            )
-        )
-    }
-
     private fun onAddKeyword() {
-        val a = account ?: return
+        val a = viewModel.account ?: return
         val ti = TootInstance.getCached(a)
+        val size = viewModel.uiState.value.keywords.size
         when {
             ti == null ->
                 showToast(true, "can't get server information")
-            !ti.versionGE(TootInstance.VERSION_4_0_0) && keywords.size >= 1 ->
+            !ti.versionGE(TootInstance.VERSION_4_0_0) && size >= 1 ->
                 showToast(true, "before mastodon 4.0, allowed 1 keyword per 1 filter.")
-            else -> addKeyword(TootFilterKeyword(keyword = ""))
+            else -> viewModel.addKeyword(TootFilterKeyword(keyword = ""))
         }
     }
 
-    private fun deleteKeyword(ks: KeywordState) {
-        keywords.remove(ks)
-        ks.serverKeywordId?.let { deleteIds.add(it) }
-    }
-
     private fun startLoading() {
-        loading = true
+        viewModel.setLoading(true)
+        val account = viewModel.account ?: return
+        val filterId = viewModel.filterId ?: return
         launchMain {
             var resultFilter: TootFilter? = null
-            runApiTask(account!!) { client ->
+            runApiTask(account) { client ->
 
                 // try v2
                 var result = client.request("${ApiPath.PATH_FILTERS_V2}/$filterId")
@@ -469,9 +425,9 @@ class ActKeywordFilter : ComponentActivity() {
 
                 result
             }?.let { result ->
-                loading = false
                 when (val filter = resultFilter) {
                     null -> {
+                        viewModel.setLoading(false)
                         showToast(true, result.error ?: "?")
                         finish()
                     }
@@ -483,119 +439,68 @@ class ActKeywordFilter : ComponentActivity() {
     }
 
     private fun onLoadComplete(filter: TootFilter) {
-        loading = false
-        filterExpire = filter.time_expires_at
-
-        contextHome.value = filter.hasContext(TootFilterContext.Home)
-        contextNotification.value = filter.hasContext(TootFilterContext.Notifications)
-        contextPublic.value = filter.hasContext(TootFilterContext.Public)
-        contextThread.value = filter.hasContext(TootFilterContext.Thread)
-        contextProfile.value = filter.hasContext(TootFilterContext.Account)
-
-        actionHide.value = filter.hide
-
-        val kws = filter.keywords.ifEmpty {
-            listOf(TootFilterKeyword(keyword = ""))
-        }
-        kws.forEach { addKeyword(it) }
-
-        titleText.value =
-            filter.title.notEmpty() ?: filter.keywords.firstOrNull()?.keyword ?: ""
-
-        expireText.value = if (filter.time_expires_at == 0L) {
+        viewModel.applyLoaded(filter)
+        val expireTextValue = if (filter.time_expires_at == 0L) {
             getString(R.string.filter_expire_unlimited)
         } else {
             TootStatus.formatTime(this, filter.time_expires_at, false)
         }
+        viewModel.setExpireText(expireTextValue)
     }
 
     private fun save() {
-        if (loading) return
+        val state = viewModel.uiState.value
+        if (state.loading) return
 
-        if (keywords.isEmpty() || keywords.any { it.keyword.value.trim().isEmpty() }) {
-            showToast(true, R.string.filter_keyword_empty)
-            return
-        }
-
-        val title = titleText.value.trim()
-        if (title.isEmpty()) {
-            showToast(true, R.string.filter_title_empty)
-            return
-        }
-
-        launchMain {
-            var result = saveV2(title)
-            if (result?.response?.code == 404) {
-                result = saveV1()
+        when (val validation = viewModel.validateForSave()) {
+            KeywordFilterViewModel.SaveValidation.KeywordEmpty -> {
+                showToast(true, R.string.filter_keyword_empty)
+                return
             }
-            result ?: return@launchMain // cancelled
+            KeywordFilterViewModel.SaveValidation.TitleEmpty -> {
+                showToast(true, R.string.filter_title_empty)
+                return
+            }
+            is KeywordFilterViewModel.SaveValidation.Ok -> {
+                launchMain {
+                    var result = saveV2(validation.title)
+                    if (result?.response?.code == 404) {
+                        result = saveV1()
+                    }
+                    result ?: return@launchMain // cancelled
 
-            val error = result.error
-            if (error != null) {
-                showToast(true, result.error)
-            } else {
-                val appState = App1.prepare(applicationContext, "ActKeywordFilter.save()")
-                for (column in appState.columnList) {
-                    if (column.type == ColumnType.KEYWORD_FILTER && column.accessInfo == account) {
-                        column.filterReloadRequired = true
+                    val error = result.error
+                    if (error != null) {
+                        showToast(true, result.error)
+                    } else {
+                        val appState = App1.prepare(applicationContext, "ActKeywordFilter.save()")
+                        for (column in appState.columnList) {
+                            if (column.type == ColumnType.KEYWORD_FILTER && column.accessInfo == viewModel.account) {
+                                column.filterReloadRequired = true
+                            }
+                        }
+                        finish()
                     }
                 }
-                finish()
             }
-        }
-    }
-
-    private fun filterParamBase() = buildJsonObject {
-        fun JsonArray.putContextChecked(checked: Boolean, fc: TootFilterContext) {
-            if (checked) add(fc.apiName)
-        }
-
-        put("context", JsonArray().apply {
-            putContextChecked(contextHome.value, TootFilterContext.Home)
-            putContextChecked(contextNotification.value, TootFilterContext.Notifications)
-            putContextChecked(contextPublic.value, TootFilterContext.Public)
-            putContextChecked(contextThread.value, TootFilterContext.Thread)
-            putContextChecked(contextProfile.value, TootFilterContext.Account)
-        })
-
-        when (val seconds = expireDurationList
-            .elementAtOrNull(expireSelection.intValue) ?: -1
-        ) {
-            // don't change
-            -1 -> Unit
-
-            // unlimited
-            0 -> when {
-                // already unlimited. don't change.
-                filterExpire <= 0L -> Unit
-                // XXX: currently there is no way to remove expires from existing filter.
-                else -> put("expires_in", Int.MAX_VALUE)
-            }
-
-            // set seconds
-            else -> put("expires_in", seconds)
         }
     }
 
     private suspend fun saveV1(): TootApiResult? {
-        if (keywords.size != 1) return TootApiResult("V1 API allow only 1 keyword.")
-
-        val params = filterParamBase().apply {
-            put("irreversible", actionHide.value)
-            val ks = keywords.first()
-            put("phrase", ks.keyword.value.trim())
-            put("whole_word", ks.wholeWord.value)
+        val account = viewModel.account ?: return null
+        if (viewModel.uiState.value.keywords.size != 1) {
+            return TootApiResult("V1 API allow only 1 keyword.")
         }
-
-        return runApiTask(account!!) { client ->
-            if (filterId == null) {
+        val params = viewModel.buildV1Params(expireDurationList)
+        return runApiTask(account) { client ->
+            if (viewModel.filterId == null) {
                 client.request(
                     ApiPath.PATH_FILTERS_V1,
                     params.toPostRequestBuilder()
                 )
             } else {
                 client.request(
-                    "${ApiPath.PATH_FILTERS_V1}/$filterId",
+                    "${ApiPath.PATH_FILTERS_V1}/${viewModel.filterId}",
                     params.toRequestBody().toPut()
                 )
             }
@@ -603,37 +508,17 @@ class ActKeywordFilter : ComponentActivity() {
     }
 
     private suspend fun saveV2(title: String): TootApiResult? {
-        val params = filterParamBase().apply {
-            put("title", title)
-            put(
-                "filter_action",
-                if (actionHide.value) "hide" else "warn"
-            )
-            put("keywords_attributes", buildJsonArray {
-                keywords.forEach { ks ->
-                    add(buildJsonObject {
-                        put("keyword", ks.keyword.value.trim())
-                        put("whole_word", ks.wholeWord.value)
-                        ks.serverKeywordId?.let { put("id", it) }
-                    })
-                }
-                deleteIds.forEach { id ->
-                    add(buildJsonObject {
-                        put("id", id)
-                        put("_destroy", id)
-                    })
-                }
-            })
-        }
-        return runApiTask(account!!) { client ->
-            if (filterId == null) {
+        val account = viewModel.account ?: return null
+        val params = viewModel.buildV2Params(expireDurationList, title)
+        return runApiTask(account) { client ->
+            if (viewModel.filterId == null) {
                 client.request(
                     ApiPath.PATH_FILTERS_V2,
                     params.toPostRequestBuilder()
                 )
             } else {
                 client.request(
-                    "${ApiPath.PATH_FILTERS_V2}/$filterId",
+                    "${ApiPath.PATH_FILTERS_V2}/${viewModel.filterId}",
                     params.toRequestBody().toPut()
                 )
             }
