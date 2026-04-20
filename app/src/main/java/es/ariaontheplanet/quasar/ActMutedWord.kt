@@ -15,21 +15,21 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import es.ariaontheplanet.quasar.actmutedword.MutedWordViewModel
 import es.ariaontheplanet.quasar.dialog.DlgConfirm.confirm
 import es.ariaontheplanet.quasar.table.MutedWord
-import es.ariaontheplanet.quasar.table.daoMutedWord
+import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.backPressed
-import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.log.LogCategory
-import kotlinx.coroutines.withContext
 
 class ActMutedWord : ComponentActivity() {
 
@@ -37,7 +37,9 @@ class ActMutedWord : ComponentActivity() {
         private val log = LogCategory("ActMutedWord")
     }
 
-    private val items = mutableStateListOf<MutedWord>()
+    private val viewModel by lazy {
+        provideViewModel(this) { MutedWordViewModel() }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,40 +49,28 @@ class ActMutedWord : ComponentActivity() {
         }
         App1.setActivityTheme(this)
         setContent {
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
             ) {
-                items(items, key = { it.name }) { item ->
-                    MuteItemRow(item.name) { delete(item) }
+                items(state.items, key = { it.name }) { item ->
+                    MuteItemRow(item.name) { onDelete(item) }
                 }
                 item {
                     Text(
                         text = stringResource(R.string.refresh_after_ummute),
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                        fontSize = androidx.compose.ui.unit.TextUnit(12f, androidx.compose.ui.unit.TextUnitType.Sp),
+                        fontSize = 12.sp,
                     )
                 }
             }
         }
-        loadData()
     }
 
-    private fun loadData() {
-        launchAndShowError {
-            val list = withContext(AppDispatchers.IO) {
-                daoMutedWord.listAll()
-            }
-            items.clear()
-            items.addAll(list)
-        }
-    }
-
-    private fun delete(item: MutedWord) {
+    private fun onDelete(item: MutedWord) {
         launchAndShowError {
             confirm(R.string.delete_confirm, item.name)
-            daoMutedWord.delete(item.name)
-            items.remove(item)
+            viewModel.delete(item)
         }
     }
 }
