@@ -11,16 +11,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Text
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import jp.juggler.util.coroutine.AppDispatchers
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import es.ariaontheplanet.quasar.actdrawablelist.DrawableListViewModel
+import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.log.LogCategory
-import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class ActDrawableList : ComponentActivity() {
 
@@ -28,19 +27,19 @@ class ActDrawableList : ComponentActivity() {
         private val log = LogCategory("ActDrawableList")
     }
 
-    private class MyItem(val id: Int, val name: String)
-
-    private val drawableList = mutableStateListOf<MyItem>()
+    private val viewModel by lazy {
+        provideViewModel(this) { DrawableListViewModel(application) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
         setContent {
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
+                modifier = Modifier.fillMaxSize()
             ) {
-                items(drawableList) { item ->
+                items(state.items, key = { it.id }) { item ->
                     Row(
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -59,32 +58,6 @@ class ActDrawableList : ComponentActivity() {
                     }
                 }
             }
-
-        }
-        load()
-    }
-
-    private fun load() = lifecycleScope.launch {
-        try {
-            val rePackageSpec = """.+/""".toRegex()
-            val reSkipName =
-                """^(m3_|abc_|avd_|btn_checkbox_|btn_radio_|googleg_|ic_keyboard_arrow_|ic_menu_arrow_|notification_|common_|emj_|cpv_|design_|exo_|mtrl_|ic_mtrl_)"""
-                    .toRegex()
-            val list = withContext(AppDispatchers.IO) {
-                R.drawable::class.java.fields
-                    .mapNotNull {
-                        val id = it.get(null) as? Int ?: return@mapNotNull null
-                        val name = resources.getResourceName(id).replaceFirst(rePackageSpec, "")
-                        if (reSkipName.containsMatchIn(name)) return@mapNotNull null
-                        MyItem(id, name)
-                    }
-                    .toMutableList()
-                    .apply { sortBy { it.name } }
-            }
-            drawableList.clear()
-            drawableList.addAll(list)
-        } catch (ex: Throwable) {
-            log.e(ex, "load failed.")
         }
     }
 }
