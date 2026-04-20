@@ -32,23 +32,23 @@ data class StExtendedColors(
 )
 
 val LightStExtendedColors = StExtendedColors(
-    buttonAccentBoost = Color(0xFF0088FF),
-    buttonAccentFavourite = Color(0xFF0088FF),
-    buttonAccentBookmark = Color(0xFF0088FF),
-    buttonAccentFollow = Color(0xFF0088FF),
-    buttonAccentFollowRequest = Color(0xFFFF0000),
-    buttonAccentReaction = Color(0xFF0088FF),
-    conversationMainTootBg = Color(0x200088FF),
+    buttonAccentBoost = StColorTokens.AccentBlue,
+    buttonAccentFavourite = StColorTokens.AccentBlue,
+    buttonAccentBookmark = StColorTokens.AccentBlue,
+    buttonAccentFollow = StColorTokens.AccentBlue,
+    buttonAccentFollowRequest = StColorTokens.SemanticAlert,
+    buttonAccentReaction = StColorTokens.AccentBlue,
+    conversationMainTootBg = StColorTokens.AccentBlueTint,
 )
 
 val DarkStExtendedColors = StExtendedColors(
-    buttonAccentBoost = Color(0xFF00A2FF),
-    buttonAccentFavourite = Color(0xFF00A2FF),
-    buttonAccentBookmark = Color(0xFF00A2FF),
-    buttonAccentFollow = Color(0xFF00A2FF),
-    buttonAccentFollowRequest = Color(0xFFFF0000),
-    buttonAccentReaction = Color(0xFF00A2FF),
-    conversationMainTootBg = Color(0x2000A2FF),
+    buttonAccentBoost = StColorTokens.AccentBlueBright,
+    buttonAccentFavourite = StColorTokens.AccentBlueBright,
+    buttonAccentBookmark = StColorTokens.AccentBlueBright,
+    buttonAccentFollow = StColorTokens.AccentBlueBright,
+    buttonAccentFollowRequest = StColorTokens.SemanticAlert,
+    buttonAccentReaction = StColorTokens.AccentBlueBright,
+    conversationMainTootBg = StColorTokens.AccentBlueBrightTint,
 )
 
 val LocalStExtendedColors = staticCompositionLocalOf { LightStExtendedColors }
