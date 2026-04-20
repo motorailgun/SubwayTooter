@@ -48,7 +48,10 @@ fun StScreen(
 ) {
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     MaterialTheme(colorScheme = stColorScheme()) {
-        CompositionLocalProvider(LocalStExtendedColors provides stExtendedColors()) {
+        CompositionLocalProvider(
+            LocalStExtendedColors provides stExtendedColors(),
+            LocalStExtendedTypography provides stExtendedTypography(),
+        ) {
             Scaffold(
                 modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
                 topBar = {
@@ -83,7 +86,10 @@ fun StThemedContent(
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(colorScheme = stColorScheme()) {
-        CompositionLocalProvider(LocalStExtendedColors provides stExtendedColors()) {
+        CompositionLocalProvider(
+            LocalStExtendedColors provides stExtendedColors(),
+            LocalStExtendedTypography provides stExtendedTypography(),
+        ) {
             content()
         }
     }

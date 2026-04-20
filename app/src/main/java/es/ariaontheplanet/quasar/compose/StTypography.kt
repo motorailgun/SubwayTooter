@@ -12,9 +12,9 @@ import es.ariaontheplanet.quasar.ActMain
 import es.ariaontheplanet.quasar.pref.PrefF
 
 // App-specific text styles that don't map to M3 Typography slots.
-// Phase 1 bridgehead: additive infrastructure — nothing is wired in yet.
-// Phase 1c will provide this via CompositionLocalProvider in StScreen/StThemedContent
-// and start migrating call sites off hard-coded `fontSize = Nsp` literals.
+// Provided by StScreen / StThemedContent via LocalStExtendedTypography.
+// Call sites currently still use hard-coded `fontSize = Nsp` literals;
+// later phases will migrate them onto these styles.
 @Immutable
 data class StExtendedTypography(
     val timelineBody: TextStyle,
