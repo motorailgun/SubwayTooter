@@ -18,13 +18,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import es.ariaontheplanet.quasar.acthighlightwordlist.HighlightWordListViewModel
 import es.ariaontheplanet.quasar.dialog.DlgConfirm.confirm
 import es.ariaontheplanet.quasar.table.HighlightWord
-import es.ariaontheplanet.quasar.table.daoHighlightWord
-import jp.juggler.util.coroutine.AppDispatchers
+import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.mayUri
 import jp.juggler.util.data.notBlank
@@ -32,7 +32,6 @@ import jp.juggler.util.data.notZero
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.ActivityResultHandler
 import jp.juggler.util.ui.isNotOk
-import kotlinx.coroutines.withContext
 import java.lang.ref.WeakReference
 
 class ActHighlightWordList : ComponentActivity() {
@@ -89,24 +88,26 @@ class ActHighlightWordList : ComponentActivity() {
         }
     }
 
-    private var items = mutableStateOf<List<HighlightWord>>(emptyList())
+    private val viewModel by lazy {
+        provideViewModel(this) { HighlightWordListViewModel(application) }
+    }
 
     private val arEdit = ActivityResultHandler(log) { r ->
         if (r.isNotOk) return@ActivityResultHandler
-        loadData()
+        viewModel.reload()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arEdit.register(this)
         App1.setActivityTheme(this)
-        loadData()
         setContent {
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
             Column(modifier = Modifier) {
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                 ) {
-                    items(items.value, key = { it.id }) { item ->
+                    items(state.items, key = { it.id }) { item ->
                         HighlightWordRow(item)
                     }
                 }
@@ -191,21 +192,13 @@ class ActHighlightWordList : ComponentActivity() {
                 )
             }
             IconButton(
-                onClick = { delete(item) },
+                onClick = { onDelete(item) },
                 modifier = Modifier.size(40.dp),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.ic_delete),
                     contentDescription = stringResource(R.string.delete),
                 )
-            }
-        }
-    }
-
-    private fun loadData() {
-        launchAndShowError {
-            items.value = withContext(AppDispatchers.IO) {
-                daoHighlightWord.listAll()
             }
         }
     }
@@ -219,14 +212,11 @@ class ActHighlightWordList : ComponentActivity() {
         arEdit.launch(ActHighlightWordEdit.createIntent(this, item.id))
     }
 
-    private fun delete(item: HighlightWord?) {
+    private fun onDelete(item: HighlightWord?) {
         item ?: return
-        val activity = this
         launchAndShowError {
             confirm(getString(R.string.delete_confirm, item.name))
-            daoHighlightWord.delete(applicationContext, item)
-            items.value = items.value.filter { it != item }
-            App1.getAppState(activity).enableSpeech()
+            viewModel.delete(item)
         }
     }
 
