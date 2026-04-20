@@ -22,6 +22,8 @@ import com.bumptech.glide.load.model.GlideUrl
 import es.ariaontheplanet.quasar.actmain.rebuildFixedColumns
 import es.ariaontheplanet.quasar.api.TootApiClient
 import es.ariaontheplanet.quasar.column.ColumnType
+import es.ariaontheplanet.quasar.di.appModule
+import es.ariaontheplanet.quasar.di.viewModelModule
 import es.ariaontheplanet.quasar.emoji.EmojiMap
 import es.ariaontheplanet.quasar.pref.LazyContextHolder
 import es.ariaontheplanet.quasar.pref.PrefI
@@ -49,6 +51,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.conscrypt.Conscrypt
+import org.koin.android.ext.koin.androidContext
+import org.koin.core.context.startKoin
 import ru.gildor.coroutines.okhttp.await
 import java.io.File
 import java.io.InputStream
@@ -65,6 +69,10 @@ class App1 : Application() {
         log.d("onCreate")
         LazyContextHolder.init(applicationContextSafe)
         super.onCreate()
+        startKoin {
+            androidContext(this@App1)
+            modules(appModule, viewModelModule)
+        }
         initializeToastUtils(this)
         prepare(applicationContext, "App1.onCreate")
     }

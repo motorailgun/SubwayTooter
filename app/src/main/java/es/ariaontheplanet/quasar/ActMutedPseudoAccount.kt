@@ -12,10 +12,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.ariaontheplanet.quasar.actmutedpseudoaccount.MutedPseudoAccountViewModel
 import es.ariaontheplanet.quasar.dialog.DlgConfirm.confirm
 import es.ariaontheplanet.quasar.table.UserRelation
-import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.log.LogCategory
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class ActMutedPseudoAccount : ComponentActivity() {
 
@@ -23,9 +23,7 @@ class ActMutedPseudoAccount : ComponentActivity() {
         private val log = LogCategory("ActMutedPseudoAccount")
     }
 
-    private val viewModel by lazy {
-        provideViewModel(this) { MutedPseudoAccountViewModel() }
-    }
+    private val viewModel: MutedPseudoAccountViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
