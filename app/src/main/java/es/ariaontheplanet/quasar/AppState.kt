@@ -18,12 +18,11 @@ import es.ariaontheplanet.quasar.column.getBackgroundImageDir
 import es.ariaontheplanet.quasar.column.onMuteUpdated
 import es.ariaontheplanet.quasar.pref.prefDevice
 import es.ariaontheplanet.quasar.services.AppBusyState
+import es.ariaontheplanet.quasar.services.ColumnRepository
 import es.ariaontheplanet.quasar.span.MyClickableSpan
 import es.ariaontheplanet.quasar.streaming.StreamManager
 import es.ariaontheplanet.quasar.table.*
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import es.ariaontheplanet.quasar.util.NetworkStateTracker
 import es.ariaontheplanet.quasar.util.PostAttachment
 import jp.juggler.util.coroutine.launchIO
@@ -57,6 +56,7 @@ class AppState(
 ) : KoinComponent {
 
     private val busyState: AppBusyState by inject()
+    private val columnRepo: ColumnRepository by inject()
 
     // Reference to MainViewModel for accessing view holder registry
     // Set by ActMain during initialization
@@ -139,15 +139,13 @@ class AppState(
 
     internal var mediaThumbHeight: Int = 0
 
-    private val _columnList = ArrayList<Column>()
-
     // The single "current" account that drives the 4 fixed columns.
     // null when no account has been chosen (first-run / all accounts removed).
-    private val _currentAccount = MutableStateFlow<SavedAccount?>(null)
-    val currentAccount: StateFlow<SavedAccount?> = _currentAccount.asStateFlow()
+    val currentAccount: StateFlow<SavedAccount?>
+        get() = columnRepo.currentAccount
 
     fun setCurrentAccount(account: SavedAccount?) {
-        _currentAccount.value = account
+        columnRepo.setCurrentAccount(account)
         context.prefDevice.currentAccountDbId = account?.db_id
     }
 
@@ -161,28 +159,18 @@ class AppState(
             ?.takeIf { !it.isPseudo }
         val chosen = saved
             ?: daoSavedAccount.loadAccountList().firstOrNull { !it.isPseudo }
-        _currentAccount.value = chosen
+        columnRepo.setCurrentAccount(chosen)
         return chosen
     }
 
-    // make shallow copy
-    val columnList: List<Column>
-        get() = synchronized(_columnList) { ArrayList(_columnList) }
-
-    val columnCount: Int
-        get() = synchronized(_columnList) { _columnList.size }
-
-    fun column(i: Int) =
-        synchronized(_columnList) { _columnList.elementAtOrNull(i) }
-
-    fun columnIndex(column: Column?) =
-        synchronized(_columnList) { _columnList.indexOf(column).takeIf { it != -1 } }
+    val columnList: List<Column> get() = columnRepo.columnList
+    val columnCount: Int get() = columnRepo.columnCount
+    fun column(i: Int) = columnRepo.column(i)
+    fun columnIndex(column: Column?) = columnRepo.columnIndex(column)
 
     fun editColumnList(save: Boolean = true, block: (ArrayList<Column>) -> Unit) {
-        synchronized(_columnList) {
-            block(_columnList)
-            if (save) saveColumnList()
-        }
+        columnRepo.editColumnList(block)
+        if (save) saveColumnList()
     }
 
     internal var attachmentList: ArrayList<PostAttachment>? = null
