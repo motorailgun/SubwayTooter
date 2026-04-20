@@ -10,8 +10,6 @@ object PrefB {
         false
     )
 
-    // val bpDisableFastScroller = BooleanPref("disable_fast_scroller", true, 0) // R.id.swDisableFastScroller)
-
     val bpDisableTabletMode = BooleanPref(
         "disable_tablet_mode",
         false
@@ -71,21 +69,6 @@ object PrefB {
         "mention_full_acct",
         false
     )
-
-//    val bpNotificationLED = BooleanPref(
-//        "notification_led",
-//        true
-//    )
-
-//    val bpNotificationSound = BooleanPref(
-//        "notification_sound",
-//        true
-//    )
-
-//    val bpNotificationVibration = BooleanPref(
-//        "notification_vibration",
-//        true
-//    )
 
     val bpPostButtonBarTop = BooleanPref(
         "post_button_bar_at_top",
