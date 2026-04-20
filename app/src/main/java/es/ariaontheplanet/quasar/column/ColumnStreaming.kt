@@ -2,8 +2,8 @@ package es.ariaontheplanet.quasar.column
 
 import android.os.SystemClock
 import es.ariaontheplanet.quasar.App1
-import es.ariaontheplanet.quasar.DedupMode
 import es.ariaontheplanet.quasar.api.auth.AuthBase
+import es.ariaontheplanet.quasar.services.DedupMode
 import es.ariaontheplanet.quasar.api.entity.*
 import es.ariaontheplanet.quasar.columnviewholder.*
 import es.ariaontheplanet.quasar.notification.injectData

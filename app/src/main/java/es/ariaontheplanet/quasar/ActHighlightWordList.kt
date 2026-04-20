@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import es.ariaontheplanet.quasar.acthighlightwordlist.HighlightWordListViewModel
 import es.ariaontheplanet.quasar.dialog.DlgConfirm.confirm
+import es.ariaontheplanet.quasar.services.DedupMode
 import es.ariaontheplanet.quasar.table.HighlightWord
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.data.mayUri
