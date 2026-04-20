@@ -4,22 +4,18 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Text
-import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import es.ariaontheplanet.quasar.actmutedapp.MutedAppViewModel
 import es.ariaontheplanet.quasar.dialog.DlgConfirm.confirm
 import es.ariaontheplanet.quasar.table.MutedApp
-import es.ariaontheplanet.quasar.table.appDatabase
+import es.ariaontheplanet.quasar.util.provideViewModel
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
 import jp.juggler.util.log.LogCategory
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 
 class ActMutedApp : ComponentActivity() {
 
@@ -27,8 +23,9 @@ class ActMutedApp : ComponentActivity() {
         private val log = LogCategory("ActMutedApp")
     }
 
-    private val items = mutableStateListOf<MutedApp>()
-    private val daoMutedApp by lazy { MutedApp.Access(appDatabase) }
+    private val viewModel by lazy {
+        provideViewModel(this) { MutedAppViewModel(application) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,33 +35,21 @@ class ActMutedApp : ComponentActivity() {
         }
         App1.setActivityTheme(this)
         setContent {
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize(),
+                modifier = Modifier.fillMaxSize(),
             ) {
-                items(items, key = { it.name }) { item ->
-                    MuteItemRow(item.name) { delete(item) }
+                items(state.items, key = { it.name }) { item ->
+                    MuteItemRow(item.name) { onDelete(item) }
                 }
             }
         }
-        loadData()
     }
 
-    private fun loadData() {
-        launchAndShowError {
-            val list = withContext(Dispatchers.IO) {
-                daoMutedApp.listAll()
-            }
-            items.clear()
-            items.addAll(list)
-        }
-    }
-
-    private fun delete(item: MutedApp) {
+    private fun onDelete(item: MutedApp) {
         launchAndShowError {
             confirm(R.string.delete_confirm, item.name)
-            daoMutedApp.delete(item.name)
-            items.remove(item)
+            viewModel.delete(item)
         }
     }
 }
