@@ -32,10 +32,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import es.ariaontheplanet.quasar.ActHighlightWordEdit
 import es.ariaontheplanet.quasar.App1
 import es.ariaontheplanet.quasar.R
+import es.ariaontheplanet.quasar.RootActivity
 import es.ariaontheplanet.quasar.acthighlightwordlist.HighlightWordListViewModel
+import es.ariaontheplanet.quasar.nav.Route
 import es.ariaontheplanet.quasar.dialog.DlgConfirm.confirm
 import es.ariaontheplanet.quasar.services.DedupMode
 import es.ariaontheplanet.quasar.table.HighlightWord
@@ -68,7 +69,9 @@ fun HighlightWordListScreen() {
                     item = item,
                     onOpenEdit = {
                         activity?.let {
-                            editLauncher.launch(ActHighlightWordEdit.createIntent(it, item.id))
+                            editLauncher.launch(
+                                RootActivity.createIntent(it, Route.HighlightWordEdit(itemId = item.id)),
+                            )
                         }
                     },
                     onSpeech = {
@@ -101,7 +104,9 @@ fun HighlightWordListScreen() {
             )
             IconButton(onClick = {
                 activity?.let {
-                    editLauncher.launch(ActHighlightWordEdit.createIntent(it, ""))
+                    editLauncher.launch(
+                        RootActivity.createIntent(it, Route.HighlightWordEdit(initialText = "")),
+                    )
                 }
             }) {
                 Icon(

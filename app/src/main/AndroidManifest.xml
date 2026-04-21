@@ -246,11 +246,6 @@
             android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
 
         <activity
-            android:name=".ActHighlightWordEdit"
-            android:exported="false"
-            android:label="@string/highlight_word" />
-
-        <activity
             android:name=".ActColumnCustomize"
             android:exported="false"
             android:label="@string/color_and_background"

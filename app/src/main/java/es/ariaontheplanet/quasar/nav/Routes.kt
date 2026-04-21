@@ -27,6 +27,10 @@ sealed interface Route {
 
     @Serializable data class AccountSettings(val accountDbId: Long) : Route
     @Serializable data class Alert(val title: String, val message: String) : Route
+    @Serializable data class HighlightWordEdit(
+        val itemId: Long = -1L,
+        val initialText: String = "",
+    ) : Route
     @Serializable data class LanguageFilter(val columnIndex: Int) : Route
     @Serializable data class Nickname(
         val acctAscii: String,

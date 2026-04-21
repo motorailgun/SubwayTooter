@@ -51,6 +51,7 @@ import androidx.lifecycle.lifecycleScope
 import es.ariaontheplanet.quasar.api.entity.TootAccount
 import es.ariaontheplanet.quasar.api.entity.TootStatus
 import es.ariaontheplanet.quasar.compose.StScreen
+import es.ariaontheplanet.quasar.nav.Route
 import es.ariaontheplanet.quasar.dialog.pickAccount
 import es.ariaontheplanet.quasar.table.SavedAccount
 import es.ariaontheplanet.quasar.table.daoMutedWord
@@ -647,7 +648,7 @@ class ActText : ComponentActivity() {
 
     private fun highlight() {
         selectionOrAll.trim().notEmpty()?.let {
-            startActivity(ActHighlightWordEdit.createIntent(this, it))
+            startActivity(RootActivity.createIntent(this, Route.HighlightWordEdit(initialText = it)))
         }
     }
 }
