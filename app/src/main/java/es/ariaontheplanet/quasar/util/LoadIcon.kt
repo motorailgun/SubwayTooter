@@ -2,43 +2,24 @@ package es.ariaontheplanet.quasar.util
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
-import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.CustomTarget
-import com.bumptech.glide.request.transition.Transition
+import coil3.BitmapImage
+import coil3.SingletonImageLoader
+import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.request.allowHardware
 import jp.juggler.util.log.LogCategory
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.suspendCancellableCoroutine
 
 private val log = LogCategory("LoadIcon")
 
-@OptIn(ExperimentalCoroutinesApi::class)
 suspend fun Context.loadIcon(url: String?, size: Int): Bitmap? = try {
-    suspendCancellableCoroutine { cont ->
-        @Suppress("ThrowableNotThrown")
-        val target = object : CustomTarget<Bitmap>() {
-            override fun onLoadFailed(errorDrawable: Drawable?) {
-                if (cont.isActive) cont.resume(null) {_, _, _ ->}
-                if (!url.isNullOrEmpty()) log.w("onLoadFailed. url=$url")
-            }
-
-            override fun onResourceReady(resource: Bitmap, transition: Transition<in Bitmap>?) {
-                if (cont.isActive) cont.resume(resource) { _, _, _ -> resource.recycle() }
-            }
-
-            override fun onLoadCleared(placeholder: Drawable?) {
-                if (cont.isActive) cont.resume(null) { _, _, _ -> }
-                if (!url.isNullOrEmpty()) log.w("onLoadCleared. url=$url")
-            }
-        }
-        Glide.with(this)
-            .asBitmap()
-            .load(url)
-            .override(size)
-            .into(target)
-        cont.invokeOnCancellation {
-            Glide.with(this).clear(target)
-        }
+    val request = ImageRequest.Builder(this)
+        .data(url)
+        .size(size, size)
+        .allowHardware(false)
+        .build()
+    when (val result = SingletonImageLoader.get(this).execute(request)) {
+        is SuccessResult -> (result.image as? BitmapImage)?.bitmap
+        else -> null
     }
 } catch (ex: Throwable) {
     log.w(ex, "url=$url")
