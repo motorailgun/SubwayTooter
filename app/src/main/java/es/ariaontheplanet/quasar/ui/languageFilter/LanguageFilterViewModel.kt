@@ -18,7 +18,6 @@ import jp.juggler.util.data.buildJsonObject
 import jp.juggler.util.data.decodeJsonObject
 import jp.juggler.util.data.decodeUTF8
 import jp.juggler.util.data.encodeUTF8
-import jp.juggler.util.int
 import jp.juggler.util.log.LogCategory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -70,12 +69,11 @@ class LanguageFilterViewModel(
     }
 
     fun restoreOrInitialize(
-        activityContext: Context,
+        columnIndex: Int,
         savedInstanceState: Bundle?,
-        intent: Intent?,
     ) {
         appState = App1.getAppState(context)
-        columnIndex = intent?.int(EXTRA_COLUMN_INDEX) ?: 0
+        this.columnIndex = columnIndex
         column = appState.column(columnIndex) ?: error("missing column[$columnIndex]")
         viewModelScope.launch {
             try {
@@ -100,12 +98,12 @@ class LanguageFilterViewModel(
                         val specDefault = LanguageInfo(
                             code = TootStatus.LANGUAGE_CODE_DEFAULT,
                             name = TootStatus.LANGUAGE_CODE_DEFAULT,
-                            displayName = activityContext.getString(R.string.language_code_default),
+                            displayName = context.getString(R.string.language_code_default),
                         )
                         val specUnknown = LanguageInfo(
                             code = TootStatus.LANGUAGE_CODE_UNKNOWN,
                             name = TootStatus.LANGUAGE_CODE_UNKNOWN,
-                            displayName = activityContext.getString(R.string.language_code_unknown)
+                            displayName = context.getString(R.string.language_code_unknown)
                         )
                         put(specDefault.code, specDefault)
                         put(specUnknown.code, specUnknown)

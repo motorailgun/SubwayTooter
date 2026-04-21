@@ -18,6 +18,7 @@ import es.ariaontheplanet.quasar.ui.about.AboutScreen
 import es.ariaontheplanet.quasar.ui.alert.AlertScreen
 import es.ariaontheplanet.quasar.ui.exitReasons.ExitReasonsScreen
 import es.ariaontheplanet.quasar.ui.highlightWord.HighlightWordListScreen
+import es.ariaontheplanet.quasar.ui.languageFilter.LanguageFilterScreen
 import es.ariaontheplanet.quasar.ui.nickname.NicknameScreen
 import es.ariaontheplanet.quasar.ui.ossLicense.OssLicenseScreen
 import androidx.navigation.toRoute
@@ -66,6 +67,10 @@ fun AppNavHost(
             composable<Route.ExitReasons> { ExitReasonsScreen() }
             composable<Route.FavMute> { FavMuteScreen() }
             composable<Route.HighlightWordList> { HighlightWordListScreen() }
+            composable<Route.LanguageFilter> { entry ->
+                val r = entry.toRoute<Route.LanguageFilter>()
+                LanguageFilterScreen(columnIndex = r.columnIndex)
+            }
             composable<Route.MutedApp> { MutedAppScreen() }
             composable<Route.MutedPseudoAccount> { MutedPseudoAccountScreen() }
             composable<Route.MutedWord> { MutedWordScreen() }

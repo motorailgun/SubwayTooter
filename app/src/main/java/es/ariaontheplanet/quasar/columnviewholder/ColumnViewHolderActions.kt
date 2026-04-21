@@ -17,7 +17,7 @@ import es.ariaontheplanet.quasar.column.canReloadWhenRefreshTop
 import es.ariaontheplanet.quasar.column.startLoading
 import es.ariaontheplanet.quasar.column.startRefresh
 import es.ariaontheplanet.quasar.compose.ColumnCallbacks
-import es.ariaontheplanet.quasar.ui.languageFilter.LanguageFilterActivity.Companion.openLanguageFilterActivity
+import es.ariaontheplanet.quasar.ui.languageFilter.openLanguageFilterActivity
 import jp.juggler.util.coroutine.launchMain
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast

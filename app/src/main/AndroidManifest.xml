@@ -263,11 +263,6 @@
             android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
 
         <activity
-            android:name=".ui.languageFilter.LanguageFilterActivity"
-            android:exported="false"
-            android:label="@string/language_filter"
-            android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
-        <activity
             android:name=".ActText"
             android:exported="false"
             android:label="@string/select_and_copy"

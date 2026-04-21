@@ -89,7 +89,7 @@ import es.ariaontheplanet.quasar.span.MyClickableSpan
 import es.ariaontheplanet.quasar.span.MyClickableSpanHandler
 import es.ariaontheplanet.quasar.table.daoSavedAccount
 import es.ariaontheplanet.quasar.ui.about.EXTRA_ABOUT_SEARCH
-import es.ariaontheplanet.quasar.ui.languageFilter.LanguageFilterActivity
+import es.ariaontheplanet.quasar.ui.languageFilter.decodeLanguageFilterResult
 import es.ariaontheplanet.quasar.util.DecodeOptions.Companion.reloadEmojiScale
 import es.ariaontheplanet.quasar.util.EmojiDecoder
 import es.ariaontheplanet.quasar.util.openBrowser
@@ -244,7 +244,7 @@ class ActMain : ComponentActivity(),
     }
 
     val arLanguageFilter = ActivityResultHandler(log) { r ->
-        LanguageFilterActivity.decodeResult(r)?.let { columnIndex ->
+        decodeLanguageFilterResult(r)?.let { columnIndex ->
             appState.saveColumnList()
             appState.column(columnIndex)?.onLanguageFilterChanged()
         }
