@@ -15,6 +15,7 @@ androidxEmoji2 = "1.6.0"
 androidxExifInterface = "1.4.1"
 androidxLifecycle = "2.10.0"
 androidxMedia3 = "1.8.0"
+androidxNavigation = "2.8.5"
 androidxMedia3Effect = "1.8.0"
 androidxMedia3Transformer = "1.8.0"
 androidxPreference = "1.2.1"
@@ -128,6 +129,7 @@ androidx-media3-exoplayer = { module = "androidx.media3:media3-exoplayer", versi
 androidx-media3-session = { module = "androidx.media3:media3-session", version.ref = "androidxMedia3" }
 androidx-media3-transformer = { module = "androidx.media3:media3-transformer", version.ref = "androidxMedia3Transformer" }
 androidx-media3-ui = { module = "androidx.media3:media3-ui", version.ref = "androidxMedia3" }
+androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "androidxNavigation" }
 androidx-preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "androidxPreference" }
 androidx-recyclerview = { module = "androidx.recyclerview:recyclerview", version.ref = "androidxRecyclerView" }
 androidx-runtime-livedata = { module = "androidx.compose.runtime:runtime-livedata" }

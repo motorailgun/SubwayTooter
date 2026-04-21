@@ -3,6 +3,8 @@ package es.ariaontheplanet.quasar.di
 import android.os.Handler
 import android.os.Looper
 import es.ariaontheplanet.quasar.AppState
+import es.ariaontheplanet.quasar.nav.Navigator
+import es.ariaontheplanet.quasar.nav.NavigatorImpl
 import es.ariaontheplanet.quasar.pref.PrefS
 import es.ariaontheplanet.quasar.services.AppBusyState
 import es.ariaontheplanet.quasar.services.ColumnRepository
@@ -24,6 +26,12 @@ val appModule = module {
     singleOf(::ColumnRepository)
     single { TtsService(androidContext(), get()) }
     single { AppState(androidContext(), get()) }
+
+    // Navigator — exposed via interface, binds with the Compose NavController
+    // inside AppNavHost. Stays useful as an escape hatch (launchIntent) for
+    // destinations that are still Activity-hosted.
+    single { NavigatorImpl() }
+    single<Navigator> { get<NavigatorImpl>() }
 
     // Main-looper Handler shared by emoji services that still rely on it.
     single { Handler(Looper.getMainLooper()) }
