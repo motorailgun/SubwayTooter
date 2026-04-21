@@ -326,9 +326,9 @@
             android:theme="@style/AppTheme.Dark" />
 
         <activity
-            android:name=".ActExitReasons"
+            android:name=".RootActivity"
             android:exported="false"
-            android:label="@string/exit_reasons"
+            android:label="@string/app_name"
             android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
         <activity
             android:name="es.ariaontheplanet.quasar.ActPushMessageList"

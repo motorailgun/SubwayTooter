@@ -11,7 +11,7 @@ import android.widget.TextView
 import androidx.annotation.StringRes
 import es.ariaontheplanet.quasar.ActAppSetting
 import es.ariaontheplanet.quasar.ActDrawableList
-import es.ariaontheplanet.quasar.ActExitReasons
+import es.ariaontheplanet.quasar.RootActivity
 
 import es.ariaontheplanet.quasar.App1
 import es.ariaontheplanet.quasar.R
@@ -863,7 +863,7 @@ val appSettingRoot = AppSettingItem(null, SettingType.Section, R.string.app_sett
         action(R.string.exit_reasons) {
             action = {
                 if (Build.VERSION.SDK_INT >= 30) {
-                    startActivity(Intent(this, ActExitReasons::class.java))
+                    startActivity(Intent(this, RootActivity::class.java))
                 } else {
                     showToast(false, "this feature requires Android 11")
                 }
