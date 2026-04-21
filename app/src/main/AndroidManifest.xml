@@ -251,26 +251,6 @@
             android:label="@string/app_about" />
 
         <activity
-            android:name=".ActMutedApp"
-            android:exported="false"
-            android:label="@string/muted_app" />
-
-        <activity
-            android:name=".ActMutedPseudoAccount"
-            android:exported="false"
-            android:label="@string/muted_users_from_pseudo_account" />
-
-        <activity
-            android:name=".ActMutedWord"
-            android:exported="false"
-            android:label="@string/muted_word" />
-
-        <activity
-            android:name=".ActFavMute"
-            android:exported="false"
-            android:label="@string/fav_muted_user_long" />
-
-        <activity
             android:name=".ActKeywordFilter"
             android:exported="false"
             android:label="@string/keyword_filter_new"

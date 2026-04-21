@@ -35,12 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import es.ariaontheplanet.quasar.ActAbout
 import es.ariaontheplanet.quasar.ActAppSetting.Companion.launchAppSetting
-import es.ariaontheplanet.quasar.ActFavMute
 import es.ariaontheplanet.quasar.ActHighlightWordList
 import es.ariaontheplanet.quasar.ActMain
-import es.ariaontheplanet.quasar.ActMutedApp
-import es.ariaontheplanet.quasar.ActMutedPseudoAccount
-import es.ariaontheplanet.quasar.ActMutedWord
 import es.ariaontheplanet.quasar.ActPushMessageList
 import es.ariaontheplanet.quasar.App1
 import es.ariaontheplanet.quasar.R
@@ -198,22 +194,22 @@ class SideMenuAdapter(
         },
 
         Item(icon = R.drawable.ic_volume_off, title = R.string.muted_app) {
-            startActivity(Intent(this, ActMutedApp::class.java))
+            startActivity(RootActivity.createIntent(this, Route.MutedApp))
         },
 
         Item(icon = R.drawable.ic_volume_off, title = R.string.muted_word) {
-            startActivity(Intent(this, ActMutedWord::class.java))
+            startActivity(RootActivity.createIntent(this, Route.MutedWord))
         },
 
         Item(icon = R.drawable.ic_volume_off, title = R.string.fav_muted_user) {
-            startActivity(Intent(this, ActFavMute::class.java))
+            startActivity(RootActivity.createIntent(this, Route.FavMute))
         },
 
         Item(
             icon = R.drawable.ic_volume_off,
             title = R.string.muted_users_from_pseudo_account
         ) {
-            startActivity(Intent(this, ActMutedPseudoAccount::class.java))
+            startActivity(RootActivity.createIntent(this, Route.MutedPseudoAccount))
         },
 
         Item(icon = R.drawable.ic_info_outline, title = R.string.app_about) {

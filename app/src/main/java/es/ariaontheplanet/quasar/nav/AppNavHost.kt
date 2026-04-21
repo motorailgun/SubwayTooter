@@ -9,6 +9,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import es.ariaontheplanet.quasar.actdrawablelist.DrawableListScreen
+import es.ariaontheplanet.quasar.actfavmute.FavMuteScreen
+import es.ariaontheplanet.quasar.actmutedapp.MutedAppScreen
+import es.ariaontheplanet.quasar.actmutedpseudoaccount.MutedPseudoAccountScreen
+import es.ariaontheplanet.quasar.actmutedword.MutedWordScreen
 import es.ariaontheplanet.quasar.compose.StThemedContent
 import es.ariaontheplanet.quasar.ui.exitReasons.ExitReasonsScreen
 import es.ariaontheplanet.quasar.ui.ossLicense.OssLicenseScreen
@@ -50,6 +54,10 @@ fun AppNavHost(
         ) {
             composable<Route.DrawableList> { DrawableListScreen() }
             composable<Route.ExitReasons> { ExitReasonsScreen() }
+            composable<Route.FavMute> { FavMuteScreen() }
+            composable<Route.MutedApp> { MutedAppScreen() }
+            composable<Route.MutedPseudoAccount> { MutedPseudoAccountScreen() }
+            composable<Route.MutedWord> { MutedWordScreen() }
             composable<Route.OssLicense> { OssLicenseScreen(onClose = popOrFinish) }
         }
     }
