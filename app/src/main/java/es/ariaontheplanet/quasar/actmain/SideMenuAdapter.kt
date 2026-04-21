@@ -54,7 +54,8 @@ import es.ariaontheplanet.quasar.pref.PrefDevice.Companion.PUSH_DISTRIBUTOR_NONE
 import es.ariaontheplanet.quasar.pref.PrefS
 import es.ariaontheplanet.quasar.pref.prefDevice
 import es.ariaontheplanet.quasar.push.fcmHandler
-import es.ariaontheplanet.quasar.ui.ossLicense.ActOSSLicense
+import es.ariaontheplanet.quasar.RootActivity
+import es.ariaontheplanet.quasar.nav.Route
 import es.ariaontheplanet.quasar.util.VersionString
 import es.ariaontheplanet.quasar.util.openBrowser
 import jp.juggler.util.coroutine.launchAndShowError
@@ -223,7 +224,7 @@ class SideMenuAdapter(
         },
 
         Item(icon = R.drawable.ic_info_outline, title = R.string.oss_license) {
-            startActivity(Intent(this, ActOSSLicense::class.java))
+            startActivity(RootActivity.createIntent(this, Route.OssLicense))
         },
 
         Item(icon = R.drawable.ic_hot_tub, title = R.string.app_exit) {

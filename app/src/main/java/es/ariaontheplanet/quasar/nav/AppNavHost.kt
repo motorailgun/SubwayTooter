@@ -10,6 +10,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import es.ariaontheplanet.quasar.compose.StThemedContent
 import es.ariaontheplanet.quasar.ui.exitReasons.ExitReasonsScreen
+import es.ariaontheplanet.quasar.ui.ossLicense.OssLicenseScreen
 import org.koin.core.context.GlobalContext
 
 // Hosts the app's NavController and wires it to NavigatorImpl so non-UI
@@ -37,12 +38,17 @@ fun AppNavHost(
         }
     }
 
+    val popOrFinish: () -> Unit = {
+        if (!navController.popBackStack()) activity?.finish()
+    }
+
     StThemedContent {
         NavHost(
             navController = navController,
             startDestination = startDestination,
         ) {
             composable<Route.ExitReasons> { ExitReasonsScreen() }
+            composable<Route.OssLicense> { OssLicenseScreen(onClose = popOrFinish) }
         }
     }
 }

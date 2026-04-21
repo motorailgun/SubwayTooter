@@ -251,11 +251,6 @@
             android:label="@string/app_about" />
 
         <activity
-            android:name=".ui.ossLicense.ActOSSLicense"
-            android:exported="false"
-            android:label="@string/oss_license" />
-
-        <activity
             android:name=".ActMutedApp"
             android:exported="false"
             android:label="@string/muted_app" />

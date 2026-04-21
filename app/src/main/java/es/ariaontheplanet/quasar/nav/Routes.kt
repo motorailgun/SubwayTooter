@@ -16,6 +16,28 @@ sealed interface Route {
     @Serializable data class AccountSettings(val accountDbId: Long) : Route
     @Serializable data class LanguageFilter(val columnIndex: Int) : Route
 
-    // Parameterless Activities for now; parameterized variants follow as each
-    // Activity is migrated off its raw Intent construction.
+    companion object {
+        const val EXTRA_START_KEY = "nav.start_route_key"
+
+        // Parameterless-route key mapping for cross-Activity launches.
+        // Parameterized routes use Navigator.navigate inside an already-running
+        // RootActivity; they don't need an intent extra here.
+        fun keyOf(route: Route): String? = when (route) {
+            AppSettings -> "app_settings"
+            ColumnList -> "column_list"
+            ExitReasons -> "exit_reasons"
+            OssLicense -> "oss_license"
+            About -> "about"
+            else -> null
+        }
+
+        fun fromKey(key: String?): Route? = when (key) {
+            "app_settings" -> AppSettings
+            "column_list" -> ColumnList
+            "exit_reasons" -> ExitReasons
+            "oss_license" -> OssLicense
+            "about" -> About
+            else -> null
+        }
+    }
 }
