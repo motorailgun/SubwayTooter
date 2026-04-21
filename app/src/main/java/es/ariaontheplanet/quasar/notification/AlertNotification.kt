@@ -4,8 +4,8 @@ import android.app.AlertDialog
 import android.app.PendingIntent
 import android.content.Context
 import androidx.core.net.toUri
-import es.ariaontheplanet.quasar.ActAlert.Companion.intentActAlert
 import es.ariaontheplanet.quasar.R
+import es.ariaontheplanet.quasar.ui.alert.intentActAlert
 import es.ariaontheplanet.quasar.notification.NotificationDeleteReceiver.Companion.intentNotificationDelete
 import jp.juggler.util.log.LogCategory
 

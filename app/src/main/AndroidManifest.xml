@@ -287,14 +287,6 @@
             android:name="es.ariaontheplanet.quasar.ActPushMessageList"
             android:exported="false"
             android:label="@string/push_message_history" />
-        <activity
-            android:name="es.ariaontheplanet.quasar.ActAlert"
-            android:exported="false"
-            android:label="@string/alert" />
-        <activity
-            android:name="es.ariaontheplanet.quasar.ActGlideTest"
-            android:exported="false"
-            android:label="@string/glide_test" />
 
         <meta-data
             android:name="android.max_aspect"
