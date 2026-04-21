@@ -10,6 +10,7 @@ import es.ariaontheplanet.quasar.services.AppBusyState
 import es.ariaontheplanet.quasar.services.ColumnRepository
 import es.ariaontheplanet.quasar.services.OkHttpQualifiers
 import es.ariaontheplanet.quasar.services.TtsService
+import es.ariaontheplanet.quasar.services.buildAppImageLoader
 import es.ariaontheplanet.quasar.services.prepareOkHttp
 import es.ariaontheplanet.quasar.util.CustomEmojiCache
 import es.ariaontheplanet.quasar.util.CustomEmojiLister
@@ -59,5 +60,13 @@ val appModule = module {
             .prepareOkHttp(mediaReadTimeout, mediaReadTimeout)
             .cache(get())
             .build()
+    }
+
+    // Coil ImageLoader — reuses the API OkHttp single so cache-control + UA match.
+    single {
+        buildAppImageLoader(
+            androidContext(),
+            get(named(OkHttpQualifiers.API)),
+        )
     }
 }
