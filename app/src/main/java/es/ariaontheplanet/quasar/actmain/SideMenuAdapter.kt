@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import es.ariaontheplanet.quasar.ActAbout
 import es.ariaontheplanet.quasar.ActAppSetting.Companion.launchAppSetting
-import es.ariaontheplanet.quasar.ActHighlightWordList
 import es.ariaontheplanet.quasar.ActMain
 import es.ariaontheplanet.quasar.ActPushMessageList
 import es.ariaontheplanet.quasar.App1
@@ -190,7 +189,7 @@ class SideMenuAdapter(
         },
 
         Item(icon = R.drawable.ic_settings, title = R.string.highlight_word) {
-            startActivity(Intent(this, ActHighlightWordList::class.java))
+            startActivity(RootActivity.createIntent(this, Route.HighlightWordList))
         },
 
         Item(icon = R.drawable.ic_volume_off, title = R.string.muted_app) {

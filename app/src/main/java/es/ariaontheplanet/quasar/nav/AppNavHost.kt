@@ -15,6 +15,7 @@ import es.ariaontheplanet.quasar.actmutedpseudoaccount.MutedPseudoAccountScreen
 import es.ariaontheplanet.quasar.actmutedword.MutedWordScreen
 import es.ariaontheplanet.quasar.compose.StThemedContent
 import es.ariaontheplanet.quasar.ui.exitReasons.ExitReasonsScreen
+import es.ariaontheplanet.quasar.ui.highlightWord.HighlightWordListScreen
 import es.ariaontheplanet.quasar.ui.ossLicense.OssLicenseScreen
 import org.koin.core.context.GlobalContext
 
@@ -55,6 +56,7 @@ fun AppNavHost(
             composable<Route.DrawableList> { DrawableListScreen() }
             composable<Route.ExitReasons> { ExitReasonsScreen() }
             composable<Route.FavMute> { FavMuteScreen() }
+            composable<Route.HighlightWordList> { HighlightWordListScreen() }
             composable<Route.MutedApp> { MutedAppScreen() }
             composable<Route.MutedPseudoAccount> { MutedPseudoAccountScreen() }
             composable<Route.MutedWord> { MutedWordScreen() }

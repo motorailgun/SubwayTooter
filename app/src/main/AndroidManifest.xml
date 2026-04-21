@@ -257,11 +257,6 @@
             android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
 
         <activity
-            android:name=".ActHighlightWordList"
-            android:exported="false"
-            android:label="@string/highlight_word" />
-
-        <activity
             android:name=".ActHighlightWordEdit"
             android:exported="false"
             android:label="@string/highlight_word" />

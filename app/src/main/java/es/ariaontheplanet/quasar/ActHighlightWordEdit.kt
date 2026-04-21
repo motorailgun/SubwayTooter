@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import es.ariaontheplanet.quasar.dialog.dialogColorPicker
 import es.ariaontheplanet.quasar.table.HighlightWord
+import es.ariaontheplanet.quasar.ui.highlightWord.playHighlightSound
 import es.ariaontheplanet.quasar.table.daoHighlightWord
 import jp.juggler.util.backPressed
 import jp.juggler.util.coroutine.launchAndShowError
@@ -253,7 +254,7 @@ class ActHighlightWordEdit : ComponentActivity() {
                         syncFromItem()
                     }) { Text(stringResource(R.string.reset)) }
                     Button(onClick = {
-                        ActHighlightWordList.sound(this@ActHighlightWordEdit, item)
+                        playHighlightSound(this@ActHighlightWordEdit, item)
                     }) { Text(stringResource(R.string.test)) }
                 }
 
