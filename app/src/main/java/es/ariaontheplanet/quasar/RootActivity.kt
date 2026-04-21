@@ -19,7 +19,7 @@ class RootActivity : ComponentActivity() {
         // Settings-style screens historically set RESULT_OK on back so callers
         // refresh. Default to that; routes that need something else can change it.
         setResult(RESULT_OK)
-        val start = Route.fromKey(intent?.getStringExtra(Route.EXTRA_START_KEY))
+        val start = Route.decode(intent?.getStringExtra(Route.EXTRA_ROUTE_JSON))
             ?: Route.ExitReasons
         setContent { AppNavHost(startDestination = start) }
     }
@@ -27,7 +27,7 @@ class RootActivity : ComponentActivity() {
     companion object {
         fun createIntent(context: Context, route: Route): Intent =
             Intent(context, RootActivity::class.java).apply {
-                Route.keyOf(route)?.let { putExtra(Route.EXTRA_START_KEY, it) }
+                putExtra(Route.EXTRA_ROUTE_JSON, Route.encode(route))
             }
     }
 }
