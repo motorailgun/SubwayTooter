@@ -6,18 +6,10 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Handler
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.emoji2.bundled.BundledEmojiCompatConfig
 import androidx.emoji2.text.EmojiCompat
 import java.util.WeakHashMap
-import com.bumptech.glide.Glide
-import com.bumptech.glide.GlideBuilder
-import com.bumptech.glide.Registry
-import com.bumptech.glide.integration.okhttp3.OkHttpUrlLoader
-import com.bumptech.glide.load.engine.cache.InternalCacheDiskCacheFactory
-import com.bumptech.glide.load.engine.executor.GlideExecutor
-import com.bumptech.glide.load.model.GlideUrl
 import es.ariaontheplanet.quasar.actmain.rebuildFixedColumns
 import es.ariaontheplanet.quasar.api.TootApiClient
 import es.ariaontheplanet.quasar.column.ColumnType
@@ -50,7 +42,6 @@ import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
 import org.koin.core.qualifier.named
 import ru.gildor.coroutines.okhttp.await
-import java.io.InputStream
 import java.security.Security
 import java.util.concurrent.TimeUnit
 import java.util.logging.Level
@@ -173,37 +164,6 @@ class App1 : Application() {
             } catch (ex: Throwable) {
                 log.e(ex, "sound failed.")
             }
-        }
-
-        @Suppress("UNUSED_PARAMETER")
-        fun registerGlideComponents(context: Context, glide: Glide, registry: Registry) {
-            // カスタムされたokhttpを優先的に使うためにprependを指定する
-            registry.prepend(
-                GlideUrl::class.java,
-                InputStream::class.java,
-                OkHttpUrlLoader.Factory(ok_http_client)
-            )
-        }
-
-        fun applyGlideOptions(context: Context, builder: GlideBuilder) {
-
-            // ログレベル
-            builder.setLogLevel(Log.ERROR)
-
-            // エラー処理
-            val catcher = GlideExecutor.UncaughtThrowableStrategy { ex ->
-                log.e(ex, "glide uncaught error.")
-            }
-            builder.setDiskCacheExecutor(
-                GlideExecutor.newDiskCacheBuilder()
-                    .setUncaughtThrowableStrategy(catcher).build()
-            )
-            builder.setSourceExecutor(
-                GlideExecutor.newSourceBuilder()
-                    .setUncaughtThrowableStrategy(catcher).build()
-            )
-
-            builder.setDiskCache(InternalCacheDiskCacheFactory(context, 10L * 1024L * 1024L))
         }
 
         fun setActivityTheme(

@@ -166,7 +166,6 @@ dependencies {
     implementation(libs.conscrypt.android)
     implementation(libs.custom.qr.generator)
     implementation(libs.draglistview)
-    implementation(libs.glide)
     implementation(libs.google.flexbox)
     implementation(libs.google.material)
     implementation(libs.koin.android)
@@ -189,17 +188,11 @@ dependencies {
     //noinspection UseTomlInstead
     implementation("com.github.omadahealth:swipy:1.2.3@aar")
 
-    val glideVersion = libs.versions.glide.get()
-    implementation("com.github.bumptech.glide:okhttp3-integration:$glideVersion") {
-        exclude("com.squareup.okhttp3", "okhttp")
-    }
-
     "fcmImplementation"(libs.firebase.messaging)
     "fcmImplementation"(libs.kotlinx.coroutines.play.services)
 
     detektPlugins(libs.detekt.formatting)
 
-    ksp(libs.glide.ksp)
 
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)

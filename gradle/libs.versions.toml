@@ -37,6 +37,8 @@ desugarJdk = "2.1.5"
 detekt = "1.23.8"
 draglistview = "1.7.3"
 firebaseMessaging = "25.0.1"
+# Glide is kept only for the apng_android module's WebP frame decoder
+# (depends on zjupure/GlideWebpDecoder). The app itself no longer uses Glide.
 glide = "5.0.5"
 googleFlexbox = "3.0.0"
 googleMaterial = "1.13.0"
@@ -158,8 +160,8 @@ custom-qr-generator = { module = "com.github.alexzhirkevich:custom-qr-generator"
 detekt-formatting = { module = "io.gitlab.arturbosch.detekt:detekt-formatting", version.ref = "detekt" }
 draglistview = { module = "com.github.woxthebox:draglistview", version.ref = "draglistview" }
 firebase-messaging = { module = "com.google.firebase:firebase-messaging", version.ref = "firebaseMessaging" }
+# apng_android-only — see comment on the `glide` version.
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
-glide-ksp = { module = "com.github.bumptech.glide:ksp", version.ref = "glide" }
 google-flexbox = { module = "com.google.android.flexbox:flexbox", version.ref = "googleFlexbox" }
 google-material = { module = "com.google.android.material:material", version.ref = "googleMaterial" }
 google-services = { module = "com.google.gms:google-services", version.ref = "googleServices" }
