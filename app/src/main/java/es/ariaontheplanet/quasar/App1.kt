@@ -27,42 +27,34 @@ import es.ariaontheplanet.quasar.di.viewModelModule
 import es.ariaontheplanet.quasar.emoji.EmojiMap
 import es.ariaontheplanet.quasar.pref.LazyContextHolder
 import es.ariaontheplanet.quasar.pref.PrefI
-import es.ariaontheplanet.quasar.pref.PrefS
+import es.ariaontheplanet.quasar.services.OkHttpQualifiers
 import es.ariaontheplanet.quasar.table.HighlightWord
 import es.ariaontheplanet.quasar.table.SavedAccount
 import es.ariaontheplanet.quasar.util.CustomEmojiCache
 import es.ariaontheplanet.quasar.util.CustomEmojiLister
-import es.ariaontheplanet.quasar.util.ProgressResponseBody
-import org.koin.core.context.GlobalContext
-import es.ariaontheplanet.quasar.util.getUserAgent
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.EmptyScope
 import jp.juggler.util.data.notEmpty
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.initializeToastUtils
-import jp.juggler.util.network.MySslSocketFactory
 import jp.juggler.util.network.toPostRequestBuilder
 import jp.juggler.util.os.applicationContextSafe
 import kotlinx.coroutines.launch
-import okhttp3.Cache
 import okhttp3.CacheControl
-import okhttp3.ConnectionSpec
-import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import org.conscrypt.Conscrypt
 import org.koin.android.ext.koin.androidContext
+import org.koin.core.context.GlobalContext
 import org.koin.core.context.startKoin
+import org.koin.core.qualifier.named
 import ru.gildor.coroutines.okhttp.await
-import java.io.File
 import java.io.InputStream
 import java.security.Security
-import java.util.Collections
 import java.util.concurrent.TimeUnit
 import java.util.logging.Level
 import java.util.logging.Logger
-import kotlin.math.max
 
 class App1 : Application() {
 
@@ -92,43 +84,17 @@ class App1 : Application() {
 
         internal val log = LogCategory("App1")
 
-        private fun Context.userAgentInterceptor() =
-            Interceptor { chain ->
-                chain.proceed(
-                    chain.request().newBuilder()
-                        .header("User-Agent", getUserAgent())
-                        .build()
-                )
-            }
+        // Forward to Koin — the container owns construction. Existing callers
+        // keep working via these properties; follow-ups migrate them to inject directly.
+        val ok_http_client: OkHttpClient
+            get() = GlobalContext.get().get(named(OkHttpQualifiers.API))
 
-        private fun Context.prepareOkHttp(
-            timeoutSecondsConnect: Int,
-            timeoutSecondsRead: Int,
-        ): OkHttpClient.Builder {
-            val spec = ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-                .allEnabledCipherSuites()
-                .allEnabledTlsVersions()
-                .build()
+        private val ok_http_client2: OkHttpClient
+            get() = GlobalContext.get().get(named(OkHttpQualifiers.CACHED))
 
-            return OkHttpClient.Builder()
-                .connectTimeout(timeoutSecondsConnect.toLong(), TimeUnit.SECONDS)
-                .readTimeout(timeoutSecondsRead.toLong(), TimeUnit.SECONDS)
-                .writeTimeout(timeoutSecondsRead.toLong(), TimeUnit.SECONDS)
-                .pingInterval(10, TimeUnit.SECONDS)
-                .connectionSpecs(Collections.singletonList(spec))
-                .sslSocketFactory(MySslSocketFactory, MySslSocketFactory.trustManager)
-                .addInterceptor(ProgressResponseBody.makeInterceptor())
-                .addInterceptor(userAgentInterceptor())
-        }
+        val ok_http_client_media_viewer: OkHttpClient
+            get() = GlobalContext.get().get(named(OkHttpQualifiers.MEDIA))
 
-        lateinit var ok_http_client: OkHttpClient
-
-        private lateinit var ok_http_client2: OkHttpClient
-
-        lateinit var ok_http_client_media_viewer: OkHttpClient
-
-        // Forward to Koin — the container owns construction now. Existing callers
-        // keep working via this property; Phase 4e follow-ups migrate them to inject directly.
         val custom_emoji_cache: CustomEmojiCache
             get() = GlobalContext.get().get()
 
@@ -166,32 +132,8 @@ class App1 : Application() {
                 1 /* 1 means first position */
             )
 
-            log.d("create okhttp client")
-            run {
-                Logger.getLogger(OkHttpClient::class.java.name).level = Level.FINE
-
-                val apiReadTimeout = max(3, PrefS.spApiReadTimeout.toInt())
-
-                // API用のHTTP設定はキャッシュを使わない
-                ok_http_client = appContext.prepareOkHttp(apiReadTimeout, apiReadTimeout)
-                    .build()
-
-                // ディスクキャッシュ
-                val cacheDir = File(appContext.cacheDir, "http2")
-                val cache = Cache(cacheDir, 30000000L)
-
-                // カスタム絵文字用のHTTP設定はキャッシュを使う
-                ok_http_client2 = appContext.prepareOkHttp(apiReadTimeout, apiReadTimeout)
-                    .cache(cache)
-                    .build()
-
-                // 内蔵メディアビューア用のHTTP設定はタイムアウトを調整可能
-                val mediaReadTimeout = max(3, PrefS.spMediaReadTimeout.toInt())
-                ok_http_client_media_viewer =
-                    appContext.prepareOkHttp(mediaReadTimeout, mediaReadTimeout)
-                        .cache(cache)
-                        .build()
-            }
+            // OkHttp noise at FINE level only — clients themselves are Koin singles.
+            Logger.getLogger(OkHttpClient::class.java.name).level = Level.FINE
 
             val handler = Handler(appContext.mainLooper)
 
