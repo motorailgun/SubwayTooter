@@ -33,6 +33,7 @@ import es.ariaontheplanet.quasar.table.SavedAccount
 import es.ariaontheplanet.quasar.util.CustomEmojiCache
 import es.ariaontheplanet.quasar.util.CustomEmojiLister
 import es.ariaontheplanet.quasar.util.ProgressResponseBody
+import org.koin.core.context.GlobalContext
 import es.ariaontheplanet.quasar.util.getUserAgent
 import jp.juggler.util.coroutine.AppDispatchers
 import jp.juggler.util.coroutine.EmptyScope
@@ -126,11 +127,13 @@ class App1 : Application() {
 
         lateinit var ok_http_client_media_viewer: OkHttpClient
 
-        @SuppressLint("StaticFieldLeak")
-        lateinit var custom_emoji_cache: CustomEmojiCache
+        // Forward to Koin — the container owns construction now. Existing callers
+        // keep working via this property; Phase 4e follow-ups migrate them to inject directly.
+        val custom_emoji_cache: CustomEmojiCache
+            get() = GlobalContext.get().get()
 
-        @SuppressLint("StaticFieldLeak")
-        lateinit var custom_emoji_lister: CustomEmojiLister
+        val custom_emoji_lister: CustomEmojiLister
+            get() = GlobalContext.get().get()
 
         fun prepare(appContext: Context, caller: String): AppState {
             var state = appStateX
@@ -192,9 +195,10 @@ class App1 : Application() {
 
             val handler = Handler(appContext.mainLooper)
 
-            log.d("create custom emoji cache.")
-            custom_emoji_cache = CustomEmojiCache(appContext, handler)
-            custom_emoji_lister = CustomEmojiLister(appContext, handler)
+            // CustomEmojiCache / CustomEmojiLister are Koin singles now.
+            // Trigger construction here so onNetworkChanged() hooks fire as before.
+            custom_emoji_cache
+            custom_emoji_lister
 
             ColumnType.dump()
 
