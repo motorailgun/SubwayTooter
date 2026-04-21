@@ -246,12 +246,6 @@
             android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
 
         <activity
-            android:name=".ActColumnCustomize"
-            android:exported="false"
-            android:label="@string/color_and_background"
-            android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
-
-        <activity
             android:name=".ActText"
             android:exported="false"
             android:label="@string/select_and_copy"
