@@ -246,11 +246,6 @@
             android:windowSoftInputMode="adjustResize" />
 
         <activity
-            android:name=".ActAbout"
-            android:exported="false"
-            android:label="@string/app_about" />
-
-        <activity
             android:name=".ActKeywordFilter"
             android:exported="false"
             android:label="@string/keyword_filter_new"

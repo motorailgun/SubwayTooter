@@ -88,6 +88,7 @@ import es.ariaontheplanet.quasar.pref.PrefS
 import es.ariaontheplanet.quasar.span.MyClickableSpan
 import es.ariaontheplanet.quasar.span.MyClickableSpanHandler
 import es.ariaontheplanet.quasar.table.daoSavedAccount
+import es.ariaontheplanet.quasar.ui.about.EXTRA_ABOUT_SEARCH
 import es.ariaontheplanet.quasar.ui.languageFilter.LanguageFilterActivity
 import es.ariaontheplanet.quasar.util.DecodeOptions.Companion.reloadEmojiScale
 import es.ariaontheplanet.quasar.util.EmojiDecoder
@@ -267,7 +268,7 @@ class ActMain : ComponentActivity(),
 
     val arAbout = ActivityResultHandler(log) { r ->
         if (r.isNotOk) return@ActivityResultHandler
-        r.data?.string(ActAbout.EXTRA_SEARCH)?.notEmpty()?.let { search ->
+        r.data?.string(EXTRA_ABOUT_SEARCH)?.notEmpty()?.let { search ->
             timeline(
                 defaultInsertPosition,
                 ColumnType.SEARCH,

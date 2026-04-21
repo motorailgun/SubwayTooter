@@ -14,6 +14,7 @@ import es.ariaontheplanet.quasar.actmutedapp.MutedAppScreen
 import es.ariaontheplanet.quasar.actmutedpseudoaccount.MutedPseudoAccountScreen
 import es.ariaontheplanet.quasar.actmutedword.MutedWordScreen
 import es.ariaontheplanet.quasar.compose.StThemedContent
+import es.ariaontheplanet.quasar.ui.about.AboutScreen
 import es.ariaontheplanet.quasar.ui.exitReasons.ExitReasonsScreen
 import es.ariaontheplanet.quasar.ui.highlightWord.HighlightWordListScreen
 import es.ariaontheplanet.quasar.ui.ossLicense.OssLicenseScreen
@@ -53,6 +54,7 @@ fun AppNavHost(
             navController = navController,
             startDestination = startDestination,
         ) {
+            composable<Route.About> { AboutScreen() }
             composable<Route.DrawableList> { DrawableListScreen() }
             composable<Route.ExitReasons> { ExitReasonsScreen() }
             composable<Route.FavMute> { FavMuteScreen() }

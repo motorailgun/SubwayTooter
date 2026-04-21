@@ -33,7 +33,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import es.ariaontheplanet.quasar.ActAbout
 import es.ariaontheplanet.quasar.ActAppSetting.Companion.launchAppSetting
 import es.ariaontheplanet.quasar.ActMain
 import es.ariaontheplanet.quasar.ActPushMessageList
@@ -212,10 +211,7 @@ class SideMenuAdapter(
         },
 
         Item(icon = R.drawable.ic_info_outline, title = R.string.app_about) {
-
-            arAbout.launch(
-                Intent(this, ActAbout::class.java)
-            )
+            arAbout.launch(RootActivity.createIntent(this, Route.About))
         },
 
         Item(icon = R.drawable.ic_info_outline, title = R.string.oss_license) {
