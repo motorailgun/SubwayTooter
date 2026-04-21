@@ -4,7 +4,6 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.os.Build
-import android.widget.ImageView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -26,11 +25,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
-import com.bumptech.glide.Glide
+import androidx.core.graphics.drawable.toBitmap
+import coil3.compose.AsyncImage
 import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.api.entity.Acct
 import es.ariaontheplanet.quasar.api.entity.NotificationType.Companion.toNotificationType
@@ -226,22 +228,17 @@ private fun GlideImage(
     modifier: Modifier = Modifier,
     errorDrawable: Drawable? = null,
 ) {
-    AndroidView(
-        factory = { context ->
-            ImageView(context).apply {
-                importantForAccessibility = ImageView.IMPORTANT_FOR_ACCESSIBILITY_NO
-            }
-        },
+    AsyncImage(
+        model = model,
+        contentDescription = null,
         modifier = modifier,
-        update = { imageView ->
-            val request = Glide.with(imageView).load(model)
-            if (errorDrawable != null) {
-                request.error(errorDrawable)
-            }
-            request.into(imageView)
-        },
+        error = errorDrawable?.toPainter(),
+        fallback = errorDrawable?.toPainter(),
     )
 }
+
+private fun Drawable.toPainter(): Painter =
+    BitmapPainter(toBitmap().asImageBitmap())
 
 private fun pushMessageText(pm: PushMessage): String = arrayOf(
     "when: ${pm.timestamp.formatLocalTime()}",
