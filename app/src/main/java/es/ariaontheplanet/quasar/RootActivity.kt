@@ -16,6 +16,9 @@ class RootActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App1.setActivityTheme(this)
+        // Settings-style screens historically set RESULT_OK on back so callers
+        // refresh. Default to that; routes that need something else can change it.
+        setResult(RESULT_OK)
         val start = Route.fromKey(intent?.getStringExtra(Route.EXTRA_START_KEY))
             ?: Route.ExitReasons
         setContent { AppNavHost(startDestination = start) }

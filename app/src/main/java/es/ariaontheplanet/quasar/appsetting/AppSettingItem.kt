@@ -10,7 +10,6 @@ import android.widget.Spinner
 import android.widget.TextView
 import androidx.annotation.StringRes
 import es.ariaontheplanet.quasar.ActAppSetting
-import es.ariaontheplanet.quasar.ActDrawableList
 import es.ariaontheplanet.quasar.RootActivity
 import es.ariaontheplanet.quasar.nav.Route
 
@@ -858,7 +857,7 @@ val appSettingRoot = AppSettingItem(null, SettingType.Section, R.string.app_sett
         sw(PrefB.bpEnableDeprecatedSomething, R.string.enable_deprecated_something)
 
         action(R.string.drawable_list) {
-            action = { startActivity(Intent(this, ActDrawableList::class.java)) }
+            action = { startActivity(RootActivity.createIntent(this, Route.DrawableList)) }
         }
 
         action(R.string.exit_reasons) {

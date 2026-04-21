@@ -298,12 +298,6 @@
             android:label="@string/language_filter"
             android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
         <activity
-            android:name=".ActDrawableList"
-            android:exported="false"
-            android:label="@string/drawable_list"
-            android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
-
-        <activity
             android:name=".ActNickname"
             android:exported="false"
             android:label="@string/acct_customize"

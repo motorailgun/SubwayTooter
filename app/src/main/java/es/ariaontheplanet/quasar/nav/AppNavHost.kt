@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import es.ariaontheplanet.quasar.actdrawablelist.DrawableListScreen
 import es.ariaontheplanet.quasar.compose.StThemedContent
 import es.ariaontheplanet.quasar.ui.exitReasons.ExitReasonsScreen
 import es.ariaontheplanet.quasar.ui.ossLicense.OssLicenseScreen
@@ -47,6 +48,7 @@ fun AppNavHost(
             navController = navController,
             startDestination = startDestination,
         ) {
+            composable<Route.DrawableList> { DrawableListScreen() }
             composable<Route.ExitReasons> { ExitReasonsScreen() }
             composable<Route.OssLicense> { OssLicenseScreen(onClose = popOrFinish) }
         }
