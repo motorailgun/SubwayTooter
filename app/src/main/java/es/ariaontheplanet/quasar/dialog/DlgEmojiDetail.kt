@@ -1,9 +1,7 @@
 package es.ariaontheplanet.quasar.dialog
 
 import android.app.Dialog
-import android.graphics.drawable.PictureDrawable
 import android.view.WindowManager
-import android.widget.ImageView
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -24,10 +22,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import com.bumptech.glide.Glide
+import coil3.compose.AsyncImage
 import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.view.NetworkEmojiView
 import jp.juggler.util.ui.dismissSafe
@@ -114,22 +113,15 @@ private fun EmojiDetailContent(
                 }
 
                 is EmojiDetailPreview.UnicodeImage -> {
-                    AndroidView(
-                        factory = { context ->
-                            ImageView(context).apply {
-                                scaleType = ImageView.ScaleType.FIT_CENTER
-                                if (preview.isSvg) {
-                                    Glide.with(context)
-                                        .`as`(PictureDrawable::class.java)
-                                        .load("file:///android_asset/${preview.assetsName}")
-                                        .into(this)
-                                } else {
-                                    Glide.with(context)
-                                        .load(preview.drawableId)
-                                        .into(this)
-                                }
-                            }
-                        },
+                    val model: Any = if (preview.isSvg) {
+                        "file:///android_asset/${preview.assetsName}"
+                    } else {
+                        preview.drawableId
+                    }
+                    AsyncImage(
+                        model = model,
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(max = 200.dp),

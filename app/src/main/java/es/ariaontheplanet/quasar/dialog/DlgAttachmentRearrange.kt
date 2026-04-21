@@ -2,7 +2,6 @@ package es.ariaontheplanet.quasar.dialog
 
 import android.app.Dialog
 import android.graphics.drawable.Drawable
-import android.widget.ImageView
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -39,11 +38,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import com.bumptech.glide.Glide
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.graphics.Color as ComposeColor
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.layout.ContentScale
+import androidx.core.graphics.drawable.toBitmap
+import coil3.compose.AsyncImage
 import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.defaultColorIcon
 import es.ariaontheplanet.quasar.util.PostAttachment
@@ -233,37 +239,37 @@ private fun AttachmentThumbnail(
     iconFallback: Drawable?,
 ) {
     val imageUrl = item.attachment?.preview_url
-    AndroidView(
-        factory = { context ->
-            ImageView(context).apply {
-                setBackgroundColor(0x80808080.toInt())
-                importantForAccessibility = android.view.View.IMPORTANT_FOR_ACCESSIBILITY_NO
-                scaleType = ImageView.ScaleType.FIT_CENTER
+    val thumbModifier = Modifier
+        .size(80.dp)
+        .background(ComposeColor(0x80808080))
+    if (imageUrl.isNullOrEmpty()) {
+        val icon: Painter? = when (item.status) {
+            PostAttachment.Status.Progress -> iconPlaceHolder?.toPainter()
+            PostAttachment.Status.Error -> iconError?.toPainter()
+            else -> iconFallback?.toPainter()
+        }
+        Box(modifier = thumbModifier) {
+            if (icon != null) {
+                Image(
+                    painter = icon,
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier.size(80.dp),
+                )
             }
-        },
-        modifier = Modifier.size(80.dp),
-        update = { imageView ->
-            val context = imageView.context
-            when {
-                imageUrl.isNullOrEmpty() -> {
-                    val icon = when (item.status) {
-                        PostAttachment.Status.Progress -> iconPlaceHolder
-                        PostAttachment.Status.Error -> iconError
-                        else -> iconFallback
-                    }
-                    Glide.with(context).clear(imageView)
-                    imageView.setImageDrawable(icon)
-                }
-
-                else -> {
-                    Glide.with(context)
-                        .load(imageUrl)
-                        .placeholder(iconPlaceHolder)
-                        .error(iconError)
-                        .fallback(iconFallback)
-                        .into(imageView)
-                }
-            }
-        },
-    )
+        }
+    } else {
+        AsyncImage(
+            model = imageUrl,
+            contentDescription = null,
+            modifier = thumbModifier,
+            contentScale = ContentScale.Fit,
+            placeholder = iconPlaceHolder?.toPainter(),
+            error = iconError?.toPainter(),
+            fallback = iconFallback?.toPainter(),
+        )
+    }
 }
+
+private fun Drawable.toPainter(): Painter =
+    BitmapPainter(toBitmap().asImageBitmap())
