@@ -1,6 +1,5 @@
 package es.ariaontheplanet.quasar
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.app.Application
 import android.content.Context
@@ -28,6 +27,7 @@ import es.ariaontheplanet.quasar.emoji.EmojiMap
 import es.ariaontheplanet.quasar.pref.LazyContextHolder
 import es.ariaontheplanet.quasar.pref.PrefI
 import es.ariaontheplanet.quasar.services.OkHttpQualifiers
+import es.ariaontheplanet.quasar.services.TtsService
 import es.ariaontheplanet.quasar.table.HighlightWord
 import es.ariaontheplanet.quasar.table.SavedAccount
 import es.ariaontheplanet.quasar.util.CustomEmojiCache
@@ -101,10 +101,20 @@ class App1 : Application() {
         val custom_emoji_lister: CustomEmojiLister
             get() = GlobalContext.get().get()
 
-        fun prepare(appContext: Context, caller: String): AppState {
-            var state = appStateX
-            if (state != null) return state
+        @Volatile
+        private var prepared = false
 
+        fun prepare(appContext: Context, caller: String): AppState {
+            if (!prepared) {
+                synchronized(App1::class.java) {
+                    if (!prepared) runFirstTimeInit(appContext, caller)
+                    prepared = true
+                }
+            }
+            return GlobalContext.get().get()
+        }
+
+        private fun runFirstTimeInit(appContext: Context, caller: String) {
             log.d("initialize AppState. caller=$caller")
 
             // initialize EmojiMap
@@ -135,8 +145,6 @@ class App1 : Application() {
             // OkHttp noise at FINE level only — clients themselves are Koin singles.
             Logger.getLogger(OkHttpClient::class.java.name).level = Level.FINE
 
-            val handler = Handler(appContext.mainLooper)
-
             // CustomEmojiCache / CustomEmojiLister are Koin singles now.
             // Trigger construction here so onNetworkChanged() hooks fire as before.
             custom_emoji_cache
@@ -144,27 +152,14 @@ class App1 : Application() {
 
             ColumnType.dump()
 
-            log.d("create  AppState.")
-
-            state = AppState(appContext, handler)
-            appStateX = state
-
-            // Fixed 4-column model: resolve the current account (from PrefDevice or
-            // first real account in DB) and build the 4 fixed columns from it.
-            // If no real account exists yet, the column list is left empty and the
-            // onboarding UI in ActMain prompts the user to add one.
             log.d("initialize fixed columns...")
+            val state: AppState = GlobalContext.get().get()
             state.loadCurrentAccount()?.let { account ->
                 state.rebuildFixedColumns(account)
             }
 
             log.d("prepare() complete! caller=$caller")
-
-            return state
         }
-
-        @SuppressLint("StaticFieldLeak")
-        private var appStateX: AppState? = null
 
         fun getAppState(context: Context, caller: String = "getAppState"): AppState {
             return prepare(context.applicationContext, caller)
@@ -172,12 +167,9 @@ class App1 : Application() {
 
         fun sound(item: HighlightWord) {
             try {
-                appStateX?.sound(item)
+                GlobalContext.get().get<TtsService>().sound(item)
             } catch (ex: Throwable) {
                 log.e(ex, "sound failed.")
-                // java.lang.NoSuchFieldError:
-                // at es.ariaontheplanet.quasar.App1$Companion.sound (App1.kt:544)
-                // at es.ariaontheplanet.quasar.column.Column$startRefresh$task$1.onPostExecute (Column.kt:2432)
             }
         }
 
