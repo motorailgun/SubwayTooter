@@ -26,6 +26,11 @@ sealed interface Route {
 
     @Serializable data class AccountSettings(val accountDbId: Long) : Route
     @Serializable data class LanguageFilter(val columnIndex: Int) : Route
+    @Serializable data class Nickname(
+        val acctAscii: String,
+        val acctPretty: String,
+        val showNotificationSound: Boolean,
+    ) : Route
 
     companion object {
         const val EXTRA_ROUTE_JSON = "nav.route_json"

@@ -17,7 +17,9 @@ import es.ariaontheplanet.quasar.compose.StThemedContent
 import es.ariaontheplanet.quasar.ui.about.AboutScreen
 import es.ariaontheplanet.quasar.ui.exitReasons.ExitReasonsScreen
 import es.ariaontheplanet.quasar.ui.highlightWord.HighlightWordListScreen
+import es.ariaontheplanet.quasar.ui.nickname.NicknameScreen
 import es.ariaontheplanet.quasar.ui.ossLicense.OssLicenseScreen
+import androidx.navigation.toRoute
 import org.koin.core.context.GlobalContext
 
 // Hosts the app's NavController and wires it to NavigatorImpl so non-UI
@@ -62,6 +64,14 @@ fun AppNavHost(
             composable<Route.MutedApp> { MutedAppScreen() }
             composable<Route.MutedPseudoAccount> { MutedPseudoAccountScreen() }
             composable<Route.MutedWord> { MutedWordScreen() }
+            composable<Route.Nickname> { entry ->
+                val r = entry.toRoute<Route.Nickname>()
+                NicknameScreen(
+                    acctAscii = r.acctAscii,
+                    acctPretty = r.acctPretty,
+                    showNotificationSound = r.showNotificationSound,
+                )
+            }
             composable<Route.OssLicense> { OssLicenseScreen(onClose = popOrFinish) }
         }
     }

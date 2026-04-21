@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.unit.dp
 import es.ariaontheplanet.quasar.*
 import es.ariaontheplanet.quasar.actmain.addColumn
+import es.ariaontheplanet.quasar.nav.Route
 import es.ariaontheplanet.quasar.api.*
 import es.ariaontheplanet.quasar.api.entity.*
 import es.ariaontheplanet.quasar.column.*
@@ -52,7 +53,19 @@ fun ActMain.clickBlock(
 fun ActMain.clickNicknameCustomize(
     accessInfo: SavedAccount,
     who: TootAccount,
-) = arNickname.launch(ActNickname.createIntent(this, accessInfo.getFullAcct(who), true))
+) {
+    val fullAcct = accessInfo.getFullAcct(who)
+    arNickname.launch(
+        RootActivity.createIntent(
+            this,
+            Route.Nickname(
+                acctAscii = fullAcct.ascii,
+                acctPretty = fullAcct.pretty,
+                showNotificationSound = true,
+            ),
+        ),
+    )
+}
 
 fun ActMain.openAvatarImage(who: TootAccount) {
     openCustomTab(
