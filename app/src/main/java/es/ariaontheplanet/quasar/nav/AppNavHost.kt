@@ -21,6 +21,7 @@ import es.ariaontheplanet.quasar.ui.highlightWord.HighlightWordListScreen
 import es.ariaontheplanet.quasar.ui.languageFilter.LanguageFilterScreen
 import es.ariaontheplanet.quasar.ui.nickname.NicknameScreen
 import es.ariaontheplanet.quasar.ui.ossLicense.OssLicenseScreen
+import es.ariaontheplanet.quasar.ui.pushMessageList.PushMessageListScreen
 import androidx.navigation.toRoute
 import org.koin.core.context.GlobalContext
 
@@ -83,6 +84,7 @@ fun AppNavHost(
                 )
             }
             composable<Route.OssLicense> { OssLicenseScreen(onClose = popOrFinish) }
+            composable<Route.PushMessageList> { PushMessageListScreen() }
         }
     }
 }

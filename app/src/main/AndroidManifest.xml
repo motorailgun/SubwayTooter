@@ -278,11 +278,6 @@
             android:exported="false"
             android:label="@string/app_name"
             android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
-        <activity
-            android:name="es.ariaontheplanet.quasar.ActPushMessageList"
-            android:exported="false"
-            android:label="@string/push_message_history" />
-
         <meta-data
             android:name="android.max_aspect"
             android:value="100.0" />

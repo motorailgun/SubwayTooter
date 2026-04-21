@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import es.ariaontheplanet.quasar.ActAppSetting.Companion.launchAppSetting
 import es.ariaontheplanet.quasar.ActMain
-import es.ariaontheplanet.quasar.ActPushMessageList
 import es.ariaontheplanet.quasar.App1
 import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.action.accountAdd
@@ -173,7 +172,7 @@ class SideMenuAdapter(
         },
 
         Item(icon = R.drawable.outline_delivery_dining_24, title = R.string.push_message_history) {
-            startActivity(Intent(this, ActPushMessageList::class.java))
+            startActivity(RootActivity.createIntent(this, Route.PushMessageList))
         },
 
         // Fixed-columns refactor: the "Column" section (column list, close-all, add-from-URL,

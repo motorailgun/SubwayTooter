@@ -23,6 +23,7 @@ sealed interface Route {
     @Serializable data object MutedWord : Route
     @Serializable data object OssLicense : Route
     @Serializable data object About : Route
+    @Serializable data object PushMessageList : Route
 
     @Serializable data class AccountSettings(val accountDbId: Long) : Route
     @Serializable data class Alert(val title: String, val message: String) : Route
