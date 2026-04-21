@@ -5,7 +5,6 @@ import android.os.Handler
 import es.ariaontheplanet.quasar.api.entity.TootStatus
 import es.ariaontheplanet.quasar.column.Column
 import es.ariaontheplanet.quasar.column.ColumnEncoder
-import es.ariaontheplanet.quasar.column.getBackgroundImageDir
 import es.ariaontheplanet.quasar.column.onMuteUpdated
 import es.ariaontheplanet.quasar.pref.prefDevice
 import es.ariaontheplanet.quasar.services.AppBusyState
@@ -19,20 +18,12 @@ import es.ariaontheplanet.quasar.table.daoSavedAccount
 import kotlinx.coroutines.flow.StateFlow
 import es.ariaontheplanet.quasar.util.NetworkStateTracker
 import es.ariaontheplanet.quasar.util.PostAttachment
-import jp.juggler.util.data.JsonArray
 import jp.juggler.util.data.JsonException
 import jp.juggler.util.data.JsonObject
-import jp.juggler.util.data.decodeJsonArray
-import jp.juggler.util.data.decodeUTF8
-import jp.juggler.util.data.encodeUTF8
 import jp.juggler.util.data.toJsonArray
-import jp.juggler.util.idCompat
 import jp.juggler.util.log.LogCategory
-import jp.juggler.util.log.showToast
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import java.io.File
-import java.io.FileNotFoundException
 
 class AppState(
     internal val context: Context,
@@ -50,53 +41,6 @@ class AppState(
     companion object {
 
         internal val log = LogCategory("AppState")
-
-        private const val FILE_COLUMN_LIST = "column_list"
-
-        internal fun saveColumnList(context: Context, fileName: String, array: JsonArray) {
-            synchronized(log) {
-                try {
-                    val tmpName =
-                        "tmpColumnList.${System.currentTimeMillis()}.${Thread.currentThread().idCompat}"
-                    val tmpFile = context.getFileStreamPath(tmpName)
-                    try {
-                        // write to tmp file
-                        context.openFileOutput(tmpName, Context.MODE_PRIVATE).use { os ->
-                            os.write(array.toString().encodeUTF8())
-                        }
-                        // rename
-                        val outFile = context.getFileStreamPath(fileName)
-                        if (!tmpFile.renameTo(outFile)) {
-                            error("saveColumnList: rename failed!")
-                        } else {
-                            log.d("saveColumnList: rename ok: $outFile")
-                        }
-                        Unit
-                    } finally {
-                        tmpFile.delete() // ignore return value
-                    }
-                } catch (ex: Throwable) {
-                    log.e(ex, "saveColumnList failed.")
-                    context.showToast(ex, "saveColumnList failed.")
-                }
-            }
-        }
-
-        internal fun loadColumnList(context: Context, fileName: String): JsonArray? {
-            synchronized(log) {
-                try {
-                    return context.openFileInput(fileName).use { inData ->
-                        inData.readBytes().decodeUTF8().decodeJsonArray()
-                    }
-                } catch (ignored: FileNotFoundException) {
-                } catch (ex: Throwable) {
-                    log.e(ex, "loadColumnList failed.")
-                    context.showToast(ex, "loadColumnList failed.")
-                }
-                return null
-            }
-        }
-
     }
 
     internal val density: Float
@@ -172,41 +116,6 @@ class AppState(
     // compiling; this is now a no-op aside from re-evaluating TTS.
     internal fun saveColumnList(bEnableSpeech: Boolean = true) {
         if (bEnableSpeech) enableSpeech()
-    }
-
-    fun loadColumnList() {
-        val list = loadColumnList(context, FILE_COLUMN_LIST)
-            ?.objectList()
-            ?.mapIndexedNotNull { index, src ->
-                try {
-                    Column(this, src)
-                } catch (ex: Throwable) {
-                    log.e(ex, "loadColumnList: decode column failed at $index")
-                    null
-                }
-            }
-        if (list != null) editColumnList(save = false) { it.addAll(list) }
-
-        // ミュートデータのロード
-        TootStatus.updateMuteData(force = true)
-
-        // 背景フォルダの掃除
-        try {
-            val backgroundImageDir = getBackgroundImageDir(context)
-            backgroundImageDir.list()?.forEach { name ->
-                val file = File(backgroundImageDir, name)
-                if (file.isFile) {
-                    val delm = name.indexOf(':')
-                    val id = if (delm != -1) name.substring(0, delm) else name
-                    val column = ColumnEncoder.findColumnById(id)
-                    if (column == null) file.delete()
-                }
-            }
-        } catch (ex: Throwable) {
-            // クラッシュレポートによると状態が悪いとダメらしい
-            // java.lang.IllegalStateException
-            log.e(ex, "loadColumnList failed.")
-        }
     }
 
     fun isBusyFav(account: SavedAccount, status: TootStatus) =

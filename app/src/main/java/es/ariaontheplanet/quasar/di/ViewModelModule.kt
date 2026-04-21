@@ -1,7 +1,6 @@
 package es.ariaontheplanet.quasar.di
 
 import es.ariaontheplanet.quasar.actaccountsetting.AccountSettingViewModel
-import es.ariaontheplanet.quasar.actcolumnlist.ColumnListViewModel
 import es.ariaontheplanet.quasar.actdrawablelist.DrawableListViewModel
 import es.ariaontheplanet.quasar.actfavmute.FavMuteViewModel
 import es.ariaontheplanet.quasar.acthighlightwordlist.HighlightWordListViewModel
@@ -45,7 +44,4 @@ val viewModelModule = module {
 
     // Parameterized
     viewModel { (acctAscii: String) -> NicknameViewModel(acctAscii) }
-    viewModel { (initialSelection: Int) ->
-        ColumnListViewModel(androidApplication(), initialSelection)
-    }
 }

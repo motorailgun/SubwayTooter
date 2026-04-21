@@ -234,12 +234,6 @@
             android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
 
         <activity
-            android:name=".ActColumnList"
-            android:exported="false"
-            android:label="@string/column_list"
-            android:windowSoftInputMode="adjustResize" />
-
-        <activity
             android:name=".ActKeywordFilter"
             android:exported="false"
             android:label="@string/keyword_filter_new"
