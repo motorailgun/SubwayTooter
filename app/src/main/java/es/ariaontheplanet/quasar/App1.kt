@@ -66,6 +66,8 @@ class App1 : Application() {
             androidContext(this@App1)
             modules(appModule, viewModelModule)
         }
+        // Route all Coil AsyncImage calls through the Koin-managed ImageLoader.
+        coil3.SingletonImageLoader.setSafe { GlobalContext.get().get() }
         initializeToastUtils(this)
         prepare(applicationContext, "App1.onCreate")
     }
