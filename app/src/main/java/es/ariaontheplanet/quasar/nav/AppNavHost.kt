@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import es.ariaontheplanet.quasar.actaccountsetting.AccountSettingRoute
 import es.ariaontheplanet.quasar.actdrawablelist.DrawableListScreen
 import es.ariaontheplanet.quasar.actfavmute.FavMuteScreen
 import es.ariaontheplanet.quasar.actmutedapp.MutedAppScreen
@@ -60,6 +61,10 @@ fun AppNavHost(
             startDestination = startDestination,
         ) {
             composable<Route.About> { AboutScreen() }
+            composable<Route.AccountSettings> { entry ->
+                val r = entry.toRoute<Route.AccountSettings>()
+                AccountSettingRoute(accountDbId = r.accountDbId, onBack = popOrFinish)
+            }
             composable<Route.Alert> { entry ->
                 val r = entry.toRoute<Route.Alert>()
                 AlertScreen(title = r.title, message = r.message)

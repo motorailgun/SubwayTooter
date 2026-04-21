@@ -228,12 +228,6 @@
         </activity>
 
         <activity
-            android:name=".ActAccountSetting"
-            android:exported="false"
-            android:label="@string/account_setting"
-            android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
-
-        <activity
             android:name=".ActAppSetting"
             android:exported="false"
             android:label="@string/app_setting"

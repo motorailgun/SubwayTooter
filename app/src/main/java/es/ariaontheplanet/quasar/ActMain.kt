@@ -281,13 +281,8 @@ class ActMain : ComponentActivity(),
         launchAndShowError {
             updateColumnStrip()
             appState.columnList.forEach { it.fireShowColumnHeader() }
-            when (r.resultCode) {
-                RESULT_OK -> r.data?.data?.let { openBrowser(it) }
-
-                ActAccountSetting.RESULT_INPUT_ACCESS_TOKEN ->
-                    r.data?.long(ActAccountSetting.EXTRA_DB_ID)
-                        ?.let { daoSavedAccount.loadAccount(it) }
-                        ?.let { accessTokenPrompt(it.apiHost) }
+            if (r.resultCode == RESULT_OK) {
+                r.data?.data?.let { openBrowser(it) }
             }
         }
     }

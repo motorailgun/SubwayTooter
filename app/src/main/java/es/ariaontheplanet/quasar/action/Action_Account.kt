@@ -3,6 +3,7 @@ package es.ariaontheplanet.quasar.action
 import android.os.Build
 import es.ariaontheplanet.quasar.*
 import es.ariaontheplanet.quasar.actmain.addColumn
+import es.ariaontheplanet.quasar.nav.Route
 import es.ariaontheplanet.quasar.actmain.afterAccountVerify
 import es.ariaontheplanet.quasar.actmain.defaultInsertPosition
 import es.ariaontheplanet.quasar.api.*
@@ -190,7 +191,12 @@ fun ActMain.accountOpenSetting() {
             bAuto = true,
             message = getString(R.string.account_picker_open_setting)
         )?.let {
-            arAccountSetting.launch(ActAccountSetting.createIntent(this@accountOpenSetting, it))
+            arAccountSetting.launch(
+                RootActivity.createIntent(
+                    this@accountOpenSetting,
+                    Route.AccountSettings(it.db_id),
+                ),
+            )
         }
     }
 }
@@ -200,7 +206,9 @@ fun ActMain.accountOpenSetting() {
 fun ActMain.openCurrentAccountSetting() {
     val current = appState.currentAccount.value
     if (current != null) {
-        arAccountSetting.launch(ActAccountSetting.createIntent(this, current))
+        arAccountSetting.launch(
+            RootActivity.createIntent(this, Route.AccountSettings(current.db_id)),
+        )
     } else {
         accountOpenSetting()
     }
