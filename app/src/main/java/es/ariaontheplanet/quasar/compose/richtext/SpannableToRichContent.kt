@@ -3,24 +3,19 @@ package es.ariaontheplanet.quasar.compose.richtext
 import android.text.Spanned
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.text.InlineTextContent
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.Placeholder
 import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.em
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.toBitmap
 import coil3.compose.AsyncImage
 import es.ariaontheplanet.quasar.span.EmojiImageSpan
 import es.ariaontheplanet.quasar.span.HighlightSpan
@@ -42,7 +37,10 @@ import es.ariaontheplanet.quasar.span.SvgEmojiSpan
 // single Paragraph in this first pass. Most account bios and display names
 // don't hit them; proper block decomposition is scheduled for 6c-2.
 
-fun CharSequence.toRichContent(defaultLinkColor: Int = 0): RichContent {
+fun CharSequence.toRichContent(
+    defaultLinkColor: Int = 0,
+    onLinkClick: ((String) -> Unit)? = null,
+): RichContent {
     val spannable = this as? Spanned
     if (spannable == null) {
         return RichContent(listOf(RichBlock.Paragraph(AnnotatedString(this.toString()))))
@@ -65,16 +63,26 @@ fun CharSequence.toRichContent(defaultLinkColor: Int = 0): RichContent {
                 is MyClickableSpan -> {
                     val color = MyClickableSpan.defaultLinkColor
                         .takeIf { it != 0 } ?: defaultLinkColor
-                    addStyle(
-                        SpanStyle(
-                            color = if (color != 0) Color(color.argbWithAlpha()) else Color.Unspecified,
-                            textDecoration = if (MyClickableSpan.showLinkUnderline) {
-                                TextDecoration.Underline
-                            } else null,
-                        ),
-                        start, end,
+                    val linkStyle = SpanStyle(
+                        color = if (color != 0) Color(color.argbWithAlpha()) else Color.Unspecified,
+                        textDecoration = if (MyClickableSpan.showLinkUnderline) {
+                            TextDecoration.Underline
+                        } else null,
                     )
-                    addStringAnnotation(RICH_LINK_TAG, span.linkInfo.url, start, end)
+                    val url = span.linkInfo.url
+                    if (onLinkClick != null) {
+                        // Compose 1.7 LinkAnnotation — Text's native link handling
+                        // honours the listener, so no extra pointer-input wiring.
+                        val link = LinkAnnotation.Clickable(
+                            tag = RICH_LINK_TAG,
+                            styles = TextLinkStyles(style = linkStyle),
+                            linkInteractionListener = { onLinkClick(url) },
+                        )
+                        addLink(link, start, end)
+                    } else {
+                        addStyle(linkStyle, start, end)
+                        addStringAnnotation(RICH_LINK_TAG, url, start, end)
+                    }
                 }
 
                 is HighlightSpan -> {
