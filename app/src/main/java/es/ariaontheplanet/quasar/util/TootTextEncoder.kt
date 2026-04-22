@@ -3,8 +3,10 @@ package es.ariaontheplanet.quasar.util
 import android.content.Context
 import android.content.Intent
 import androidx.annotation.StringRes
-import es.ariaontheplanet.quasar.ActText
 import es.ariaontheplanet.quasar.R
+import es.ariaontheplanet.quasar.ui.text.EXTRA_CONTENT_END
+import es.ariaontheplanet.quasar.ui.text.EXTRA_CONTENT_START
+import es.ariaontheplanet.quasar.ui.text.EXTRA_TEXT
 import es.ariaontheplanet.quasar.api.entity.*
 import es.ariaontheplanet.quasar.pref.PrefB
 import es.ariaontheplanet.quasar.table.SavedAccount
@@ -65,7 +67,7 @@ object TootTextEncoder {
 
         sb.addAfterLine("\n")
 
-        intent.putExtra(ActText.EXTRA_CONTENT_START, sb.length)
+        intent.putExtra(EXTRA_CONTENT_START, sb.length)
         sb.append(
             DecodeOptions(
                 context,
@@ -78,13 +80,13 @@ object TootTextEncoder {
 
         encodePolls(sb, context, status)
 
-        intent.putExtra(ActText.EXTRA_CONTENT_END, sb.length)
+        intent.putExtra(EXTRA_CONTENT_END, sb.length)
 
         dumpAttachment(sb, status.media_attachments)
 
         sb.addAfterLine(String.format(Locale.JAPAN, "Status-Source: %s", status.json.toString(2)))
         sb.addAfterLine("")
-        intent.putExtra(ActText.EXTRA_TEXT, sb.toString())
+        intent.putExtra(EXTRA_TEXT, sb.toString())
     }
 
     fun encodeStatusForTranslate(
@@ -255,16 +257,16 @@ object TootTextEncoder {
     ) {
         val sb = StringBuilder()
 
-        intent.putExtra(ActText.EXTRA_CONTENT_START, sb.length)
+        intent.putExtra(EXTRA_CONTENT_START, sb.length)
         sb.append(who.display_name)
         sb.append("\n")
         sb.append("@")
         sb.append(accessInfo.getFullAcct(who))
         sb.append("\n")
 
-        intent.putExtra(ActText.EXTRA_CONTENT_START, sb.length)
+        intent.putExtra(EXTRA_CONTENT_START, sb.length)
         sb.append(who.url)
-        intent.putExtra(ActText.EXTRA_CONTENT_END, sb.length)
+        intent.putExtra(EXTRA_CONTENT_END, sb.length)
 
         sb.addAfterLine("\n")
 
@@ -320,6 +322,6 @@ object TootTextEncoder {
         sb.addAfterLine(String.format(Locale.JAPAN, "Account-Source: %s", who.json.toString(2)))
         sb.addAfterLine("")
 
-        intent.putExtra(ActText.EXTRA_TEXT, sb.toString())
+        intent.putExtra(EXTRA_TEXT, sb.toString())
     }
 }

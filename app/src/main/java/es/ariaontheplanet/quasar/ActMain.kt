@@ -275,7 +275,7 @@ class ActMain : ComponentActivity(),
 
     val arActText = ActivityResultHandler(log) { r ->
         when (r.resultCode) {
-            ActText.RESULT_SEARCH_NOTESTOCK -> searchFromActivityResult(
+            es.ariaontheplanet.quasar.ui.text.RESULT_SEARCH_NOTESTOCK -> searchFromActivityResult(
                 r.data,
                 ColumnType.SEARCH_NOTESTOCK
             )

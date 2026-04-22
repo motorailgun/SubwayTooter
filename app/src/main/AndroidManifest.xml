@@ -240,12 +240,6 @@
             android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
 
         <activity
-            android:name=".ActText"
-            android:exported="false"
-            android:label="@string/select_and_copy"
-            android:windowSoftInputMode="adjustResize|stateAlwaysHidden" />
-
-        <activity
             android:name=".ActMediaViewer"
             android:exported="false"
             android:theme="@style/AppTheme.Dark" />

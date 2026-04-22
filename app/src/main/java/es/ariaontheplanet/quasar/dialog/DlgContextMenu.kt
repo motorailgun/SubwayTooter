@@ -39,8 +39,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import es.ariaontheplanet.quasar.ActMain
-import es.ariaontheplanet.quasar.ActText
 import es.ariaontheplanet.quasar.R
+import es.ariaontheplanet.quasar.ui.text.createTextIntent
 import es.ariaontheplanet.quasar.action.*
 import es.ariaontheplanet.quasar.actmain.nextPosition
 import es.ariaontheplanet.quasar.api.entity.*
@@ -362,7 +362,7 @@ internal class DlgContextMenu(
             ) { openStatusHistory(nextPosition(column), accessInfo, status) }
         }
         MenuBtn(R.string.open_web_page) { openCustomTab(status.url) }
-        MenuBtn(R.string.select_and_copy) { launchActText(ActText.createIntent(this, accessInfo, status)) }
+        MenuBtn(R.string.select_and_copy) { launchActText(createTextIntent(this, accessInfo, status)) }
         if (hasTranslateApp) {
             MenuBtn(R.string.translate) {
                 CustomShare.invokeStatusText(CustomShareTarget.Translate, activity, accessInfo, status)
@@ -548,7 +548,7 @@ internal class DlgContextMenu(
             MenuBtn(R.string.open_profile) { userProfileLocal(pos, accessInfo, who) }
         }
         MenuBtn(R.string.open_web_page) { openCustomTab(who.url) }
-        MenuBtn(R.string.select_and_copy) { launchActText(ActText.createIntent(this, accessInfo, who)) }
+        MenuBtn(R.string.select_and_copy) { launchActText(createTextIntent(this, accessInfo, who)) }
         if (!accessInfo.isPseudo) {
             MenuBtn(R.string.send_message) { mention(accessInfo, who) }
         }
