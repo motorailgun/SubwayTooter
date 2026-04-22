@@ -335,7 +335,7 @@ class ActMain : ComponentActivity(),
         handler = appState.handler
         density = appState.density
 
-        sideMenuAdapter = SideMenuAdapter(this, handler)
+        sideMenuAdapter = SideMenuAdapter(this)
 
         App1.setActivityTheme(this)
         

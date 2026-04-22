@@ -3,7 +3,6 @@ package es.ariaontheplanet.quasar.actmain
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.os.Handler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -69,7 +68,6 @@ import kotlin.math.abs
 
 class SideMenuAdapter(
     private val actMain: ActMain,
-    @Suppress("unused") val handler: Handler,
 ) {
 
     companion object {
