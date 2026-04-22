@@ -800,8 +800,61 @@ Phase 6 doesn't slice into quick wins beyond the dead-code kills. Three sizable 
 
 Beyond the spans and emoji invalidator, the only live stragglers in `view/` are:
 - `MyLinkMovementMethod.kt` — 2 refs (ComposeViewBridges, TootAccount)
-- `NetworkEmojiView.kt` — 1 ref (DlgEmojiDetail)
 - `PinchBitmapView.kt` — 1 ref (MediaViewerScreen — out of scope per master plan)
 
-These clear out when their consumers migrate in 6c/6d.
+`NetworkEmojiView.kt` was deleted this pass — see the new session log below.
+
+---
+
+## Progress Log (continuation — 2026-04-21, picking up from `6a6ba065f`)
+
+**64 commits total on `gendev`** at HEAD `23afdf957`. `./gradlew :app:assembleFcmDebug :app:testFcmDebugUnitTest` both green.
+
+This pass was a dead-code sweep rather than a migration — no new screens, no architectural changes. **~870 LOC removed** across 11 commits, all low-risk reductions driven by grep-audits of call sites.
+
+### Deletions
+
+| Commit | What | LOC |
+|---|---|---|
+| `8c6688601` | Styler.kt: fixHorizontalPadding/Margin, appendMisskeyReaction, generateLayoutParamsEx, Context.setSwitchColor, getVisibilityCaption (stub); 3 callers migrated to `getVisibilityString` | 213 |
+| `bb09847a8` | `ColumnUiState.columnStatus: CharSequence` → `String`; dropped SpannableStringBuilder icon that `.toString()` was throwing away; removed `appendColorShadeIcon` | 39 |
+| `8ddb9e42a` | `dialog/DlgEmojiDetail.kt` (0 callers) + `view/NetworkEmojiView.kt` (was only used by that dialog) | 354 |
+| `65ce5a6bb` | ActMainStyle.kt: loadColumnMin (dead), justifyWindowContentPortrait/showFooterColor/closePopup (no-op stubs); AnnotatedString.Builder.isEmpty/isNotEmpty (inlined) | 41 |
+| `6047895e4` | `actpost/CompletionHelper.kt` — stub with 3 no-op methods + 8 call sites | 56 |
+| `37f79316f` | `AppState.encodeColumnList()` — no callers since fixed-columns refactor killed persistence | 16 |
+| `ac37e5280` | `util/TootColorConfig.kt` — always set to 0, so per-visibility bg-color branch in StatusComposables always collapsed; also the legacy `/* views */` comment block in ActMain | 48 |
+| `9d358ab14` | `showPoll`/`showContentWarningEnabled` no-op stubs in actpost/ + 8 call sites | 18 |
+| `530e6cb82` | `addColumnViewHolder`/`removeColumnViewHolder` no-op stubs + `hasMultipleViewHolder()` (always false) + 5 call sites + the dead retry branch in `procRestoreScrollPosition` | 27 |
+| `ece90be9e` | `extraInvalidatorList` + `emojiQueryInvalidatorList` in ColumnViewHolder — declared but nothing ever added; the register(null) loops were therefore no-ops | 28 |
+| `23afdf957` | Dead pref keys: `ipMediaBackground`, `spQuickTootVisibility`, and 4 already-commented entries | 12 |
+
+### Patterns that surfaced
+
+- **"Returns CharSequence, rendered via .toString()"** — the span information gets thrown away. Converting the field to `String` and dropping the Spannable-building code is safe and self-documenting.
+- **"No-op stub with N callers"** — common residue of incremental migrations. Always worth deleting: the callers don't need anything else to change.
+- **"Field set but never read"** / **"field read but never set"** — shows up across `columnUiState` members (announcementsExpanded/announcementsCaption are candidates for the next pass).
+- **"List declared but nothing added to it"** — the consumer loops iterate nothing, so they're self-sustaining dead code (easy to miss in normal grep).
+
+### Styler.kt — now 284 LOC
+
+Was 497 at session start; `getVisibilityIconId`/`getVisibilityString`/`setFollowIcon`/`defaultColorIcon`/`calcIconRound`/`enableEdgeToEdgeEx`/`appendColorShadeIcon` (now gone) are what remain. The Phase 1 plan target of ~150 LOC is achievable after Phase 6 deletes the last `EmojiImageSpan` callers.
+
+### AppState.kt — now 147 LOC
+
+(172 at start of this pass.) Companion is still just `LogCategory`.
+
+### Recommended next steps (updated)
+
+**Easy wins, ~30 min each**:
+- Announcement "expanded" state: `uiState.announcementsExpanded` is always false, so the large `if (expanded) { ... }` in `ColumnAnnouncementsComposable` never renders. Either restore the click-to-expand (which would make `announcementsCaption` also become live) or delete the unreachable block.
+- Audit `CharSequence.toString()` call sites for more cases like `columnStatus` where a Spannable is silently reduced to text.
+- Span-class usage audit: `BlockCodeSpan`, `BlockQuoteSpan`, `InlineCodeSpan` only have 2 files of refs each — map those call sites before starting 6c-2.
+
+**Medium**:
+- **Phase 6c-2**: block-level span decomposition. Pilot on account bio / content-warning first where block spans are rare.
+- **ActText migration** — least bad remaining Phase-5 screen (self-contained search-in-long-text; already uses Compose + StScreen).
+
+**Hard / high-risk**:
+- **ActMain migration**. Phase 5 cleanup ties `ActMainRegistry.WeakReference<ActMain>` deletion to this.
+- **Phase 7 (Column state)**.
 
