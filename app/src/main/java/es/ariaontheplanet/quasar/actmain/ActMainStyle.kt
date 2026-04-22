@@ -94,19 +94,6 @@ fun ActMain.reloadTextSize() {
     ActMain.timelineSpacing = if (fv != null && fv.isFinite() && fv != 0f) fv else null
 }
 
-fun ActMain.loadColumnMin() =
-    (PrefS.spColumnWidth.value
-        .toFloatOrNull()
-        ?.takeIf { it.isFinite() && it >= 100f }
-        ?: ActMain.COLUMN_WIDTH_MIN_DP.toFloat()
-            ).dpToPx(this)
-
-fun ActMain.justifyWindowContentPortrait() {
-    // No-op: Compose layout handles justification
-}
-
-//////////////////////////////////////////////////////
-
 // onStart時に呼ばれる
 fun reloadTimeZone() {
     try {
@@ -136,12 +123,4 @@ fun ActMain.reloadColors() {
     // views.llFormRoot.setBackgroundColor(attrColor(MR.attr.colorSurface))
 
     CustomShare.reloadCache(this)
-}
-
-fun ActMain.showFooterColor() {
-    // No-op: handled by Compose
-}
-
-fun ActMain.closePopup() {
-    // no-op: old StatusButtonsPopup removed
 }

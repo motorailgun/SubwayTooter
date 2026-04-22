@@ -34,13 +34,11 @@ import es.ariaontheplanet.quasar.action.timeline
 import es.ariaontheplanet.quasar.actmain.ActMainRegistry
 import es.ariaontheplanet.quasar.actmain.SideMenuAdapter
 import es.ariaontheplanet.quasar.actmain.afterNotificationGranted
-import es.ariaontheplanet.quasar.actmain.closePopup
 import es.ariaontheplanet.quasar.actmain.defaultInsertPosition
 import es.ariaontheplanet.quasar.actmain.handleIntentUri
 import es.ariaontheplanet.quasar.actmain.handleSharedIntent
 import es.ariaontheplanet.quasar.actmain.importAppData
 import es.ariaontheplanet.quasar.actmain.isOrderChanged
-import es.ariaontheplanet.quasar.actmain.justifyWindowContentPortrait
 import es.ariaontheplanet.quasar.actmain.launchDialogs
 import es.ariaontheplanet.quasar.actmain.onBackPressedImpl
 import es.ariaontheplanet.quasar.actmain.onCompleteActPost
@@ -62,7 +60,6 @@ import es.ariaontheplanet.quasar.actmain.scrollToColumn
 import es.ariaontheplanet.quasar.actmain.scrollToLastColumn
 import es.ariaontheplanet.quasar.actmain.searchFromActivityResult
 import es.ariaontheplanet.quasar.actmain.setColumnsOrder
-import es.ariaontheplanet.quasar.actmain.showFooterColor
 import es.ariaontheplanet.quasar.actmain.updateColumnStrip
 import es.ariaontheplanet.quasar.actmain.updateColumnStripSelection
 import es.ariaontheplanet.quasar.actpost.CompletionHelper
@@ -258,7 +255,6 @@ class ActMain : ComponentActivity(),
 
     val arAppSetting = ActivityResultHandler(log) { r ->
         Column.reloadDefaultColor(this)
-        showFooterColor()
         updateColumnStrip()
         enableEdgeToEdgeEx(forceDark = false)
         if (r.resultCode == RESULT_APP_DATA_IMPORT) {
@@ -552,8 +548,6 @@ class ActMain : ComponentActivity(),
 
         completionHelper.closeAcctPopup()
 
-        closePopup()
-
         appState.streamManager.onScreenStop()
 
         appState.columnList.forEach { it.saveScrollPosition() }
@@ -639,12 +633,8 @@ class ActMain : ComponentActivity(),
 
         reloadFonts()
         reloadIconSize()
-
-        justifyWindowContentPortrait()
-
         reloadMediaHeight()
-        showFooterColor()
-        
+
         // Observe current page changes
         lifecycleScope.launch {
             viewModel.currentPage.collect { position ->

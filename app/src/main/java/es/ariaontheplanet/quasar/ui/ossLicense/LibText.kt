@@ -5,7 +5,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.buildAnnotatedString
 import es.ariaontheplanet.quasar.util.annotateUrl
-import es.ariaontheplanet.quasar.util.isNotEmpty
 import es.ariaontheplanet.quasar.util.joinAnnotatedString
 import es.ariaontheplanet.quasar.util.toAnnotatedString
 import jp.juggler.util.data.JsonObject
@@ -34,7 +33,7 @@ private fun AnnotatedString.Builder.appendLine(
     prefix: CharSequence? = null,
 ) {
     if (text.isNullOrBlank()) return
-    if (isNotEmpty()) append("\n")
+    if (length != 0) append("\n")
     if (!prefix.isNullOrBlank()) append(prefix)
     append(text)
 }

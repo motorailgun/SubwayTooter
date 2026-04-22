@@ -5,7 +5,6 @@ import android.widget.ImageView
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.core.net.toUri
 import es.ariaontheplanet.quasar.R
-import es.ariaontheplanet.quasar.actmain.closePopup
 import es.ariaontheplanet.quasar.column.*
 import es.ariaontheplanet.quasar.compose.TimelineState
 import es.ariaontheplanet.quasar.pref.PrefB
@@ -103,8 +102,6 @@ fun ColumnViewHolder.onPageDestroy(pageIdx: Int) {
         this.column = null
     }
     closeBitmaps()
-
-    activity.closePopup()
 }
 
 fun ColumnViewHolder.onPageCreate(column: Column, pageIdx: Int, pageCount: Int) {

@@ -17,9 +17,6 @@ fun CharSequence.toAnnotatedString() = when (this) {
     else -> AnnotatedString(toString())
 }
 
-fun AnnotatedString.Builder.isEmpty() = length == 0
-fun AnnotatedString.Builder.isNotEmpty() = length != 0
-
 /**
  * 装飾付き文字列のリストを連結する
  * @receiver 装飾付き文字列のリスト
@@ -29,7 +26,7 @@ fun List<CharSequence>.joinAnnotatedString(
     separator: CharSequence,
 ): AnnotatedString = AnnotatedString.Builder().also { dst ->
     for (item in this) {
-        if (dst.isNotEmpty()) dst.append(separator)
+        if (dst.length != 0) dst.append(separator)
         dst.append(item)
     }
 }.toAnnotatedString()
