@@ -2,6 +2,7 @@ package es.ariaontheplanet.quasar.ui.alert
 
 import android.content.Context
 import android.content.Intent
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -13,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import es.ariaontheplanet.quasar.RootActivity
+import es.ariaontheplanet.quasar.compose.StScreen
 import es.ariaontheplanet.quasar.nav.Route
 import jp.juggler.util.data.encodePercent
 
@@ -29,14 +31,21 @@ fun Context.intentActAlert(
 }
 
 @Composable
-fun AlertScreen(@Suppress("UNUSED_PARAMETER") title: String, message: String) {
-    SelectionContainer {
-        Text(
-            text = message,
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(12.dp),
-        )
+fun AlertScreen(title: String, message: String) {
+    val activity = LocalActivity.current
+    StScreen(
+        title = title,
+        onBack = activity?.let { { it.finish() } },
+    ) { innerPadding ->
+        SelectionContainer {
+            Text(
+                text = message,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(innerPadding)
+                    .padding(12.dp),
+            )
+        }
     }
 }

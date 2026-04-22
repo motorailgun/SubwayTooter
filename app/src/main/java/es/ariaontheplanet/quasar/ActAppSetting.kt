@@ -209,17 +209,6 @@ class ActAppSetting : ComponentActivity() {
         }
     }
 
-    /**
-     * Navigate to a section. Called from AppSettingItem lambda.
-     */
-    fun load(section: AppSettingItem?, @Suppress("UNUSED_PARAMETER") query: String?) {
-        viewModel.setSection(section)
-        viewModel.setSearchQuery("")
-    }
-
-
-
-
 
     // ---- Pref cleanup ----
 
