@@ -1,5 +1,11 @@
 package es.ariaontheplanet.quasar.compose.richtext
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -12,15 +18,20 @@ import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 
 /**
  * Renders [RichContent] produced by [toRichContent].
@@ -120,24 +131,69 @@ private fun RichParagraph(
     maxLines: Int,
     onLinkClick: ((String) -> Unit)?,
 ) {
-    val clickableText = remember(block) { block.text }
     val overflow = if (maxLines > 0) TextOverflow.Ellipsis else TextOverflow.Clip
 
-    val linkModifier = if (onLinkClick != null) {
-        Modifier
-    } else Modifier
+    val displayText = if (block.animRanges.isEmpty()) {
+        block.text
+    } else {
+        animateTextScale(block.text, block.animRanges)
+    }
 
-    // Compose's Text handles inline content + clickable-ranges natively via
-    // text `LinkAnnotation` (Compose 1.7+). For Phase 6c, we render a plain
-    // Text with inlineContent; link clicks are wired when onLinkClick is set
-    // via a small helper (pending the Compose 1.7 LinkAnnotation integration).
     Text(
-        text = clickableText,
-        modifier = modifier.then(linkModifier),
+        text = displayText,
+        modifier = modifier,
         color = color,
         style = style,
         maxLines = if (maxLines > 0) maxLines else Int.MAX_VALUE,
         overflow = overflow,
         inlineContent = block.inline,
     )
+}
+
+/**
+ * Rebuilds [base] once per animation frame with the scale-oscillating
+ * SpanStyle applied to each [ranges] entry. The two MFM animations:
+ *
+ * - MisskeyBigSpan: period ≈ 3.14 s, scale oscillates 1.2…1.5 em.
+ * - MisskeyMotionSpan: period ≈ 0.63 s, scale oscillates 0.8…1.0 em.
+ *
+ * (A true sine wave is approximated with a linear triangle wave; the
+ * visual difference at these scales is imperceptible.)
+ */
+@Composable
+private fun animateTextScale(
+    base: AnnotatedString,
+    ranges: List<AnimRange>,
+): AnnotatedString {
+    val transition = rememberInfiniteTransition(label = "mfmScale")
+    val bigScale by transition.animateFloat(
+        initialValue = 1.2f,
+        targetValue = 1.5f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1570, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "mfmBig",
+    )
+    val motionScale by transition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 314, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "mfmMotion",
+    )
+    return remember(base, ranges, bigScale, motionScale) {
+        buildAnnotatedString {
+            append(base)
+            ranges.forEach { r ->
+                val scale = when (r.type) {
+                    AnimType.MisskeyBig -> bigScale
+                    AnimType.MisskeyMotion -> motionScale
+                }
+                addStyle(SpanStyle(fontSize = scale.em), r.start, r.end)
+            }
+        }
+    }
 }

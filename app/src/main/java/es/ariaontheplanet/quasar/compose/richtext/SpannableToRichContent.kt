@@ -24,6 +24,8 @@ import es.ariaontheplanet.quasar.span.EmojiImageSpan
 import es.ariaontheplanet.quasar.span.HighlightSpan
 import es.ariaontheplanet.quasar.span.HrSpan
 import es.ariaontheplanet.quasar.span.InlineCodeSpan
+import es.ariaontheplanet.quasar.span.MisskeyBigSpan
+import es.ariaontheplanet.quasar.span.MisskeyMotionSpan
 import es.ariaontheplanet.quasar.span.MyClickableSpan
 import es.ariaontheplanet.quasar.span.NetworkEmojiSpan
 import es.ariaontheplanet.quasar.span.OrderedListItemSpan
@@ -153,6 +155,7 @@ private fun buildParagraph(
 ): RichBlock.Paragraph {
     val text = spannable.subSequence(start, end).toString()
     val inline = mutableMapOf<String, InlineTextContent>()
+    val animRanges = mutableListOf<AnimRange>()
     var emojiCounter = 0
 
     val annotated = buildAnnotatedString {
@@ -228,11 +231,17 @@ private fun buildParagraph(
                     addStringAnnotation(RICH_EMOJI_TAG, id, sLocal, eLocal)
                     inline[id] = svgEmojiInline(span.assetsName)
                 }
+
+                is MisskeyBigSpan ->
+                    animRanges += AnimRange(sLocal, eLocal, AnimType.MisskeyBig)
+
+                is MisskeyMotionSpan ->
+                    animRanges += AnimRange(sLocal, eLocal, AnimType.MisskeyMotion)
             }
         }
     }
 
-    return RichBlock.Paragraph(annotated, inline)
+    return RichBlock.Paragraph(annotated, inline, animRanges)
 }
 
 private fun Int.argbWithAlpha(): Long =

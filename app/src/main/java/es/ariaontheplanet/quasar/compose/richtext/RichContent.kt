@@ -14,11 +14,18 @@ data class RichContent(val blocks: List<RichBlock>) {
     }
 }
 
+/** Text ranges whose font size oscillates over time — Misskey MFM
+ *  `$[x2 ...]` (Big) and `$[jelly ...]` (Motion). Ranges are paragraph-local. */
+data class AnimRange(val start: Int, val end: Int, val type: AnimType)
+
+enum class AnimType { MisskeyBig, MisskeyMotion }
+
 sealed interface RichBlock {
     /** A run of text, with inline styling + inline-content placeholders (emoji). */
     data class Paragraph(
         val text: AnnotatedString,
         val inline: Map<String, InlineTextContent> = emptyMap(),
+        val animRanges: List<AnimRange> = emptyList(),
     ) : RichBlock
 
     /** <blockquote> — draws a left bar + indent, then renders [children]. */
