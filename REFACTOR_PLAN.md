@@ -937,3 +937,26 @@ The RichText composable uses Compose `Text` with `AnnotatedString` + `InlineText
 
 All behaviours that need to remain working on device: timeline status rendering (boosts, replies, CW, mentions, body, display name), profile headers, announcement box, DlgListMember target display.
 
+### Follow-up: reflection → public fields
+
+`NetworkEmojiSpan.url`, `EmojiImageSpan.resId`, `SvgEmojiSpan.assetsName`, `OrderedListItemSpan.order` were promoted from `private` to public vals so the RichContent bridge reads them directly. Deleted ~48 LOC of reflection try/catch. Commit `64422b78f`.
+
+### ActText → Route.Text (`b9870fb0e`)
+
+654 LOC Activity → 583 LOC `ui/text/TextScreen.kt` + manifest entry gone. Activity-held mutable state became composable-scoped `remember` + `mutableStateOf`; the Channel<Long> debounced-search loop moved into a `LaunchedEffect` + `DisposableEffect`. Extras (EXTRA_TEXT, EXTRA_CONTENT_START/END, EXTRA_ACCOUNT_DB_ID) still carry the text payload on the RootActivity-routed Intent because a multi-kB toot body doesn't belong in a serialized Route. `RESULT_SEARCH_NOTESTOCK` promoted to a public top-level const. Two `createTextIntent(...)` overloads replace `ActText.createIntent(...)`.
+
+### ActKeywordFilter → Route.KeywordFilter (`1295c863b`)
+
+525 LOC → `ui/keywordFilter/KeywordFilterScreen.kt` (488 LOC). Activity methods (onAddKeyword, startLoading, save, saveV1/V2, onLoadComplete) became top-level helpers taking `(ComponentActivity, KeywordFilterViewModel)`. `KeywordFilterViewModel` is no longer a Koin `viewModel { }` binding — it works via the plain `viewModel()` Compose factory. `Route.KeywordFilter(accountDbId, filterId: String?, initialPhrase: String?)` — filterId round-trips as `EntityId.toString()` since Route must be @Serializable. `openKeywordFilter(...)` top-level helper replaces `ActKeywordFilter.open`.
+
+### Activity inventory after this pass
+
+| File | Status | Notes |
+|---|---|---|
+| `ActMain` (653) | remaining | big. Kills `ActMainRegistry.WeakReference<ActMain>` when migrated. |
+| `ActPost` (731) | remaining | post composer. Largest unmigrated screen. |
+| `ActAppSetting` (745) | remaining | lots of framework-coupled file I/O — viable to keep. |
+| `ActMediaViewer` (338) | out of scope | dedicated media-viewer refactor. |
+| `ActCallback` (272) | intentional | external-intent dispatcher. |
+| `ActPostScreen` (434) | not an Activity | extracted composable. |
+
