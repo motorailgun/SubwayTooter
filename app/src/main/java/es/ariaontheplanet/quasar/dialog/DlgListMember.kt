@@ -27,6 +27,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -42,7 +43,8 @@ import es.ariaontheplanet.quasar.action.*
 import es.ariaontheplanet.quasar.api.*
 import es.ariaontheplanet.quasar.api.entity.*
 import es.ariaontheplanet.quasar.compose.NetworkImage
-import es.ariaontheplanet.quasar.compose.SpannableTextView
+import es.ariaontheplanet.quasar.compose.richtext.RichText
+import es.ariaontheplanet.quasar.compose.richtext.toRichContent
 import es.ariaontheplanet.quasar.table.SavedAccount
 import es.ariaontheplanet.quasar.table.accountListNonPseudo
 import es.ariaontheplanet.quasar.table.daoAcctColor
@@ -282,7 +284,6 @@ class DlgListMember(
         val dialog = Dialog(activity)
         val act = this.activity
         val displayName = who.decodeDisplayName(act)
-        val actHandler = act.handler
         val composeView = ComposeView(act).apply {
             setViewTreeLifecycleOwner(act)
             setViewTreeSavedStateRegistryOwner(act)
@@ -293,7 +294,6 @@ class DlgListMember(
                     displayName = displayName,
                     items = itemsState.value,
                     listOwner = listOwnerState.value,
-                    handler = actHandler,
                     onPickOwner = {
                         launchMain {
                             act.pickAccount(
@@ -332,7 +332,6 @@ private fun DlgListMemberContent(
     displayName: CharSequence,
     items: List<Any>,
     listOwner: SavedAccount?,
-    handler: android.os.Handler,
     onPickOwner: () -> Unit,
     onCheckChange: (OwnerListStatus) -> Unit,
     onCreate: () -> Unit,
@@ -363,10 +362,8 @@ private fun DlgListMemberContent(
             )
             Spacer(modifier = Modifier.width(4.dp))
             Column(modifier = Modifier.weight(1f)) {
-                SpannableTextView(
-                    text = displayName,
-                    handler = handler,
-                )
+                val nameContent = remember(displayName) { displayName.toRichContent() }
+                RichText(content = nameContent)
                 Text(
                     text = whoAcct.pretty,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
