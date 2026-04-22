@@ -50,8 +50,8 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import es.ariaontheplanet.quasar.ActKeywordFilter
 import es.ariaontheplanet.quasar.ActMain
+import es.ariaontheplanet.quasar.ui.keywordFilter.openKeywordFilter
 import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.RootActivity
 import es.ariaontheplanet.quasar.api.entity.TootAccount
@@ -396,7 +396,7 @@ fun TextScreen() {
                         selectionOrAll().trim().notEmpty()?.let { text ->
                             val acc = account
                             if (acc?.isPseudo == false && acc.isMastodon) {
-                                ActKeywordFilter.open(activity, acc, initialPhrase = text)
+                                openKeywordFilter(activity, acc, initialPhrase = text)
                             } else {
                                 launchMain {
                                     activity.pickAccount(
@@ -405,7 +405,7 @@ fun TextScreen() {
                                         bAllowMastodon = true,
                                         bAuto = false,
                                     )?.let {
-                                        ActKeywordFilter.open(activity, it, initialPhrase = text)
+                                        openKeywordFilter(activity, it, initialPhrase = text)
                                     }
                                 }
                             }

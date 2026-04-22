@@ -1,8 +1,8 @@
 package es.ariaontheplanet.quasar.action
 
-import es.ariaontheplanet.quasar.ActKeywordFilter
 import es.ariaontheplanet.quasar.ActMain
 import es.ariaontheplanet.quasar.R
+import es.ariaontheplanet.quasar.ui.keywordFilter.openKeywordFilter
 import es.ariaontheplanet.quasar.api.ApiPath
 import es.ariaontheplanet.quasar.api.TootApiClient
 import es.ariaontheplanet.quasar.api.TootApiResult
@@ -25,7 +25,7 @@ fun ActMain.openFilterMenu(accessInfo: SavedAccount, item: TootFilter?) {
     launchAndShowError {
         actionsDialog(getString(R.string.filter_of, item.displayString)) {
             action(getString(R.string.edit)) {
-                ActKeywordFilter.open(activity, accessInfo, item.id)
+                openKeywordFilter(activity, accessInfo, item.id)
             }
             action(getString(R.string.delete)) {
                 filterDelete(accessInfo, item)

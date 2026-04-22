@@ -32,6 +32,11 @@ sealed interface Route {
         val itemId: Long = -1L,
         val initialText: String = "",
     ) : Route
+    @Serializable data class KeywordFilter(
+        val accountDbId: Long,
+        val filterId: String? = null,
+        val initialPhrase: String? = null,
+    ) : Route
     @Serializable data class LanguageFilter(val columnIndex: Int) : Route
     @Serializable data class Nickname(
         val acctAscii: String,

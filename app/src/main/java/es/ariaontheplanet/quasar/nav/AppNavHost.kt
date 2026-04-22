@@ -20,6 +20,7 @@ import es.ariaontheplanet.quasar.ui.alert.AlertScreen
 import es.ariaontheplanet.quasar.ui.exitReasons.ExitReasonsScreen
 import es.ariaontheplanet.quasar.ui.highlightWord.HighlightWordEditScreen
 import es.ariaontheplanet.quasar.ui.highlightWord.HighlightWordListScreen
+import es.ariaontheplanet.quasar.ui.keywordFilter.KeywordFilterScreen
 import es.ariaontheplanet.quasar.ui.languageFilter.LanguageFilterScreen
 import es.ariaontheplanet.quasar.ui.nickname.NicknameScreen
 import es.ariaontheplanet.quasar.ui.ossLicense.OssLicenseScreen
@@ -79,6 +80,14 @@ fun AppNavHost(
                 HighlightWordEditScreen(itemId = r.itemId, initialText = r.initialText)
             }
             composable<Route.HighlightWordList> { HighlightWordListScreen() }
+            composable<Route.KeywordFilter> { entry ->
+                val r = entry.toRoute<Route.KeywordFilter>()
+                KeywordFilterScreen(
+                    accountDbId = r.accountDbId,
+                    filterId = r.filterId,
+                    initialPhrase = r.initialPhrase,
+                )
+            }
             composable<Route.LanguageFilter> { entry ->
                 val r = entry.toRoute<Route.LanguageFilter>()
                 LanguageFilterScreen(columnIndex = r.columnIndex)

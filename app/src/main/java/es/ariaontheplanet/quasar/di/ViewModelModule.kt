@@ -4,7 +4,6 @@ import es.ariaontheplanet.quasar.actaccountsetting.AccountSettingViewModel
 import es.ariaontheplanet.quasar.actdrawablelist.DrawableListViewModel
 import es.ariaontheplanet.quasar.actfavmute.FavMuteViewModel
 import es.ariaontheplanet.quasar.acthighlightwordlist.HighlightWordListViewModel
-import es.ariaontheplanet.quasar.actkeywordfilter.KeywordFilterViewModel
 import es.ariaontheplanet.quasar.actmain.MainViewModel
 import es.ariaontheplanet.quasar.actmediaviewer.MediaViewerViewModel
 import es.ariaontheplanet.quasar.actmutedapp.MutedAppViewModel
@@ -25,7 +24,6 @@ import org.koin.dsl.module
 val viewModelModule = module {
     // Simple ViewModels
     viewModel { FavMuteViewModel() }
-    viewModel { KeywordFilterViewModel() }
     viewModel { MutedPseudoAccountViewModel() }
     viewModel { MutedWordViewModel() }
 
