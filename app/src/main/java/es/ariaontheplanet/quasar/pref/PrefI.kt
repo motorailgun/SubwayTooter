@@ -15,9 +15,6 @@ object PrefI {
 
     val ipBackButtonAction = IntPref("back_button_action", BACK_CLOSE_COLUMN)
 
-
-//	val ipResizeImage = IntPref("resize_image", 4)
-
     const val RC_SIMPLE = 0
     const val RC_ACTUAL = 1
 
@@ -57,8 +54,6 @@ object PrefI {
     private const val GSP_TAIL = 1
     val ipGapHeadScrollPosition = IntPref("GapHeadScrollPosition", GSP_TAIL)
     val ipGapTailScrollPosition = IntPref("GapTailScrollPosition", GSP_TAIL)
-
-    val ipMediaBackground = IntPref("MediaBackground", 1)
 
     val ipLogSaveLevel = IntPref("LogSaveLevel", Log.WARN)
 

@@ -18,10 +18,6 @@ object PrefS {
     val spHeaderIconSize = StringPref("HeaderIconSize", "24")
     val spStripIconSize = StringPref("StripIconSize", "30")
 
-    // val spMediaSizeMax = StringPref("max_media_size", "8")
-    // val spMovieSizeMax = StringPref("max_movie_size", "40")
-    // val spMediaSizeMaxPixelfed = StringPref("MediaSizeMaxPixelfed", "15")
-
     val spTimelineFont = StringPref("timeline_font", "", skipImport = true)
     val spTimelineFontBold = StringPref("timeline_font_bold", "", skipImport = true)
     val spMspUserToken = StringPref("mastodon_search_portal_user_token", "")
@@ -40,7 +36,6 @@ object PrefS {
     val spTimeZone = StringPref("TimeZone", "")
 
     val spQuickTootMacro = StringPref("QuickTootMacro", "")
-    val spQuickTootVisibility = StringPref("QuickTootVisibility", "")
 
     val spTranslateAppComponent = StringPref("TranslateAppComponent", "")
     val spCustomShare1 = StringPref("CustomShare1", "")
@@ -53,8 +48,6 @@ object PrefS {
     val spCustomShare8 = StringPref("CustomShare8", "")
     val spCustomShare9 = StringPref("CustomShare9", "")
     val spCustomShare10 = StringPref("CustomShare10", "")
-
-    // val spWebBrowser = StringPref("WebBrowser", "")
 
     val spTimelineSpacing = StringPref("TimelineSpacing", "")
 
