@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.Handler
 import es.ariaontheplanet.quasar.api.entity.TootStatus
 import es.ariaontheplanet.quasar.column.Column
-import es.ariaontheplanet.quasar.column.ColumnEncoder
 import es.ariaontheplanet.quasar.column.onMuteUpdated
 import es.ariaontheplanet.quasar.pref.prefDevice
 import es.ariaontheplanet.quasar.services.AppBusyState
@@ -18,9 +17,6 @@ import es.ariaontheplanet.quasar.table.daoSavedAccount
 import kotlinx.coroutines.flow.StateFlow
 import es.ariaontheplanet.quasar.util.NetworkStateTracker
 import es.ariaontheplanet.quasar.util.PostAttachment
-import jp.juggler.util.data.JsonException
-import jp.juggler.util.data.JsonObject
-import jp.juggler.util.data.toJsonArray
 import jp.juggler.util.log.LogCategory
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -98,18 +94,6 @@ class AppState(
             App1.custom_emoji_lister.onNetworkChanged()
         }
     }
-
-    internal fun encodeColumnList() =
-        columnList.mapIndexedNotNull { index, column ->
-            try {
-                val dst = JsonObject()
-                ColumnEncoder.encode(column, dst, index)
-                dst
-            } catch (ex: JsonException) {
-                log.e(ex, "encodeColumnList: encode failed at $index.")
-                null
-            }
-        }.toJsonArray()
 
     // Fixed-columns refactor: the column list is rebuilt in-memory on every launch and
     // every account switch, so persisting it is pointless. Existing callers are kept
