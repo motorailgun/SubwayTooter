@@ -13,7 +13,6 @@ import es.ariaontheplanet.quasar.compose.*
 import es.ariaontheplanet.quasar.streaming.StreamStatus
 import es.ariaontheplanet.quasar.streaming.getStreamingStatus
 import es.ariaontheplanet.quasar.table.daoAcctColor
-import es.ariaontheplanet.quasar.util.NetworkEmojiInvalidator
 import es.ariaontheplanet.quasar.util.ScrollPosition
 import jp.juggler.util.data.notZero
 import jp.juggler.util.log.LogCategory
@@ -60,8 +59,6 @@ class ColumnViewHolder(
 
     // ──────── Announcement state ────────
     var lastAnnouncementShown = 0L
-    val extraInvalidatorList = ArrayList<NetworkEmojiInvalidator>()
-    val emojiQueryInvalidatorList = ArrayList<NetworkEmojiInvalidator>()
 
     // ──────── Misc state ────────
     var bindingBusy: Boolean = false

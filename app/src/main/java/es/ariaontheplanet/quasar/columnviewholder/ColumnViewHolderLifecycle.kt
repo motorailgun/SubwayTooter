@@ -142,17 +142,6 @@ fun ColumnViewHolder.onPageCreate(column: Column, pageIdx: Int, pageCount: Int) 
         // ──── Settings visibility ────
         ui.settingsVisible = false
 
-        // Clear emoji invalidators
-        for (invalidator in emojiQueryInvalidatorList) {
-            invalidator.register(null)
-        }
-        emojiQueryInvalidatorList.clear()
-
-        for (invalidator in extraInvalidatorList) {
-            invalidator.register(null)
-        }
-        extraInvalidatorList.clear()
-
         // ──── Checkbox values ────
         ui.dontClose = column.dontClose
         ui.showMediaDescription = column.showMediaDescription

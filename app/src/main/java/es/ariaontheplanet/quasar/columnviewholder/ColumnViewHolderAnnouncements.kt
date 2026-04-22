@@ -61,7 +61,6 @@ fun ColumnViewHolder.showAnnouncements(force: Boolean = true) {
         return
     }
     lastAnnouncementShown = SystemClock.elapsedRealtime()
-    clearExtras()
 
     val ui = columnUiState
 
@@ -101,13 +100,6 @@ fun ColumnViewHolder.showAnnouncements(force: Boolean = true) {
 
     showAnnouncementContent(item)
     showReactionBox(column, item)
-}
-
-private fun ColumnViewHolder.clearExtras() {
-    for (invalidator in extraInvalidatorList) {
-        invalidator.register(null)
-    }
-    extraInvalidatorList.clear()
 }
 
 private fun ColumnViewHolder.showAnnouncementsEmpty() {

@@ -43,12 +43,6 @@ fun ColumnViewHolder.removeEmojiQuery(target: TootReaction?) {
 fun ColumnViewHolder.updateReactionQueryView() {
     val column = this.column ?: return
 
-    // Clear old invalidators
-    for (invalidator in emojiQueryInvalidatorList) {
-        invalidator.register(null)
-    }
-    emojiQueryInvalidatorList.clear()
-
     val ui = columnUiState
     ui.emojiQueryItems.clear()
 
