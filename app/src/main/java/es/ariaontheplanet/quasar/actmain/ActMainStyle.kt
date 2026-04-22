@@ -5,7 +5,6 @@ import android.graphics.Typeface
 import es.ariaontheplanet.quasar.ActMain
 import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.api.entity.TootStatus
-import es.ariaontheplanet.quasar.util.TootColorConfig
 import es.ariaontheplanet.quasar.pref.PrefB
 import es.ariaontheplanet.quasar.pref.PrefF
 import es.ariaontheplanet.quasar.pref.PrefS
@@ -112,15 +111,7 @@ fun reloadTimeZone() {
 // onStart時に呼ばれる
 // カラーカスタマイズを読み直す
 fun ActMain.reloadColors() {
-    // TabletColumnDivider.color = 0 (Removed)
-    TootColorConfig.toot_color_unlisted = 0
-    TootColorConfig.toot_color_follower = 0
-    TootColorConfig.toot_color_direct_user = 0
-    TootColorConfig.toot_color_direct_me = 0
     MyClickableSpan.showLinkUnderline = PrefB.bpShowLinkUnderline.value
     MyClickableSpan.defaultLinkColor = attrColor(androidx.appcompat.R.attr.colorPrimary)
-
-    // views.llFormRoot.setBackgroundColor(attrColor(MR.attr.colorSurface))
-
     CustomShare.reloadCache(this)
 }

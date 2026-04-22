@@ -23,15 +23,14 @@ import androidx.activity.addCallback
 import kotlinx.coroutines.flow.collectLatest
 import androidx.lifecycle.lifecycleScope
 import androidx.activity.compose.setContent
-import es.ariaontheplanet.quasar.actmain.MainScreen
-import es.ariaontheplanet.quasar.actmain.MainViewModel
-import es.ariaontheplanet.quasar.actmain.isVisibleColumn
-import es.ariaontheplanet.quasar.actmain.scrollToColumn
-import es.ariaontheplanet.quasar.columnviewholder.scrollToTop2
-import kotlinx.coroutines.launch
 import es.ariaontheplanet.quasar.action.accessTokenPrompt
+import es.ariaontheplanet.quasar.action.openCurrentAccountSetting
+import es.ariaontheplanet.quasar.action.openPost
+import es.ariaontheplanet.quasar.action.submitQuickPost
 import es.ariaontheplanet.quasar.action.timeline
 import es.ariaontheplanet.quasar.actmain.ActMainRegistry
+import es.ariaontheplanet.quasar.actmain.MainScreen
+import es.ariaontheplanet.quasar.actmain.MainViewModel
 import es.ariaontheplanet.quasar.actmain.SideMenuAdapter
 import es.ariaontheplanet.quasar.actmain.afterNotificationGranted
 import es.ariaontheplanet.quasar.actmain.defaultInsertPosition
@@ -39,6 +38,7 @@ import es.ariaontheplanet.quasar.actmain.handleIntentUri
 import es.ariaontheplanet.quasar.actmain.handleSharedIntent
 import es.ariaontheplanet.quasar.actmain.importAppData
 import es.ariaontheplanet.quasar.actmain.isOrderChanged
+import es.ariaontheplanet.quasar.actmain.isVisibleColumn
 import es.ariaontheplanet.quasar.actmain.launchDialogs
 import es.ariaontheplanet.quasar.actmain.onBackPressedImpl
 import es.ariaontheplanet.quasar.actmain.onCompleteActPost
@@ -50,14 +50,12 @@ import es.ariaontheplanet.quasar.actmain.reloadFonts
 import es.ariaontheplanet.quasar.actmain.reloadIconSize
 import es.ariaontheplanet.quasar.actmain.reloadMediaHeight
 import es.ariaontheplanet.quasar.actmain.reloadTextSize
-import es.ariaontheplanet.quasar.action.openCurrentAccountSetting
-import es.ariaontheplanet.quasar.action.openPost
-import es.ariaontheplanet.quasar.action.submitQuickPost
 import es.ariaontheplanet.quasar.actmain.reloadTimeZone
 import es.ariaontheplanet.quasar.actmain.resizeColumnWidth
 import es.ariaontheplanet.quasar.actmain.scrollColumnStrip
 import es.ariaontheplanet.quasar.actmain.scrollToColumn
 import es.ariaontheplanet.quasar.actmain.scrollToLastColumn
+import es.ariaontheplanet.quasar.columnviewholder.scrollToTop2
 import es.ariaontheplanet.quasar.actmain.searchFromActivityResult
 import es.ariaontheplanet.quasar.actmain.setColumnsOrder
 import es.ariaontheplanet.quasar.actmain.updateColumnStrip
@@ -196,12 +194,6 @@ class ActMain : ComponentActivity(),
     var nAutoCwLines = 0
 
     var dlgPrivacyPolicy: WeakReference<Dialog>? = null
-
-    /*
-    val views by lazy {
-         // Legacy views removed
-    }
-    */
 
     lateinit var handler: Handler
     lateinit var appState: AppState

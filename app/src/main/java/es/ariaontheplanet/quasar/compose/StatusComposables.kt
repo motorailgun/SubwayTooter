@@ -53,7 +53,6 @@ import es.ariaontheplanet.quasar.api.entity.TootAggBoost
 import es.ariaontheplanet.quasar.api.entity.TootAttachmentLike
 import es.ariaontheplanet.quasar.api.entity.TootNotification
 import es.ariaontheplanet.quasar.api.entity.TootStatus
-import es.ariaontheplanet.quasar.api.entity.TootVisibility
 import es.ariaontheplanet.quasar.calcIconRound
 import es.ariaontheplanet.quasar.column.Column
 import es.ariaontheplanet.quasar.column.getContentColor
@@ -460,17 +459,7 @@ fun StatusBody(
     }
 
     // Background color
-    val bgColor = colorBg.notZero()
-        ?: status.getBackgroundColorType(accessInfo).let { vis ->
-            when (vis) {
-                TootVisibility.UnlistedHome -> es.ariaontheplanet.quasar.util.TootColorConfig.toot_color_unlisted
-                TootVisibility.PrivateFollowers -> es.ariaontheplanet.quasar.util.TootColorConfig.toot_color_follower
-                TootVisibility.DirectSpecified -> es.ariaontheplanet.quasar.util.TootColorConfig.toot_color_direct_user
-                TootVisibility.DirectPrivate -> es.ariaontheplanet.quasar.util.TootColorConfig.toot_color_direct_me
-                TootVisibility.Limited -> es.ariaontheplanet.quasar.util.TootColorConfig.toot_color_follower
-                else -> 0
-            }
-        }.notZero() ?: 0
+    val bgColor = colorBg
 
     val bgModifier = if (bgColor != 0) {
         Modifier.background(Color(bgColor))
