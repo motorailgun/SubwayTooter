@@ -4,15 +4,16 @@
 
 ---
 
-## Handoff Guide (updated 2026-04-21, HEAD `b4f97da08`)
+## Handoff Guide (updated 2026-04-22)
 
 ### At a glance
 
-- **Branch**: `gendev`, 53 commits ahead of `origin/gendev` (all this session).
+- **Branch**: `gendev`. Many commits ahead of `main`; see the Progress Logs further down for this session's work.
 - **Build gates**: `./gradlew :app:assembleFcmDebug :app:testFcmDebugUnitTest` both pass.
   - `detekt` and `lint` still fail on pre-existing style issues (trailing whitespace, long-parameter `QuickPostSheet`). Not a regression; don't gate on these.
-- **APK**: `app/build/outputs/apk/fcm/debug/app-fcm-debug.apk` builds cleanly (~62 MB).
+- **APK**: `app/build/outputs/apk/fcm/debug/app-fcm-debug.apk` builds cleanly.
 - **Working tree**: clean.
+- **Phase 5 & Phase 6**: both complete. Phase 7 (Column state unification) is the remaining big phase. The three still-Activities (`ActMain`, `ActPost`, `ActAppSetting`) are deliberate per the plan's difficulty classification — not on the critical path.
 
 ### Roadmap progress
 
@@ -47,6 +48,7 @@ prepare(applicationContext, "App1.onCreate")  // idempotent, @Volatile-gated
 AppModule:
   singleOf(::AppBusyState)              // busy flags for fav/bookmark/boost
   singleOf(::ColumnRepository)          // columnList + currentAccount StateFlow
+  singleOf(::MultiWindowPostService)    // replaces ActMainRegistry — close-all + PostComplete bus
   single    TtsService(context, columnRepo)   // TTS queue + ringtone
   single    AppState(context, handler)        // thin forwarder; the old god-object
   singleOf(::NavigatorImpl) + Navigator alias // route facade
@@ -56,8 +58,10 @@ AppModule:
   ImageLoader (Coil, reuses API OkHttpClient)
 
 ViewModelModule:
-  15 no-arg + AndroidViewModel bindings
+  14 no-arg + AndroidViewModel bindings
   1 parameterized: NicknameViewModel(acctAscii)
+  (KeywordFilterViewModel dropped from this module — now uses plain viewModel()
+   via Compose's factory inside the route composable.)
 ```
 
 **Navigation** (`nav/`):
@@ -76,43 +80,51 @@ Navigator (interface) ──► NavigatorImpl (Koin single)
                               └─ bind(navController): DisposableEffect in AppNavHost
 ```
 
-Routes currently wired (17 total, 15 screens + 2 dead removed):
+Routes currently wired (19 total):
 ```
 @Serializable data object     Route.About / AppSettings / ColumnList /
                               DrawableList / ExitReasons / FavMute /
                               HighlightWordList / MutedApp /
                               MutedPseudoAccount / MutedWord /
-                              OssLicense / PushMessageList
+                              OssLicense / PushMessageList / Text
 @Serializable data class      Route.AccountSettings(accountDbId: Long)
                               Route.Alert(title, message)
                               Route.HighlightWordEdit(itemId, initialText)
+                              Route.KeywordFilter(accountDbId, filterId, initialPhrase)
                               Route.LanguageFilter(columnIndex: Int)
                               Route.Nickname(acctAscii, acctPretty, showNotificationSound)
 ```
 
 **Rich-text stack** (`compose/richtext/` + legacy `span/`):
 ```
-CharSequence.toRichContent(defaultLinkColor)   // NEW
-    ↓
+CharSequence.toRichContent(defaultLinkColor, onLinkClick)
+    ↓  (splits at block-level spans, clamps inline spans per block,
+        turns MyClickableSpan into LinkAnnotation.Clickable, collects
+        MFM Big/Motion ranges as AnimRange)
 RichContent(blocks: List<RichBlock>)
     ↓
-RichText(content, onLinkClick)                 // NEW (single caller so far)
-
-[Still in use for the other 12 call sites]
-SpannableTextView(AndroidView+AppCompatTextView+NetworkEmojiInvalidator)
-    consumes Spannable produced by HTMLDecoder/EmojiDecoder/MFM parser
-    15 custom Span types (block + inline + animated)
+RichText(content, ...)
+    - RichParagraph → Compose Text with inlineContent + animateTextScale()
+      driven by rememberInfiniteTransition when animRanges is non-empty
+    - RichBlock.BlockQuote / CodeBlock / Hr / ListItem / Indent each
+      render with the appropriate decoration
 ```
+
+Every SpannableTextView call site is migrated. The old
+AndroidView+AppCompatTextView+NetworkEmojiInvalidator bridge is deleted,
+as is `view/MyLinkMovementMethod.kt`. The 15 span classes in `span/` are
+still instantiated by the decoders (HTMLDecoder/EmojiDecoder/MFM) and
+their ranges are read by `toRichContent`; their `draw*` method bodies are
+effectively dead (no more TextView renders them — `ActMainAutoCW.checkAutoCW`'s
+off-screen `tv.measure()` uses only `getSize`/`updateMeasureState`/`getLeadingMargin`).
 
 **Screens route-hosted vs still Activity-hosted**:
 ```
-  RootActivity hosts → 15 composable<Route.X> screens
-  Standalone Activities (6):
+  RootActivity hosts → 19 composable<Route.X> screens
+  Standalone Activities (4):
     ActMain              — app launcher + side menu + column strip; touches most things
     ActPost              — toot composer; attachments, visibility, emoji picker
-    ActAppSetting        — partial VM exists; body is file I/O (import/export/fonts)
-    ActKeywordFilter     — form; VM exists; runApiTask stays Activity-coupled for progress dialog
-    ActText              — long-text reader + incremental regex search
+    ActAppSetting        — partial VM; body is file I/O (import/export/fonts)
     ActCallback          — external-intent dispatcher (intent filters); by design not a route
   Out of scope:
     ActMediaViewer       — dedicated refactor per master plan
