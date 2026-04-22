@@ -101,8 +101,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.Checkbox
 import androidx.compose.ui.Alignment
 import androidx.lifecycle.lifecycleScope
-import es.ariaontheplanet.quasar.actmain.ActMainRegistry
-import es.ariaontheplanet.quasar.actmain.onCompleteActPost
 import es.ariaontheplanet.quasar.actpost.editAttachmentDescription
 import es.ariaontheplanet.quasar.actpost.openFocusPoint
 import es.ariaontheplanet.quasar.actpost.performAttachmentClick
@@ -153,6 +151,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import es.ariaontheplanet.quasar.services.MultiWindowPostService
+import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.lang.ref.WeakReference
 import java.util.concurrent.CancellationException
@@ -248,6 +248,8 @@ class ActPost : ComponentActivity(),
 
     // Text states
     val viewModel: PostViewModel by viewModel()
+
+    private val multiWindowPostService: MultiWindowPostService by inject()
     
     val etContent get() = viewModel.etContent
     val etContentWarning get() = viewModel.etContentWarning
@@ -425,7 +427,7 @@ class ActPost : ComponentActivity(),
                 saveDraft()
             }
         }
-        if (isMultiWindowPost) ActMainRegistry.current?.closeList?.add(WeakReference(this))
+        if (isMultiWindowPost) multiWindowPostService.register(this)
         appState = App1.getAppState(this)
         handler = appState.handler
         attachmentPicker = AttachmentPicker(this, object : AttachmentPicker.Callback {
@@ -531,7 +533,7 @@ class ActPost : ComponentActivity(),
                     is PostViewModel.Effect.OpenFocusPoint -> openFocusPoint(effect.pa)
                     is PostViewModel.Effect.ShowAttachmentMenu -> performAttachmentClick(effect.pa)
                     is PostViewModel.Effect.PostComplete -> {
-                        ActMainRegistry.current?.onCompleteActPost(effect.intent)
+                        multiWindowPostService.emitComplete(effect.intent)
                         if (effect.isMultiWindowPost) {
                              resetText()
                              launchAndShowError {

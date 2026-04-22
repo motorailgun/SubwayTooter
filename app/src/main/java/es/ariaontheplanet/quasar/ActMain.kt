@@ -28,7 +28,6 @@ import es.ariaontheplanet.quasar.action.openCurrentAccountSetting
 import es.ariaontheplanet.quasar.action.openPost
 import es.ariaontheplanet.quasar.action.submitQuickPost
 import es.ariaontheplanet.quasar.action.timeline
-import es.ariaontheplanet.quasar.actmain.ActMainRegistry
 import es.ariaontheplanet.quasar.actmain.MainScreen
 import es.ariaontheplanet.quasar.actmain.MainViewModel
 import es.ariaontheplanet.quasar.actmain.SideMenuAdapter
@@ -107,6 +106,8 @@ import jp.juggler.util.ui.setContentViewAndInsets
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import es.ariaontheplanet.quasar.services.MultiWindowPostService
+import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.lang.ref.WeakReference
 import java.util.LinkedList
@@ -163,8 +164,8 @@ class ActMain : ComponentActivity(),
     var avatarIconSize: Int = 0
     var notificationTlIconSize: Int = 0
 
-    // マルチウィンドウモードで子ウィンドウを閉じるのに使う
-    val closeList = LinkedList<WeakReference<Activity>>()
+    // マルチウィンドウの ActPost との橋渡し（登録・クローズ・完了イベント）
+    private val multiWindowPostService: MultiWindowPostService by inject()
 
     // onResume() .. onPause() の間なら真
     private var isResumed = false
@@ -303,9 +304,15 @@ class ActMain : ComponentActivity(),
     override fun onCreate(savedInstanceState: Bundle?) {
         log.d("onCreate")
         installSplashScreen()
-        ActMainRegistry.ref = WeakReference(this)
         // supportRequestWindowFeature not needed without AppCompat
         super.onCreate(savedInstanceState)
+
+        // Multi-window ActPost posts reach us through this bus.
+        lifecycleScope.launch {
+            multiWindowPostService.completeEvents.collect { intent ->
+                onCompleteActPost(intent)
+            }
+        }
         
         onBackPressedDispatcher.addCallback(this) { 
             viewModel.onBackPressed() 
@@ -393,17 +400,8 @@ class ActMain : ComponentActivity(),
     override fun onDestroy() {
         log.d("onDestroy")
         super.onDestroy()
-        ActMainRegistry.ref = null
-
-        // 子画面を全て閉じる
-        closeList.forEach {
-            try {
-                it.get()?.finish()
-            } catch (ex: Throwable) {
-                log.e(ex, "close failed?")
-            }
-        }
-        closeList.clear()
+        // 子画面（マルチウィンドウの ActPost）を全て閉じる
+        multiWindowPostService.closeAll()
 
         // View holders are now automatically cleaned up via DisposableEffect in ColumnWrapper
     }

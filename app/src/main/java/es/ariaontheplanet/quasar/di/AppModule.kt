@@ -8,6 +8,7 @@ import es.ariaontheplanet.quasar.nav.NavigatorImpl
 import es.ariaontheplanet.quasar.pref.PrefS
 import es.ariaontheplanet.quasar.services.AppBusyState
 import es.ariaontheplanet.quasar.services.ColumnRepository
+import es.ariaontheplanet.quasar.services.MultiWindowPostService
 import es.ariaontheplanet.quasar.services.OkHttpQualifiers
 import es.ariaontheplanet.quasar.services.TtsService
 import es.ariaontheplanet.quasar.services.buildAppImageLoader
@@ -25,6 +26,7 @@ import kotlin.math.max
 val appModule = module {
     singleOf(::AppBusyState)
     singleOf(::ColumnRepository)
+    singleOf(::MultiWindowPostService)
     single { TtsService(androidContext(), get()) }
     single { AppState(androidContext(), get()) }
 
