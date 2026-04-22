@@ -960,3 +960,27 @@ All behaviours that need to remain working on device: timeline status rendering 
 | `ActCallback` (272) | intentional | external-intent dispatcher. |
 | `ActPostScreen` (434) | not an Activity | extracted composable. |
 
+### Phase 6c-3 — MFM text animation + hashtag-menu restoration
+
+Two more commits landed in the rich-text area:
+
+- **`2563e548d`** — `MisskeyBigSpan` / `MisskeyMotionSpan` used to animate in-place via the View pipeline's `updateDrawState` + Handler-driven invalidation. After the Compose migration they fell through `toRichContent`'s when-expression and rendered as plain text. Added an `AnimRange` list to `RichBlock.Paragraph`; `RichParagraph` consults it via `animateTextScale()`, which drives a `rememberInfiniteTransition` with two animations (Big: 1.2x→1.5x em over 1.57s; Motion: 0.8x→1.0x em over 0.314s) and rebuilds the `AnnotatedString` each frame with the appropriate `fontSize` SpanStyle. Animation auto-stops when the paragraph leaves composition (LazyColumn item disposal gates naturally). A linear triangle-wave approximation replaces `sin()` — indistinguishable at these amplitudes.
+- **`d5ea5def9`** — Hashtag-menu context restoration. `rememberStatusLinkClickHandler` now takes an optional `sourceText: CharSequence?`; when a Spannable is provided, every `MyClickableSpan` whose URL is a hashtag gets collected into `tagList` for `openCustomTab`'s tagDialog. Matches the View-side `ActMainActions.onMyClickableSpanClickedImpl` loop exactly. Both CW and body/mentions handlers pass `status.decoded_content` as the source.
+
+Network emoji animation (APNG/GIF/WebP) already works for free — Coil 3's `AnimatedImageDecoder` is registered in `ImageLoaderFactory` and `AsyncImagePainter`'s lifecycle handles visibility-gating. No explicit work needed.
+
+### Phase 6 status
+
+| Item | Status |
+|---|---|
+| 6a — Coil deps + ImageLoader | ✅ done (earlier session) |
+| 6b — Glide → Coil call-site migration | ✅ done (earlier session) |
+| 6c-1 — RichText bridgehead + pilot | ✅ done (earlier session) |
+| 6c-2 — block-level span decomposition | ✅ done this session (`b971dcc73`). Nested blocks still flatten — follow-up deferred. |
+| 6c-3 — MFM text animation + emoji animation | ✅ done this session |
+| 6d — Delete SpannableTextView wrapper + NetworkEmojiInvalidator + MyLinkMovementMethod | ✅ done this session |
+
+Open cleanup within Phase 6:
+- Nested block decomposition (blockquote containing a list) — rare in real HTML, flattens into the outer paragraph currently.
+- Span classes `draw*` methods are dead (no more TextView renders them; `ActMainAutoCW.checkAutoCW` calls `tv.measure()` which uses `getSize`/`updateMeasureState`/`getLeadingMargin` but not the draw methods). The classes stay because they still carry data (ranges + metrics) into `toRichContent`; deleting the draw code is a large simplification but needs careful staging.
+
