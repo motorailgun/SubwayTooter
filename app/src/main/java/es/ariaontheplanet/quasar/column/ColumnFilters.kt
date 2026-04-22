@@ -152,11 +152,6 @@ fun Column.onFilterDeleted(filter: TootFilter, filterList: List<TootFilter>) {
     }
 }
 
-@Suppress("unused")
-fun Column.onLanguageFilterChanged() {
-    // TODO
-}
-
 fun Column.initFilter() {
     columnRegexFilter = Column.COLUMN_REGEX_FILTER_DEFAULT
     val regexText = this.regexText

@@ -268,8 +268,6 @@ class Column(
     @Volatile
     var bPutGap: Boolean = false
 
-    var cacheHeaderDesc: String? = null
-
     // DMカラム更新時に新APIの利用に成功したなら真
     internal var useConversationSummaries = false
 

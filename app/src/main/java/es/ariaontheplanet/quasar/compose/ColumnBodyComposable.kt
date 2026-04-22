@@ -52,8 +52,6 @@ fun ColumnBody(
     lazyListState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
-    val rev = uiState.uiRevision // read for recomposition
-
     Box(
         modifier = modifier
             .fillMaxSize()

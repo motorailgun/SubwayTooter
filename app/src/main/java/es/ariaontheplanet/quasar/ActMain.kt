@@ -70,7 +70,6 @@ import es.ariaontheplanet.quasar.column.fireRelativeTime
 import es.ariaontheplanet.quasar.column.fireShowColumnHeader
 import es.ariaontheplanet.quasar.column.fireShowContent
 import es.ariaontheplanet.quasar.column.onActivityStart
-import es.ariaontheplanet.quasar.column.onLanguageFilterChanged
 import es.ariaontheplanet.quasar.column.saveScrollPosition
 import es.ariaontheplanet.quasar.column.startLoading
 import es.ariaontheplanet.quasar.column.viewHolder
@@ -232,9 +231,8 @@ class ActMain : ComponentActivity(),
     }
 
     val arLanguageFilter = ActivityResultHandler(log) { r ->
-        decodeLanguageFilterResult(r)?.let { columnIndex ->
+        decodeLanguageFilterResult(r)?.let { _ ->
             appState.saveColumnList()
-            appState.column(columnIndex)?.onLanguageFilterChanged()
         }
     }
 

@@ -158,13 +158,6 @@ class ColumnUiState {
 
     // Search bg color for search/list/agg bars
     var searchFormBgColor by mutableIntStateOf(0)
-
-    // ──────── revision counter for forcing recomposition ────────
-    var uiRevision by mutableIntStateOf(0)
-
-    fun forceRecompose() {
-        uiRevision++
-    }
 }
 
 /**

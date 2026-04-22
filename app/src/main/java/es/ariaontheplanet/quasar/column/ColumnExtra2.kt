@@ -2,7 +2,6 @@ package es.ariaontheplanet.quasar.column
 
 import android.content.Context
 import android.os.Environment
-import androidx.annotation.RawRes
 import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.api.TootApiClient
 import es.ariaontheplanet.quasar.api.TootApiResult
@@ -150,11 +149,6 @@ suspend fun Column.loadProfileAccount(
             }
         }
     }
-
-fun Column.loadSearchDesc(@RawRes rawEn: Int, @RawRes rawJa: Int): String {
-    @RawRes val rawId = if ("ja" == context.getString(R.string.language_code)) rawJa else rawEn
-    return context.loadRawResource(rawId).decodeUTF8()
-}
 
 suspend fun Column.updateRelation(
     client: TootApiClient,

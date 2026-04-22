@@ -1,7 +1,6 @@
 package es.ariaontheplanet.quasar.column
 
 import android.annotation.SuppressLint
-import android.view.View
 import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.api.entity.EntityId
 import es.ariaontheplanet.quasar.api.entity.TimelineItem
@@ -12,7 +11,6 @@ import es.ariaontheplanet.quasar.pref.PrefB
 import jp.juggler.util.data.notZero
 import jp.juggler.util.log.LogCategory
 import jp.juggler.util.log.showToast
-import jp.juggler.util.ui.getAdaptiveRippleDrawable
 
 private val log = LogCategory("ColumnExtra1")
 
@@ -111,13 +109,6 @@ fun Column.getHeaderNameColor() = headerFgColor.notZero() ?: Column.defaultColor
 
 fun Column.getHeaderBackgroundColor() = headerBgColor.notZero() ?: Column.defaultColorHeaderBg
 
-fun Column.setHeaderBackground(view: View) {
-    view.background = getAdaptiveRippleDrawable(
-        getHeaderBackgroundColor(),
-        getHeaderNameColor()
-    )
-}
-
 val Column.hasHashtagExtra: Boolean
     get() = when {
         isMisskey -> false
@@ -125,32 +116,6 @@ val Column.hasHashtagExtra: Boolean
         // ColumnType.HASHTAG_FROM_ACCT は追加のタグを指定しても結果に反映されない
         else -> false
     }
-
-fun Column.getHeaderDesc(): String {
-    var cache = cacheHeaderDesc
-    if (cache != null) return cache
-    cache = when (type) {
-        ColumnType.SEARCH -> context.getString(R.string.search_desc_mastodon_api)
-        ColumnType.SEARCH_MSP -> loadSearchDesc(
-            R.raw.search_desc_msp_en,
-            R.raw.search_desc_msp_ja
-        )
-
-        ColumnType.SEARCH_TS -> loadSearchDesc(
-            R.raw.search_desc_ts_en,
-            R.raw.search_desc_ts_ja
-        )
-
-        ColumnType.SEARCH_NOTESTOCK -> loadSearchDesc(
-            R.raw.search_desc_notestock_en,
-            R.raw.search_desc_notestock_ja
-        )
-
-        else -> ""
-    }
-    cacheHeaderDesc = cache
-    return cache
-}
 
 /////////////////////////////////////////////////////////////////
 

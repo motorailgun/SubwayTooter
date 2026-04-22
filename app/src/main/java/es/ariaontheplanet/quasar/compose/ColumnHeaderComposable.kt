@@ -33,8 +33,6 @@ fun ColumnHeaderBar(
     callbacks: ColumnCallbacks,
     modifier: Modifier = Modifier,
 ) {
-    val rev = uiState.uiRevision // read to trigger recomposition
-
     val headerNameColor = Color(uiState.headerNameColor)
     val headerPageNumberColor = Color(uiState.headerPageNumberColor)
     val headerBgColor = if (uiState.headerBgColorIsDefault) {
