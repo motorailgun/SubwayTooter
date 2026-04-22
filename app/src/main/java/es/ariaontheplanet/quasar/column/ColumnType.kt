@@ -1439,7 +1439,6 @@ enum class ColumnType(
             )
             if (ti != null) {
                 column.instanceInformation = ti
-                column.handshake = ri?.response?.handshake
             }
             ri
         },

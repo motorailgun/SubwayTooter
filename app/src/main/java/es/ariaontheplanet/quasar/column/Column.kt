@@ -14,7 +14,6 @@ import es.ariaontheplanet.quasar.util.BucketList
 import es.ariaontheplanet.quasar.util.ScrollPosition
 import jp.juggler.util.data.*
 import jp.juggler.util.ui.attrColor
-import okhttp3.Handshake
 import java.util.*
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
@@ -201,7 +200,6 @@ class Column(
     // 「インスタンス情報」カラムに表示するインスタンス情報
     // (SavedAccount中のインスタンス情報とは異なるので注意)
     internal var instanceInformation: TootInstance? = null
-    internal var handshake: Handshake? = null
 
     internal var scrollSave: ScrollPosition? = null
     var lastViewingItemId: EntityId? = null
