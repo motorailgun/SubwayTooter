@@ -94,7 +94,6 @@ fun ColumnViewHolder.showAnnouncements(force: Boolean = true) {
 
     ui.announcementEnablePaging = enablePaging
     ui.announcementContentColor = contentColor
-    ui.announcementsCaption = activity.getString(R.string.announcements)
     ui.announcementsIndex =
         activity.getString(R.string.announcements_index, itemIndex + 1, listShown.size)
 

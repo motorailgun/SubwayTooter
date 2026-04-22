@@ -2,6 +2,7 @@ package es.ariaontheplanet.quasar.compose
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -14,12 +15,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +50,8 @@ fun ColumnAnnouncementsBox(
     modifier: Modifier = Modifier,
 ) {
     AnimatedVisibility(visible = uiState.announcementsBoxVisible) {
+        var expanded by remember { mutableStateOf(true) }
+
         Column(
             modifier = modifier
                 .fillMaxWidth()
@@ -52,19 +62,27 @@ fun ColumnAnnouncementsBox(
         ) {
             val contentColor = Color(uiState.announcementContentColor)
 
-            // Caption + paging row
+            // Caption + paging row — tap anywhere outside the paging buttons to toggle.
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clickable { expanded = !expanded }
                     .padding(horizontal = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.End,
             ) {
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = null,
+                    tint = contentColor,
+                )
                 Text(
                     text = stringResource(R.string.announcements),
                     color = contentColor,
                     textAlign = TextAlign.End,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 4.dp),
                 )
 
                 if (uiState.announcementEnablePaging) {
@@ -72,9 +90,7 @@ fun ColumnAnnouncementsBox(
                         Icon(
                             painter = painterResource(R.drawable.ic_arrow_start),
                             contentDescription = stringResource(R.string.previous),
-                            tint = contentColor.copy(
-                                alpha = if (uiState.announcementEnablePaging) 1f else 0.3f
-                            ),
+                            tint = contentColor,
                         )
                     }
                 }
@@ -90,16 +106,14 @@ fun ColumnAnnouncementsBox(
                         Icon(
                             painter = painterResource(R.drawable.ic_arrow_end),
                             contentDescription = stringResource(R.string.next),
-                            tint = contentColor.copy(
-                                alpha = if (uiState.announcementEnablePaging) 1f else 0.3f
-                            ),
+                            tint = contentColor,
                         )
                     }
                 }
             }
 
             // Content area (scrollable, max height)
-            if (uiState.announcementsExpanded) {
+            AnimatedVisibility(visible = expanded) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()

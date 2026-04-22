@@ -128,8 +128,6 @@ class ColumnUiState {
     var announcementButtonVisible by mutableStateOf(false)
     var announcementBadgeVisible by mutableStateOf(false)
     var announcementsBoxVisible by mutableStateOf(false)
-    var announcementsExpanded by mutableStateOf(false)
-    var announcementsCaption by mutableStateOf("")
     var announcementsIndex by mutableStateOf("")
     var announcementPeriod by mutableStateOf<String?>(null)
     var announcementContent by mutableStateOf<CharSequence>("")
