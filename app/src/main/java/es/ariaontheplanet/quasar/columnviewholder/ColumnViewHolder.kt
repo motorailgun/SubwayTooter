@@ -124,12 +124,6 @@ class ColumnViewHolder(
                 return
             }
 
-            if (column.hasMultipleViewHolder()) {
-                log.d("restoreScrollPosition [%d] ${column.getColumnName(true)}, column has multiple view holder. retry later.")
-                handler.postDelayed(this, 100L)
-                return
-            }
-
             val sp = column.scrollSave ?: run {
                 log.d("restoreScrollPosition [%d] ${column.getColumnName(true)} , column has no saved scroll position.")
                 return

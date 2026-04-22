@@ -152,14 +152,6 @@ fun Column.getHeaderDesc(): String {
     return cache
 }
 
-// With the new ViewModel-based registry, each column has at most one active view holder
-fun Column.hasMultipleViewHolder(): Boolean = false
-
-@Deprecated("View holders are now managed by MainViewModel", ReplaceWith(""))
-fun Column.addColumnViewHolder(cvh: ColumnViewHolder) {
-    // No-op: View holders are now registered in ColumnWrapper via MainViewModel
-}
-
 /////////////////////////////////////////////////////////////////
 
 // ActMain の表示開始時に呼ばれる

@@ -98,7 +98,6 @@ fun ColumnViewHolder.onPageDestroy(pageIdx: Int) {
         saveScrollPosition()
         timelineState = null
         lazyListState = null
-        column.removeColumnViewHolder(this)
         this.column = null
     }
     closeBitmaps()
@@ -271,9 +270,6 @@ fun ColumnViewHolder.onPageCreate(column: Column, pageIdx: Int, pageCount: Int) 
         lastAnnouncementShown = -1L
         val announcementsBgColor = colorSurfaceContainerHigh
         ui.settingsBgColor = colorSurfaceContainerLow
-
-        // ──── Connect column ────
-        column.addColumnViewHolder(this)
 
         // ──── Build callbacks ────
         columnCallbacks = buildColumnCallbacks()

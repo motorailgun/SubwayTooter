@@ -12,11 +12,6 @@ val Column.viewHolder: ColumnViewHolder?
         else -> appState.mainViewModel?.getViewHolder(this)
     }
 
-@Deprecated("View holders are now managed by MainViewModel", ReplaceWith(""))
-fun Column.removeColumnViewHolder(cvh: ColumnViewHolder) {
-    // No-op: View holders are now unregistered in ColumnWrapper via MainViewModel
-}
-
 fun Column.fireShowContent(
     reason: String,
     changeList: List<AdapterChange>? = null,

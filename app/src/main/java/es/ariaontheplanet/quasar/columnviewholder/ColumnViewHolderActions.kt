@@ -10,7 +10,6 @@ import es.ariaontheplanet.quasar.actmain.closeColumnAll
 import es.ariaontheplanet.quasar.api.entity.TootAnnouncement
 import es.ariaontheplanet.quasar.column.ColumnLoadReason
 import es.ariaontheplanet.quasar.column.ColumnType
-import es.ariaontheplanet.quasar.column.addColumnViewHolder
 import es.ariaontheplanet.quasar.column.fireShowContent
 import es.ariaontheplanet.quasar.column.isSearchColumn
 import es.ariaontheplanet.quasar.column.canReloadWhenRefreshTop
@@ -69,8 +68,6 @@ fun ColumnViewHolder.onCheckedChangedImpl(key: String, isChecked: Boolean) {
     val column = this.column ?: return
 
     if (bindingBusy) return
-
-    column.addColumnViewHolder(this)
 
     when (key) {
         "dontClose" -> {
@@ -356,7 +353,6 @@ fun ColumnViewHolder.buildColumnCallbacks(): ColumnCallbacks = ColumnCallbacks(
     // Body
     onRefresh = { isBottom ->
         val column = this.column ?: return@ColumnCallbacks
-        column.addColumnViewHolder(this)
 
         if (!isBottom && column.canReloadWhenRefreshTop()) {
             columnUiState.isRefreshing = false
