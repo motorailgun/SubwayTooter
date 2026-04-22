@@ -846,15 +846,94 @@ Was 497 at session start; `getVisibilityIconId`/`getVisibilityString`/`setFollow
 ### Recommended next steps (updated)
 
 **Easy wins, ~30 min each**:
-- Announcement "expanded" state: `uiState.announcementsExpanded` is always false, so the large `if (expanded) { ... }` in `ColumnAnnouncementsComposable` never renders. Either restore the click-to-expand (which would make `announcementsCaption` also become live) or delete the unreachable block.
-- Audit `CharSequence.toString()` call sites for more cases like `columnStatus` where a Spannable is silently reduced to text.
-- Span-class usage audit: `BlockCodeSpan`, `BlockQuoteSpan`, `InlineCodeSpan` only have 2 files of refs each — map those call sites before starting 6c-2.
+- ~~Announcement "expanded" state~~ — done. Click-to-expand wired via local `remember`; `announcementsExpanded` + `announcementsCaption` fields deleted.
+- Animated-emoji rendering: `NetworkEmojiSpan` / `MisskeyBigSpan` / `MisskeyMotionSpan` currently render as static images in RichText. Phase 6c-3 is the `rememberInfiniteTransition` pass, gated on LazyList visibility.
+- Wire the `hashtag-menu` context into RichText's link handler (ActMainActions line 65 walks sibling spans to collect hashtags — currently gets an empty list from the Compose path).
+- Reflection accessors in SpannableToRichContent.kt: `urlOrNull`, `resIdOrNull`, `assetPathOrNull`, `orderIndexOrNull`. Turn the backing span fields `public` (or add public getters) and drop the reflection. Safer + faster.
 
 **Medium**:
-- **Phase 6c-2**: block-level span decomposition. Pilot on account bio / content-warning first where block spans are rare.
+- **Phase 6c-2 follow-up**: nested block decomposition. A blockquote containing a list currently flattens the list into the quote's paragraph. Recursive descent in the block loop would fix it; most Mastodon HTML doesn't hit this.
 - **ActText migration** — least bad remaining Phase-5 screen (self-contained search-in-long-text; already uses Compose + StScreen).
+- **Span classes pruning**: inline-span classes (`HighlightSpan`, `InlineCodeSpan`) and block-span classes (`BlockCodeSpan`, `BlockQuoteSpan`, `HrSpan`, `OrderedListItemSpan`, `UnorderedListItemSpan`, `DdSpan`) are now only consumed by the `toRichContent` converter, which reads their ranges and public fields. Their `draw*` implementations are still invoked by `ActMainAutoCW.checkAutoCW`'s off-screen measurement pass, so the classes can't be deleted wholesale — but the draw methods themselves are effectively dead pixels.
 
 **Hard / high-risk**:
 - **ActMain migration**. Phase 5 cleanup ties `ActMainRegistry.WeakReference<ActMain>` deletion to this.
 - **Phase 7 (Column state)**.
+
+---
+
+## Progress Log (continuation — 2026-04-21, picking up from `a338d12aa`)
+
+**19 more commits** this pass, HEAD at `b971dcc73`. `./gradlew :app:assembleFcmDebug :app:testFcmDebugUnitTest` both green.
+
+This pass completed the announcement wire-up + **finished Phase 6c/6d**: every `SpannableTextView` call site migrated to `RichText`, the wrapper + related view-infra deleted. Net LOC change: **−240 LOC** across the affected files, with meaningful behaviour fixes (hidden announcement content now renders, CharSequence→toString drops reversed).
+
+### Announcement box: click-to-expand wired
+
+- `announcementsExpanded` (`ColumnUiState`) was never written, so the `if (expanded) { ... }` block hiding the announcement body/reactions was unreachable. Replaced with a local `var expanded by remember { mutableStateOf(true) }` toggled by clicking the caption row; added an ExpandLess/ExpandMore chevron.
+- `announcementsCaption` was set but never read (composable calls `stringResource(R.string.announcements)` directly) — dropped.
+- Paging-arrow `alpha = 0.3f` ternaries were dead (arrows only render when paging is enabled) — removed.
+
+### Spannable → RichText migration (completes Phase 6c)
+
+Six more `SpannableTextView` sites converted before the wrapper came down:
+
+| Location | Notes |
+|---|---|
+| `ColumnAnnouncementsComposable` content | Previously `announcementContent.toString()` stripped all spans |
+| Announcement reaction Button labels | Same |
+| `ColumnSearchBarComposable` emoji-query Button labels | Same |
+| `StatusComposables.BoostHeader` boost text | SpannedString of "X boosted" w/ display-name emoji |
+| `StatusComposables.ReplyHeader` reply text | Same shape |
+| `StatusComposables` status display-name | Bold + timeline font size |
+| `StatusComposables` mentions row | Clickable mentions — needed link handler |
+| `StatusComposables.ContentWarningRow` | Signature changed: `handler: Handler` → `onLinkClick: ((String) -> Unit)?` |
+| `StatusComposables` main body | **Last call site — triggered the wrapper deletion** |
+| `ColumnContentHeaders.ProfileHeader` display-name | Bold style |
+| `ColumnContentHeaders.ProfileHeader` bio/note | Clickable mentions/URLs |
+| `DlgListMember` target-user display name | No links |
+
+Link handling: `toRichContent` gained an `onLinkClick: ((String) -> Unit)?` parameter. When supplied, `MyClickableSpan` ranges become `LinkAnnotation.Clickable` with a `LinkInteractionListener` — Compose's built-in link machinery dispatches taps. `StatusComposables.rememberStatusLinkClickHandler` wraps `openCustomTab` with the column context. One known feature gap vs. the old View handler: hashtag-menu aggregation (walking surrounding spans) gets an empty list.
+
+### Phase 6c-2 — block-span decomposition
+
+`SpannableToRichContent.kt` rewritten (136 → 247 LOC):
+
+- Scans for `BlockQuoteSpan`, `BlockCodeSpan`, `HrSpan`, `OrderedListItemSpan`, `UnorderedListItemSpan`, `DdSpan`.
+- Greedily takes non-overlapping block ranges (outer wins on ties); inner overlaps flatten into the outer paragraph — rare in real HTML.
+- Splits text at block boundaries, emits the matching `RichBlock` variant, clamps inline-span ranges to each paragraph segment.
+- `OrderedListItemSpan`'s `order` string is read via reflection (the field is private); numbering falls back to 0 on failure.
+
+Inline spans (HighlightSpan, InlineCodeSpan, NetworkEmojiSpan, EmojiImageSpan, SvgEmojiSpan, MyClickableSpan) continue to render as before inside each paragraph.
+
+### Deletions
+
+| Path | LOC |
+|---|---|
+| `compose/ComposeViewBridges.SpannableTextView` + `PreviewSpannableTextView` | ~75 |
+| `util/NetworkEmojiInvalidator.kt` | 103 |
+| `view/MyLinkMovementMethod.kt` | 66 |
+| `api/entity/TootAccount.setAccountExtra` (zero callers) | 91 |
+
+That's **−335 LOC** from the deletions alone; offset by the decomposer rewrite (+111).
+
+### Remaining SpannableTextView call sites: 0
+
+Grep confirmation: `grep -rn "\bSpannableTextView\b"` returns nothing in `app/src/main/java`.
+
+### `view/` directory — now 1 file
+
+Only `PinchBitmapView.kt` remains (used by the media viewer, out of scope).
+
+### Known visual differences to watch for
+
+The RichText composable uses Compose `Text` with `AnnotatedString` + `InlineTextContent`. Relative to the `AppCompatTextView + Spannable` path it replaces:
+
+- Line-breaking: Compose's BreakIterator may wrap differently. Noticeable on CJK body text.
+- Link hit targets: slightly tighter (no 1-line padding tolerance).
+- Inline emoji baseline: `PlaceholderVerticalAlign.Center` vs the old `EmojiImageRect`-driven descent. Should be close but could shift a pixel or two.
+- Animated emoji: currently renders as static (6c-3).
+- Hashtag menu: no surrounding-span scan, so the tag list offered in the menu is empty.
+
+All behaviours that need to remain working on device: timeline status rendering (boosts, replies, CW, mentions, body, display name), profile headers, announcement box, DlgListMember target display.
 
