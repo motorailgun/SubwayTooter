@@ -49,6 +49,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import es.ariaontheplanet.quasar.ActMain
 import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.actmain.nextPosition
+import es.ariaontheplanet.quasar.api.entity.TootTag.Companion.findHashtagFromUrl
 import es.ariaontheplanet.quasar.compose.richtext.RichText
 import es.ariaontheplanet.quasar.compose.richtext.toRichContent
 import es.ariaontheplanet.quasar.span.MyClickableSpan
@@ -76,23 +77,40 @@ import jp.juggler.util.data.notZero
  * inside RichText (mentions, hashtags, URLs) open via openCustomTab, which
  * intercepts hashtag/status URLs before falling back to the custom tab.
  *
- * Note: the View-based handler in ActMainActions additionally aggregates
- * hashtags by scanning surrounding spans. That context isn't available from
- * a plain URL string, so the hashtag-menu receives an empty tag list here.
+ * When [sourceText] is provided and is a Spannable, every MyClickableSpan
+ * that points at a hashtag URL is collected into a list and handed to
+ * [openCustomTab] as `tagList` — this matches the View-handler semantics
+ * for the "open hashtag menu" interaction (ActMainActions.onMyClickableSpanClickedImpl).
  */
 @Composable
 private fun rememberStatusLinkClickHandler(
     activity: ActMain,
     column: Column?,
-): (String) -> Unit = remember(activity, column) {
-    { url ->
-        openCustomTab(
-            activity = activity,
-            pos = activity.nextPosition(column),
-            url = url,
-            accessInfo = column?.accessInfo,
-        )
+    sourceText: CharSequence? = null,
+): (String) -> Unit {
+    val tagList = remember(sourceText) { collectHashtagsFrom(sourceText) }
+    return remember(activity, column, tagList) {
+        { url ->
+            openCustomTab(
+                activity = activity,
+                pos = activity.nextPosition(column),
+                url = url,
+                accessInfo = column?.accessInfo,
+                tagList = tagList,
+            )
+        }
     }
+}
+
+private fun collectHashtagsFrom(source: CharSequence?): ArrayList<String>? {
+    val s = source as? Spannable ?: return null
+    val out = ArrayList<String>()
+    for (span in s.getSpans(0, s.length, MyClickableSpan::class.java)) {
+        val li = span.linkInfo
+        val pair = li.url.findHashtagFromUrl() ?: continue
+        out += if (li.text.startsWith('#')) li.text else "#${pair.first}"
+    }
+    return out.takeIf { it.isNotEmpty() }
 }
 
 /**
@@ -580,7 +598,10 @@ fun StatusBody(
                 val hasCw = decodedSpoilerText.isNotEmpty() || autoCwText != null
 
                 if (hasCw) {
-                    val cwOnLinkClick = rememberStatusLinkClickHandler(activity, column)
+                    val cwOnLinkClick = rememberStatusLinkClickHandler(
+                        activity, column,
+                        sourceText = status.decoded_content,
+                    )
                     ContentWarningRow(
                         cwText = if (decodedSpoilerText.isNotEmpty()) decodedSpoilerText else autoCwText!!,
                         isShown = cwShown,
@@ -598,7 +619,10 @@ fun StatusBody(
                     val fadeAlpha = if (fadeText) ActMain.eventFadeAlpha else 1f
 
                     // Mentions
-                    val onLinkClick = rememberStatusLinkClickHandler(activity, column)
+                    val onLinkClick = rememberStatusLinkClickHandler(
+                        activity, column,
+                        sourceText = status.decoded_content,
+                    )
                     status.decoded_mentions?.let { mentions ->
                         if (mentions.isNotEmpty()) {
                             val mentionContent = remember(mentions, onLinkClick) {
