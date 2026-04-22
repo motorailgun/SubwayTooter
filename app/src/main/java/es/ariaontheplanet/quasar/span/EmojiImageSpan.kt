@@ -10,7 +10,7 @@ import java.lang.ref.WeakReference
 
 class EmojiImageSpan(
     context: Context,
-    private val resId: Int,
+    val resId: Int,
     private val useColorShader: Boolean = false,
     private val color: Int? = null,
     private val scale: Float = 1f

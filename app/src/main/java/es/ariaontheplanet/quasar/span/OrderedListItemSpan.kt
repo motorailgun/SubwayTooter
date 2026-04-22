@@ -7,7 +7,7 @@ import android.text.TextPaint
 import android.text.style.LeadingMarginSpan
 
 class OrderedListItemSpan(
-    private val order: String,
+    val order: String,
     orders: List<String>,
 ) : LeadingMarginSpan {
     companion object {

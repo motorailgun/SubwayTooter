@@ -21,7 +21,7 @@ import kotlin.math.max
 import kotlin.math.min
 
 class NetworkEmojiSpan constructor(
-    private val url: String,
+    val url: String,
     sizeMode: EmojiSizeMode,
     scale: Float = 1f,
     private val initialAspect: Float? = null,

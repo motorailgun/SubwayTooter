@@ -91,7 +91,8 @@ fun CharSequence.toRichContent(
             BlockKind.BlockCode -> RichBlock.CodeBlock(spannable.substring(start, end))
             BlockKind.Hr -> RichBlock.Hr
             BlockKind.OrderedItem -> {
-                val index = (span as OrderedListItemSpan).orderIndexOrNull() ?: 0
+                val index = (span as OrderedListItemSpan).order.trim().toIntOrNull()
+                    ?.minus(1) ?: 0
                 RichBlock.ListItem(
                     ordered = true,
                     index = index,
@@ -141,14 +142,6 @@ private fun blockKindOf(span: Any): BlockKind? = when (span) {
     is UnorderedListItemSpan -> BlockKind.UnorderedItem
     is DdSpan -> BlockKind.Indent
     else -> null
-}
-
-private fun OrderedListItemSpan.orderIndexOrNull(): Int? = try {
-    val f = javaClass.getDeclaredField("order")
-    f.isAccessible = true
-    (f.get(this) as? String)?.trim()?.toIntOrNull()?.minus(1)
-} catch (_: Throwable) {
-    null
 }
 
 private fun buildParagraph(
@@ -227,13 +220,13 @@ private fun buildParagraph(
                 is EmojiImageSpan -> {
                     val id = "emoji-${emojiCounter++}"
                     addStringAnnotation(RICH_EMOJI_TAG, id, sLocal, eLocal)
-                    inline[id] = resourceEmojiInline(span.resIdOrNull())
+                    inline[id] = resourceEmojiInline(span.resId)
                 }
 
                 is SvgEmojiSpan -> {
                     val id = "emoji-${emojiCounter++}"
                     addStringAnnotation(RICH_EMOJI_TAG, id, sLocal, eLocal)
-                    inline[id] = svgEmojiInline(span.assetPathOrNull())
+                    inline[id] = svgEmojiInline(span.assetsName)
                 }
             }
         }
@@ -255,19 +248,16 @@ private val emojiPlaceholder = Placeholder(
 
 private fun networkEmojiInline(span: NetworkEmojiSpan): InlineTextContent =
     InlineTextContent(emojiPlaceholder) {
-        val url = span.urlOrNull()
-        if (url != null) {
-            AsyncImage(
-                model = url,
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-            )
-        }
+        AsyncImage(
+            model = span.url,
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+        )
     }
 
-private fun resourceEmojiInline(@androidx.annotation.DrawableRes resId: Int?): InlineTextContent =
+private fun resourceEmojiInline(@androidx.annotation.DrawableRes resId: Int): InlineTextContent =
     InlineTextContent(emojiPlaceholder) {
-        if (resId != null && resId != 0) {
+        if (resId != 0) {
             Image(
                 painter = painterResource(resId),
                 contentDescription = null,
@@ -276,50 +266,12 @@ private fun resourceEmojiInline(@androidx.annotation.DrawableRes resId: Int?): I
         }
     }
 
-private fun svgEmojiInline(assetPath: String?): InlineTextContent =
+private fun svgEmojiInline(assetsName: String): InlineTextContent =
     InlineTextContent(emojiPlaceholder) {
-        if (!assetPath.isNullOrEmpty()) {
-            // Coil 3 has SVG support via the registered SvgDecoder.
-            AsyncImage(
-                model = "file:///android_asset/$assetPath",
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-            )
-        }
+        // Coil 3 has SVG support via the registered SvgDecoder.
+        AsyncImage(
+            model = "file:///android_asset/$assetsName",
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+        )
     }
-
-// Reflection-free accessors — the span classes don't expose their private
-// fields publicly, so add these small bridges where needed. The ones below
-// read public properties that already exist; if a field is private, we
-// fall back to null (rendering an empty placeholder) rather than crashing.
-
-private fun NetworkEmojiSpan.urlOrNull(): String? = try {
-    val f = javaClass.getDeclaredField("url")
-    f.isAccessible = true
-    f.get(this) as? String
-} catch (_: Throwable) {
-    null
-}
-
-private fun EmojiImageSpan.resIdOrNull(): Int? = try {
-    val f = javaClass.getDeclaredField("resId")
-    f.isAccessible = true
-    f.get(this) as? Int
-} catch (_: Throwable) {
-    null
-}
-
-private fun SvgEmojiSpan.assetPathOrNull(): String? = try {
-    // Try common field names.
-    listOf("assetsName", "assetPath", "path").firstNotNullOfOrNull { name ->
-        try {
-            val f = javaClass.getDeclaredField(name)
-            f.isAccessible = true
-            f.get(this) as? String
-        } catch (_: Throwable) {
-            null
-        }
-    }
-} catch (_: Throwable) {
-    null
-}

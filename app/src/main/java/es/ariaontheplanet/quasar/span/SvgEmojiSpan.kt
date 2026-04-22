@@ -21,7 +21,7 @@ fun UnicodeEmoji.createSpan(context: Context, scale: Float = 1f) =
 // SVG絵文字スパン
 class SvgEmojiSpan internal constructor(
     context: Context,
-    private val assetsName: String,
+    val assetsName: String,
     private val scale: Float = 1f,
 ) : ReplacementSpan() {
 
