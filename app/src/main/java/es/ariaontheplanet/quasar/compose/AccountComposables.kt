@@ -27,7 +27,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import es.ariaontheplanet.quasar.ActMain
+import es.ariaontheplanet.quasar.compose.richtext.RichText
+import es.ariaontheplanet.quasar.compose.richtext.toRichContent
 import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.api.entity.TootAccountRef
 import es.ariaontheplanet.quasar.column.Column
@@ -81,12 +85,20 @@ fun AccountItemContent(
 
         // Name and Acct
         Column(modifier = Modifier.weight(1f)) {
-            SpannableTextView(
-                text = whoRef.decoded_display_name,
-                textColor = contentColor,
-                textSizeSp = ActMain.timelineFontSizeSp.takeIf { it.isFinite() } ?: Float.NaN,
-                typeface = ActMain.timelineFontBold,
-                handler = activity.handler,
+            val nameContent = remember(whoRef.decoded_display_name) {
+                whoRef.decoded_display_name.toRichContent()
+            }
+            val boldTypeface = ActMain.timelineFontBold
+            val nameStyle = androidx.compose.runtime.remember(boldTypeface) {
+                TextStyle(fontFamily = FontFamily(boldTypeface))
+            }
+            RichText(
+                content = nameContent,
+                color = contentColorCompose,
+                style = nameStyle.copy(
+                    fontSize = (ActMain.timelineFontSizeSp
+                        .takeIf { it.isFinite() } ?: 14f).sp,
+                ),
             )
 
             AcctText(
