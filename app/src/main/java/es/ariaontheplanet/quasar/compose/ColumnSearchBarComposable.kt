@@ -35,6 +35,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import es.ariaontheplanet.quasar.R
+import es.ariaontheplanet.quasar.compose.richtext.RichText
+import es.ariaontheplanet.quasar.compose.richtext.toRichContent
 
 /**
  * Compose replacement for inflateSearchBar() in ColumnViewHolder.
@@ -85,6 +87,9 @@ fun ColumnSearchBar(
                         horizontalArrangement = Arrangement.spacedBy(2.dp),
                     ) {
                         uiState.emojiQueryItems.forEachIndexed { index, item ->
+                            val itemContent = remember(item.displayText) {
+                                item.displayText.toRichContent()
+                            }
                             Button(
                                 onClick = {},
                                 colors = ButtonDefaults.buttonColors(
@@ -92,7 +97,7 @@ fun ColumnSearchBar(
                                     contentColor = Color(uiState.contentColor),
                                 ),
                             ) {
-                                Text(text = item.displayText.toString())
+                                RichText(content = itemContent)
                             }
                         }
                     }

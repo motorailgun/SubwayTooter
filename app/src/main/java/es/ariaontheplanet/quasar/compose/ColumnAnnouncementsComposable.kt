@@ -37,6 +37,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import es.ariaontheplanet.quasar.R
+import es.ariaontheplanet.quasar.compose.richtext.RichText
+import es.ariaontheplanet.quasar.compose.richtext.toRichContent
+import es.ariaontheplanet.quasar.span.MyClickableSpan
 
 /**
  * Compose replacement for inflateAnnouncementsBox() and showAnnouncements() in ColumnViewHolder.
@@ -133,9 +136,12 @@ fun ColumnAnnouncementsBox(
                         )
                     }
 
-                    // Content text
-                    Text(
-                        text = uiState.announcementContent.toString(),
+                    // Content text — decoded HTML with mentions/hashtags/emoji.
+                    val announcementContent = remember(uiState.announcementContent) {
+                        uiState.announcementContent.toRichContent(MyClickableSpan.defaultLinkColor)
+                    }
+                    RichText(
+                        content = announcementContent,
                         color = contentColor,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -163,8 +169,11 @@ fun ColumnAnnouncementsBox(
                                 )
                             }
 
-                            // Existing reactions
+                            // Existing reactions — displayText carries an emoji span.
                             uiState.announcementReactions.forEachIndexed { index, item ->
+                                val reactionContent = remember(item.displayText) {
+                                    item.displayText.toRichContent()
+                                }
                                 Button(
                                     onClick = { callbacks.onReactionClick(index) },
                                     colors = ButtonDefaults.buttonColors(
@@ -174,7 +183,7 @@ fun ColumnAnnouncementsBox(
                                         contentColor = contentColor,
                                     ),
                                 ) {
-                                    Text(text = item.displayText.toString())
+                                    RichText(content = reactionContent)
                                 }
                             }
                         }
