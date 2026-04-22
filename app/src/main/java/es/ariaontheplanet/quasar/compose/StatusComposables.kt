@@ -48,6 +48,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import es.ariaontheplanet.quasar.ActMain
 import es.ariaontheplanet.quasar.R
+import es.ariaontheplanet.quasar.compose.richtext.RichText
+import es.ariaontheplanet.quasar.compose.richtext.toRichContent
+import es.ariaontheplanet.quasar.span.MyClickableSpan
 import es.ariaontheplanet.quasar.api.entity.TootAccountRef
 import es.ariaontheplanet.quasar.api.entity.TootAggBoost
 import es.ariaontheplanet.quasar.api.entity.TootAttachmentLike
@@ -347,10 +350,10 @@ fun BoostHeader(
                 )
             }
 
-            SpannableTextView(
-                text = text,
-                textColor = contentColor,
-                handler = activity.handler,
+            val content = remember(text) { text.toRichContent(MyClickableSpan.defaultLinkColor) }
+            RichText(
+                content = content,
+                color = Color(contentColor),
             )
         }
     }
@@ -408,11 +411,11 @@ fun ReplyHeader(
 
         Spacer(modifier = Modifier.width(4.dp))
 
-        SpannableTextView(
-            text = text,
-            textColor = contentColor,
+        val content = remember(text) { text.toRichContent(MyClickableSpan.defaultLinkColor) }
+        RichText(
+            content = content,
+            color = Color(contentColor),
             modifier = Modifier.weight(1f),
-            handler = activity.handler,
         )
     }
 }
@@ -516,13 +519,19 @@ fun StatusBody(
             // Name + Content column
             Column(modifier = Modifier.weight(1f)) {
                 // Display name
-                SpannableTextView(
-                    text = whoRef.decoded_display_name,
-                    textColor = contentColor,
-                    textSizeSp = ActMain.timelineFontSizeSp.takeIf { it.isFinite() }
-                        ?: Float.NaN,
-                    typeface = ActMain.timelineFontBold,
-                    handler = activity.handler,
+                val displayName = remember(whoRef.decoded_display_name) {
+                    whoRef.decoded_display_name.toRichContent(MyClickableSpan.defaultLinkColor)
+                }
+                val displayNameStyle = remember(ActMain.timelineFontBold) {
+                    androidx.compose.ui.text.TextStyle(
+                        fontFamily = androidx.compose.ui.text.font.FontFamily(ActMain.timelineFontBold),
+                        fontSize = (ActMain.timelineFontSizeSp.takeIf { it.isFinite() } ?: 14f).sp,
+                    )
+                }
+                RichText(
+                    content = displayName,
+                    color = Color(contentColor),
+                    style = displayNameStyle,
                 )
 
                 // Content Warning
