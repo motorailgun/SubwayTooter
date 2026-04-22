@@ -15,6 +15,7 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.tooling.preview.Preview
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
@@ -100,3 +101,37 @@ private fun ImageView.ScaleType.toComposeContentScale(): ContentScale = when (th
 
 private fun Drawable.toPainter(): Painter =
     BitmapPainter(toBitmap().asImageBitmap())
+
+/**
+ * Thin wrapper over [ComposeNetworkImage] that kept the old param names from
+ * the pre-Coil bridge; leaves ~20 call sites unchanged.
+ */
+@Composable
+fun NetworkImage(
+    modifier: Modifier = Modifier,
+    cornerRadius: Float = 0f,
+    staticUrl: String? = null,
+    animatedUrl: String? = null,
+    contentDescription: String? = null,
+    scaleType: ImageView.ScaleType = ImageView.ScaleType.CENTER_CROP,
+    defaultDrawable: Drawable? = null,
+) {
+    ComposeNetworkImage(
+        url = staticUrl,
+        modifier = modifier,
+        cornerRadius = cornerRadius,
+        animatedUrl = animatedUrl,
+        contentDescription = contentDescription,
+        scaleType = scaleType,
+        defaultDrawable = defaultDrawable,
+    )
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewNetworkImage() {
+    NetworkImage(
+        staticUrl = "https://example.com/image.png",
+        contentDescription = "Preview Image",
+    )
+}
