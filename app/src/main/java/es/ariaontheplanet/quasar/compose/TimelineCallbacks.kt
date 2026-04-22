@@ -1,6 +1,5 @@
 package es.ariaontheplanet.quasar.compose
 
-import es.ariaontheplanet.quasar.ActMain
 import es.ariaontheplanet.quasar.api.entity.TimelineItem
 import es.ariaontheplanet.quasar.api.entity.TootAccountRef
 import es.ariaontheplanet.quasar.api.entity.TootNotification
@@ -83,13 +82,3 @@ data class TimelineCallbacks(
     val onConversationButtonClick: (Column, TootStatus?, TootNotification?) -> Unit = { _, _, _ -> },
 )
 
-/**
- * Factory to create TimelineCallbacks wired to existing action methods in ActMain.
- */
-fun createTimelineCallbacks(activity: ActMain): TimelineCallbacks {
-    return TimelineCallbacks(
-        // All callbacks are wired through the existing action infrastructure.
-        // Individual callback implementations will be connected as the migration progresses.
-        // For now, these provide the full callback surface.
-    )
-}
