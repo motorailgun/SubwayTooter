@@ -5,10 +5,6 @@ import jp.juggler.util.data.notEmpty
 
 private fun Double?.finiteOrZero(): Double = if (this?.isFinite() == true) this else 0.0
 
-fun ActPost.showPoll() {
-    // no-op: poll section visibility is controlled by Compose state.
-}
-
 // 投票が有効で何か入力済みなら真
 fun ActPost.hasPoll(): Boolean {
     if (pollTypeIndex <= 0) return false

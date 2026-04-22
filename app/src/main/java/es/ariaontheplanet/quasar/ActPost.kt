@@ -117,8 +117,6 @@ import es.ariaontheplanet.quasar.actpost.restoreState
 import es.ariaontheplanet.quasar.actpost.saveAttachmentList
 import es.ariaontheplanet.quasar.actpost.saveDraft
 import es.ariaontheplanet.quasar.actpost.saveState
-import es.ariaontheplanet.quasar.actpost.showContentWarningEnabled
-import es.ariaontheplanet.quasar.actpost.showPoll
 import es.ariaontheplanet.quasar.actpost.showQuotedRenote
 import es.ariaontheplanet.quasar.actpost.showReplyTo
 import es.ariaontheplanet.quasar.actpost.showVisibility
@@ -570,12 +568,10 @@ class ActPost : ComponentActivity(),
 
     override fun onRestoreInstanceState(savedInstanceState: Bundle) {
         super.onRestoreInstanceState(savedInstanceState)
-        showContentWarningEnabled()
         // showMediaAttachment() handled by ViewModel
         showVisibility()
         updateTextCount()
         launchAndShowError { showReplyTo() }
-        showPoll()
         showQuotedRenote()
     }
 

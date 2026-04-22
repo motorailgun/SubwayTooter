@@ -180,7 +180,6 @@ fun ActPostScreen(activity: ActPost, modifier: Modifier = Modifier) {
                     checked = activity.contentWarningChecked,
                     onCheckedChange = {
                         activity.contentWarningChecked = it
-                        activity.showContentWarningEnabled()
                         activity.updateTextCount()
                     },
                 )
@@ -345,7 +344,6 @@ fun ActPostScreen(activity: ActPost, modifier: Modifier = Modifier) {
                         onClick = {
                             pollExpanded = false
                             activity.pollTypeIndex = index
-                            activity.showPoll()
                             activity.updateTextCount()
                         },
                     )

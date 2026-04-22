@@ -311,12 +311,10 @@ fun ActPost.restoreDraft(draft: JsonObject) {
                 states.inReplyToUrl = draft.string(DRAFT_REPLY_URL)
             }
 
-            showContentWarningEnabled()
             showMediaAttachment()
             showVisibility()
             updateTextCount()
             showReplyTo()
-            showPoll()
             showQuotedRenote()
 
             if (listWarning.isNotEmpty()) {

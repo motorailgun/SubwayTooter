@@ -119,11 +119,9 @@ suspend fun ActPost.afterUpdateText() {
     // 選択済みなら変えない
     if (account == null) selectAccount(null)
 
-    showContentWarningEnabled()
     showMediaAttachment()
     showVisibility()
     showReplyTo()
-    showPoll()
     showQuotedRenote()
     showSchedule()
     updateTextCount()
@@ -290,8 +288,4 @@ fun ActPost.performMore() {
 
 fun ActPost.performPost() {
     viewModel.performPost(isMultiWindowPost)
-}
-
-fun ActPost.showContentWarningEnabled() {
-    // no-op: CW field visibility is controlled directly by Compose state.
 }
