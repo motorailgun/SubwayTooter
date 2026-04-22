@@ -476,8 +476,6 @@ fun ActMain.statusRedraft(
 ) {
     status ?: return
 
-    completionHelper.closeAcctPopup()
-
     when {
         accessInfo.isMisskey ->
             openActPostImpl(
@@ -520,8 +518,6 @@ fun ActMain.statusEdit(
     status: TootStatus?,
 ) {
     status ?: return
-
-    completionHelper.closeAcctPopup()
 
     when {
         accessInfo.isMisskey ->

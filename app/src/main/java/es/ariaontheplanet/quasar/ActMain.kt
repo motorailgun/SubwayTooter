@@ -62,7 +62,6 @@ import es.ariaontheplanet.quasar.actmain.searchFromActivityResult
 import es.ariaontheplanet.quasar.actmain.setColumnsOrder
 import es.ariaontheplanet.quasar.actmain.updateColumnStrip
 import es.ariaontheplanet.quasar.actmain.updateColumnStripSelection
-import es.ariaontheplanet.quasar.actpost.CompletionHelper
 import es.ariaontheplanet.quasar.api.entity.Acct
 import es.ariaontheplanet.quasar.api.entity.EntityId
 import es.ariaontheplanet.quasar.api.entity.TootVisibility
@@ -204,7 +203,6 @@ class ActMain : ComponentActivity(),
     }
     */
 
-    lateinit var completionHelper: CompletionHelper
     lateinit var handler: Handler
     lateinit var appState: AppState
     lateinit var sideMenuAdapter: SideMenuAdapter
@@ -344,8 +342,7 @@ class ActMain : ComponentActivity(),
         appState.mainViewModel = viewModel
         handler = appState.handler
         density = appState.density
-        completionHelper = CompletionHelper()
-        
+
         sideMenuAdapter = SideMenuAdapter(this, handler)
 
         App1.setActivityTheme(this)
@@ -377,7 +374,7 @@ class ActMain : ComponentActivity(),
                         initialVisibility = visibility,
                     )
                 },
-                onDrawerClosed = { completionHelper.closeAcctPopup() },
+                onDrawerClosed = {},
             )
         }
 
@@ -405,7 +402,6 @@ class ActMain : ComponentActivity(),
         log.d("onDestroy")
         super.onDestroy()
         ActMainRegistry.ref = null
-        completionHelper.onDestroy()
 
         // 子画面を全て閉じる
         closeList.forEach {
@@ -546,8 +542,6 @@ class ActMain : ComponentActivity(),
         startAfterJob = null
         handler.removeCallbacks(procUpdateRelativeTime)
 
-        completionHelper.closeAcctPopup()
-
         appState.streamManager.onScreenStop()
 
         appState.columnList.forEach { it.saveScrollPosition() }
@@ -641,7 +635,6 @@ class ActMain : ComponentActivity(),
                 appState.column(position)?.let { column ->
                     column.startLoading(ColumnLoadReason.PageSelect)
                     scrollColumnStrip(position)
-                    completionHelper.setInstance(column.accessInfo.takeIf { !it.isNA })
                 }
             }
         }

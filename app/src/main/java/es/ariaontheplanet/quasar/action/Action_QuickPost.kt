@@ -65,8 +65,6 @@ fun ActMain.submitQuickPost(
     }
 
     launchMain {
-        completionHelper.closeAcctPopup()
-
         val account = currentPostTarget
             ?.takeIf { it.db_id != -1L && !it.isPseudo }
             ?: pickAccount(
