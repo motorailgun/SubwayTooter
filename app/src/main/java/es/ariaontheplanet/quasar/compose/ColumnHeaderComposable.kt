@@ -73,7 +73,7 @@ fun ColumnHeaderBar(
             )
             // Status
             Text(
-                text = uiState.columnStatus.toString(),
+                text = uiState.columnStatus,
                 color = headerPageNumberColor,
                 fontSize = 12.sp,
                 textAlign = TextAlign.End,

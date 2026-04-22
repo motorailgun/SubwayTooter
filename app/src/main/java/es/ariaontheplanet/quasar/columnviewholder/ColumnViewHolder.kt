@@ -2,14 +2,12 @@ package es.ariaontheplanet.quasar.columnviewholder
 
 import android.graphics.Bitmap
 import android.os.Handler
-import android.text.SpannableStringBuilder
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import es.ariaontheplanet.quasar.ActMain
 import es.ariaontheplanet.quasar.App1
 import es.ariaontheplanet.quasar.AppState
-import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.column.*
 import es.ariaontheplanet.quasar.compose.*
 import es.ariaontheplanet.quasar.streaming.StreamStatus
@@ -17,7 +15,6 @@ import es.ariaontheplanet.quasar.streaming.getStreamingStatus
 import es.ariaontheplanet.quasar.table.daoAcctColor
 import es.ariaontheplanet.quasar.util.NetworkEmojiInvalidator
 import es.ariaontheplanet.quasar.util.ScrollPosition
-import es.ariaontheplanet.quasar.appendColorShadeIcon
 import jp.juggler.util.data.notZero
 import jp.juggler.util.log.LogCategory
 import kotlinx.coroutines.CoroutineScope
@@ -36,7 +33,6 @@ class ColumnViewHolder(
     val themeColors: ThemeColors,
     val coroutineScope: CoroutineScope,
     val acctPadLr: Int,
-    @Deprecated("For backwards compatibility with appendColorShadeIcon")
     val activity: ActMain,
     var column: Column?
 ) {
@@ -159,7 +155,7 @@ class ColumnViewHolder(
         val column = this.column ?: return@Runnable
         if (column.isDispose.get()) return@Runnable
 
-        val sb = SpannableStringBuilder()
+        val sb = StringBuilder()
         try {
             val task = column.lastTask
             if (task != null) {
@@ -182,19 +178,12 @@ class ColumnViewHolder(
 
             when (streamStatus) {
                 StreamStatus.Missing, StreamStatus.Closed, StreamStatus.ClosedNoRetry -> Unit
-
-                StreamStatus.Connecting, StreamStatus.Open -> {
-                    sb.appendColorShadeIcon(activity, R.drawable.ic_pulse, "Streaming")
-                    sb.append("?")
-                }
-
-                StreamStatus.Subscribed -> {
-                    sb.appendColorShadeIcon(activity, R.drawable.ic_pulse, "Streaming")
-                }
+                StreamStatus.Connecting, StreamStatus.Open -> sb.append("Streaming?")
+                StreamStatus.Subscribed -> sb.append("Streaming")
             }
         } finally {
             log.d("showColumnStatus $sb")
-            columnUiState.columnStatus = sb
+            columnUiState.columnStatus = sb.toString()
         }
     }
 

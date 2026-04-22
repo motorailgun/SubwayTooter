@@ -6,8 +6,6 @@ import android.graphics.PorterDuff
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
-import android.text.SpannableStringBuilder
-import android.text.Spanned
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
@@ -15,7 +13,6 @@ import android.widget.ImageView
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
-import androidx.annotation.DrawableRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.CompareArrows
 import androidx.compose.material.icons.filled.Home
@@ -35,7 +32,6 @@ import es.ariaontheplanet.quasar.api.entity.TootAccount
 import es.ariaontheplanet.quasar.api.entity.TootVisibility
 import es.ariaontheplanet.quasar.pref.PrefI
 import es.ariaontheplanet.quasar.pref.lazyContext
-import es.ariaontheplanet.quasar.span.EmojiImageSpan
 import es.ariaontheplanet.quasar.table.UserRelation
 import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.fixColor
@@ -253,24 +249,6 @@ fun calcIconRound(wh: Int) = wh.toFloat() * 0.165f
 
 fun calcIconRound(lp: ViewGroup.LayoutParams) =
     min(lp.width, lp.height).toFloat() * 0.165f
-
-fun SpannableStringBuilder.appendColorShadeIcon(
-    context: Context,
-    @DrawableRes drawableId: Int,
-    text: String,
-    color: Int? = null,
-): SpannableStringBuilder {
-    val start = this.length
-    this.append(text)
-    val end = this.length
-    this.setSpan(
-        EmojiImageSpan(context, drawableId, useColorShader = true, color = color),
-        start,
-        end,
-        Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-    )
-    return this
-}
 
 fun ComponentActivity.enableEdgeToEdgeEx(forceDark: Boolean) {
     val colorBarBg = when{

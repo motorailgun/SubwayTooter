@@ -28,7 +28,7 @@ class ColumnUiState {
     var columnContextColorBg by mutableIntStateOf(0)
     var columnContextPadLr by mutableIntStateOf(0)
     var columnIndex by mutableStateOf("")
-    var columnStatus by mutableStateOf<CharSequence>("")
+    var columnStatus by mutableStateOf("")
     var columnIconResId by mutableIntStateOf(0)
     var headerNameColor by mutableIntStateOf(0)
     var headerPageNumberColor by mutableIntStateOf(0)
