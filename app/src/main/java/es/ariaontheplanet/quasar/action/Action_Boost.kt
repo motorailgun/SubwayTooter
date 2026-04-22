@@ -22,7 +22,7 @@ import es.ariaontheplanet.quasar.column.ColumnType
 import es.ariaontheplanet.quasar.column.findStatus
 import es.ariaontheplanet.quasar.dialog.DlgConfirm.confirm
 import es.ariaontheplanet.quasar.dialog.pickAccount
-import es.ariaontheplanet.quasar.getVisibilityCaption
+import es.ariaontheplanet.quasar.getVisibilityString
 import es.ariaontheplanet.quasar.table.SavedAccount
 import es.ariaontheplanet.quasar.table.accountListNonPseudo
 import es.ariaontheplanet.quasar.table.daoAcctColor
@@ -355,7 +355,7 @@ fun ActMain.clickBoostWithVisibility(
         )
     }
     val captionList = list
-        .map { getVisibilityCaption(this, accessInfo.isMisskey, it) }
+        .map { it.getVisibilityString(accessInfo.isMisskey) }
         .toTypedArray()
 
     AlertDialog.Builder(this)

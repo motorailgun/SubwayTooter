@@ -6,8 +6,8 @@ import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.api.entity.InstanceCapability
 import es.ariaontheplanet.quasar.api.entity.TootInstance
 import es.ariaontheplanet.quasar.api.entity.TootVisibility
-import es.ariaontheplanet.quasar.getVisibilityCaption
 import es.ariaontheplanet.quasar.getVisibilityIconId
+import es.ariaontheplanet.quasar.getVisibilityString
 
 fun ActPost.showVisibility() {
     visibilityIconRes = (states.visibility ?: TootVisibility.Public)
@@ -58,7 +58,7 @@ fun ActPost.openVisibilityPicker() {
         )
     }
     val captionList = list
-        .map { getVisibilityCaption(this, account?.isMisskey == true, it) }
+        .map { it.getVisibilityString(account?.isMisskey == true) }
         .toTypedArray()
 
     AlertDialog.Builder(this)

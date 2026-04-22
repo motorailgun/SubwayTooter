@@ -1,8 +1,6 @@
 package es.ariaontheplanet.quasar
 
 import android.content.Context
-import android.content.res.ColorStateList
-import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.drawable.ColorDrawable
@@ -18,7 +16,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.DrawableRes
-import androidx.appcompat.widget.SwitchCompat
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.CompareArrows
 import androidx.compose.material.icons.filled.Home
@@ -36,24 +33,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.core.content.ContextCompat
 import es.ariaontheplanet.quasar.api.entity.TootAccount
 import es.ariaontheplanet.quasar.api.entity.TootVisibility
-import es.ariaontheplanet.quasar.emoji.EmojiMap
-import es.ariaontheplanet.quasar.pref.PrefB
 import es.ariaontheplanet.quasar.pref.PrefI
 import es.ariaontheplanet.quasar.pref.lazyContext
 import es.ariaontheplanet.quasar.span.EmojiImageSpan
-import es.ariaontheplanet.quasar.span.createSpan
 import es.ariaontheplanet.quasar.table.UserRelation
-import jp.juggler.util.log.LogCategory
 import jp.juggler.util.ui.attrColor
 import jp.juggler.util.ui.fixColor
-import jp.juggler.util.ui.mixColor
-import jp.juggler.util.ui.scan
 import jp.juggler.util.ui.setIconDrawableId
-import kotlin.math.max
 import kotlin.math.min
 import com.google.android.material.R as MR
-
-private val log = LogCategory("Styler")
 
 fun defaultColorIcon(context: Context, iconId: Int): Drawable? =
     ContextCompat.getDrawable(context, iconId)?.also {
@@ -151,19 +139,6 @@ fun TootVisibility.getVisibilityString(isMisskeyData: Boolean): String {
             }
         }
     )
-}
-
-// アイコン付きの装飾テキストを返す
-fun getVisibilityCaption(
-    context: Context,
-    isMisskeyData: Boolean,
-    visibility: TootVisibility,
-): CharSequence {
-    val sb = SpannableStringBuilder()
-
-    // removed for now
-
-    return sb
 }
 
 fun setFollowIcon(
@@ -273,82 +248,6 @@ fun setFollowIcon(
     ibFollow.contentDescription = contentDescription
 }
 
-private fun getHorizontalPadding(v: View, dpDelta: Float): Int {
-    // Essential Phone PH-1は 短辺439dp
-    val formWidthMax = 460f
-    val dm = v.resources.displayMetrics
-    val screenW = dm.widthPixels
-    val contentW = (0.5f + formWidthMax * dm.density).toInt()
-    val padW = max(0, (screenW - contentW) / 2)
-    return padW + (0.5f + dpDelta * dm.density).toInt()
-}
-
-private fun getOrientationString(orientation: Int?) = when (orientation) {
-    null -> "null"
-    Configuration.ORIENTATION_LANDSCAPE -> "landscape"
-    Configuration.ORIENTATION_PORTRAIT -> "portrait"
-    Configuration.ORIENTATION_UNDEFINED -> "undefined"
-    else -> orientation.toString()
-}
-
-fun fixHorizontalPadding(v: View, dpDelta: Float = 12f) {
-    val padT = v.paddingTop
-    val padB = v.paddingBottom
-
-    val dm = v.resources.displayMetrics
-    val widthDp = dm.widthPixels / dm.density
-    if (widthDp >= 640f && v.resources?.configuration?.orientation == Configuration.ORIENTATION_PORTRAIT) {
-        val padLr = (0.5f + dpDelta * dm.density).toInt()
-        when (PrefI.ipJustifyWindowContentPortrait.value) {
-            PrefI.JWCP_START -> {
-                v.setPaddingRelative(padLr, padT, padLr + dm.widthPixels / 2, padB)
-                return
-            }
-
-            PrefI.JWCP_END -> {
-                v.setPaddingRelative(padLr + dm.widthPixels / 2, padT, padLr, padB)
-                return
-            }
-
-            else -> Unit
-        }
-    }
-
-    val padLr = getHorizontalPadding(v, dpDelta)
-    v.setPaddingRelative(padLr, padT, padLr, padB)
-}
-
-fun fixHorizontalMargin(v: View) {
-    val lp = v.layoutParams
-    if (lp is ViewGroup.MarginLayoutParams) {
-
-        val dm = v.resources.displayMetrics
-        val orientationString = getOrientationString(v.resources?.configuration?.orientation)
-        val widthDp = dm.widthPixels / dm.density
-        log.d("fixHorizontalMargin: orientation=$orientationString, w=${widthDp}dp, h=${dm.heightPixels / dm.density}")
-
-        if (widthDp >= 640f && v.resources?.configuration?.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            when (PrefI.ipJustifyWindowContentPortrait.value) {
-                PrefI.JWCP_START -> {
-                    lp.marginStart = 0
-                    lp.marginEnd = dm.widthPixels / 2
-                    return
-                }
-
-                PrefI.JWCP_END -> {
-                    lp.marginStart = dm.widthPixels / 2
-                    lp.marginEnd = 0
-                    return
-                }
-            }
-        }
-
-        val padLr = getHorizontalPadding(v, 0f)
-        lp.leftMargin = padLr
-        lp.rightMargin = padLr
-    }
-}
-
 // ActMainの初期化時に更新される
 fun calcIconRound(wh: Int) = wh.toFloat() * 0.165f
 
@@ -372,96 +271,6 @@ fun SpannableStringBuilder.appendColorShadeIcon(
     )
     return this
 }
-
-fun SpannableStringBuilder.appendMisskeyReaction(
-    context: Context,
-    emojiUtf16: String,
-    text: String,
-): SpannableStringBuilder {
-
-    val emoji = EmojiMap.unicodeMap[emojiUtf16]
-    when {
-        emoji == null ->
-            append("text")
-
-        PrefB.bpUseTwemoji.value -> {
-            val start = this.length
-            append(text)
-            val end = this.length
-            this.setSpan(
-                emoji.createSpan(context),
-                start, end,
-                Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-            )
-        }
-
-        else ->
-            this.append(emoji.unifiedCode)
-    }
-    return this
-}
-
-fun Context.setSwitchColor(root: View?) {
-    root ?: return
-    val colorBg = attrColor(MR.attr.colorSurface)
-    val colorOff = attrColor(MR.attr.colorOutline)
-    val colorOn = android.graphics.Color.BLACK or 0x0080ff
-
-    val colorDisabled = mixColor(colorBg, colorOff)
-
-    val colorTrackDisabled = mixColor(colorBg, colorDisabled)
-    val colorTrackOn = mixColor(colorBg, colorOn)
-    val colorTrackOff = mixColor(colorBg, colorOff)
-
-    // https://stackoverflow.com/a/25635526/9134243
-    val thumbStates = ColorStateList(
-        arrayOf(
-            intArrayOf(-android.R.attr.state_enabled),
-            intArrayOf(android.R.attr.state_checked),
-            intArrayOf()
-        ),
-        intArrayOf(
-            colorDisabled,
-            colorOn,
-            colorOff
-        )
-    )
-
-    val trackStates = ColorStateList(
-        arrayOf(
-            intArrayOf(-android.R.attr.state_enabled),
-            intArrayOf(android.R.attr.state_checked),
-            intArrayOf()
-        ),
-        intArrayOf(
-            colorTrackDisabled,
-            colorTrackOn,
-            colorTrackOff
-        )
-    )
-
-    root.scan {
-        (it as? SwitchCompat)?.apply {
-            thumbTintList = thumbStates
-            trackTintList = trackStates
-        }
-    }
-}
-
-fun ViewGroup.generateLayoutParamsEx(): ViewGroup.LayoutParams? =
-    try {
-        // Create MarginLayoutParams with MATCH_PARENT dimensions.
-        // When added to a ViewGroup, Android will convert it to the correct
-        // LayoutParams subclass via checkLayoutParams/generateLayoutParams.
-        ViewGroup.MarginLayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT,
-        )
-    } catch (ex: Throwable) {
-        log.e(ex, "generateLayoutParamsEx failed")
-        null
-    }
-
 
 fun ComponentActivity.enableEdgeToEdgeEx(forceDark: Boolean) {
     val colorBarBg = when{

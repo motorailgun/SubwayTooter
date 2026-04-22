@@ -29,7 +29,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import es.ariaontheplanet.quasar.ActMain
 import es.ariaontheplanet.quasar.R
 import es.ariaontheplanet.quasar.api.entity.TootVisibility
-import es.ariaontheplanet.quasar.getVisibilityCaption
+import es.ariaontheplanet.quasar.getVisibilityString
 import es.ariaontheplanet.quasar.pref.PrefS
 import jp.juggler.util.data.notEmpty
 import jp.juggler.util.ui.dismissSafe
@@ -87,11 +87,7 @@ class DlgQuickTootMenu(
             setContent {
                 QuickTootMenuContent(
                     visibilityState = visibilityState.value,
-                    visibilityCaption = getVisibilityCaption(
-                        activity,
-                        false,
-                        visibilityState.value,
-                    ),
+                    visibilityCaption = visibilityState.value.getVisibilityString(false),
                     macroValues = macroStates.map { it.value },
                     onMacroChange = { index, value ->
                         macroStates[index].value = value
@@ -170,16 +166,7 @@ private fun QuickTootMenuContent(
                 ) {
                     DlgQuickTootMenu.visibilityList.forEach { vis ->
                         DropdownMenuItem(
-                            text = {
-                                val context = androidx.compose.ui.platform.LocalContext.current
-                                Text(
-                                    getVisibilityCaption(
-                                        context,
-                                        false,
-                                        vis,
-                                    ).toString()
-                                )
-                            },
+                            text = { Text(vis.getVisibilityString(false)) },
                             onClick = {
                                 showVisibilityMenu.value = false
                                 onVisibilityPick(vis)

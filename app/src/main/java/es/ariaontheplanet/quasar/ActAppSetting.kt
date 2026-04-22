@@ -260,15 +260,6 @@ class ActAppSetting : ComponentActivity() {
         refreshUi()
     }
 
-    /**
-     * No-op in Material3 Compose — switches use theme colors.
-     */
-    fun setSwitchColor() {}
-
-    // Overload to accept any View — also no-op.
-    @Suppress("UNUSED_PARAMETER")
-    fun setSwitchColor(root: View?) {}
-
     fun initSpinner(spinner: Spinner, captions: List<String>) {
         spinner.adapter = ArrayAdapter(
             this,
