@@ -23,8 +23,8 @@
 | 2 — ViewModel extraction | ✅ done | All 10 target Activities have `[Android]ViewModel` with `StateFlow<UiState>` |
 | 3 — DataStore migration | ⏭ skipped | Untouched this session |
 | 4 — AppState/App1 → Koin | ✅ core done | Koin graph stood up; `AppState.kt` 636 → 179 LOC (−72%), `App1.kt` 361 → 256 LOC. Services: `AppBusyState`, `ColumnRepository`, `TtsService`, `OkHttpClients`, Coil `ImageLoader`. Static forwarders still in place on `App1` companion for a few consumers — migrating those is cleanup, not blocking. |
-| 5 — Navigation-Compose | ⚙ ~70% | **15 screens migrated + 2 dead-Activity deletions = 17 Activity classes gone.** 6 Activity source files remain: `ActMain`, `ActPost`, `ActAppSetting`, `ActKeywordFilter`, `ActText`, `ActCallback` (intentional — intent dispatcher) + `ActMediaViewer` (out-of-scope). |
-| 6 — Compose rich text + Coil | ⚙ 6a + 6b done, 6c-1 landed | Glide → Coil complete. `AnkoHelper`/`GestureInterceptor` gone. `RichText` bridgehead + one pilot migration. **12 `SpannableTextView` call sites remain.** Block-level span decomposition + link-click wiring + animated-emoji rendering all deferred to 6c-2+. |
+| 5 — Navigation-Compose | ✅ success criteria met | Every inter-screen `startActivity(Intent(...))` call is either `RootActivity.createIntent(route)`, an external system intent, or into one of the three remaining deliberately-kept Activities. `WeakReference<ActMain>` and `ActMainRegistry` gone — replaced by `MultiWindowPostService` Koin single. 17 migrated + 2 dead-deleted Activities; `ActMain` / `ActPost` / `ActAppSetting` still Activities (plan classifies their route-migration as hard / optional). |
+| 6 — Compose rich text + Coil | ✅ done in full | Glide → Coil, `SpannableTextView` wrapper + `NetworkEmojiInvalidator` + `MyLinkMovementMethod` gone, block-span decomposition in `toRichContent`, `LinkAnnotation.Clickable` link handling, MFM Big/Motion animation via `rememberInfiniteTransition`, hashtag-menu aggregation restored. |
 | 7 — Column state unification | ⏭ not started | Highest risk; intentionally last. |
 
 ### What the codebase looks like now
@@ -983,4 +983,23 @@ Network emoji animation (APNG/GIF/WebP) already works for free — Coil 3's `Ani
 Open cleanup within Phase 6:
 - Nested block decomposition (blockquote containing a list) — rare in real HTML, flattens into the outer paragraph currently.
 - Span classes `draw*` methods are dead (no more TextView renders them; `ActMainAutoCW.checkAutoCW` calls `tv.measure()` which uses `getSize`/`updateMeasureState`/`getLeadingMargin` but not the draw methods). The classes stay because they still carry data (ranges + metrics) into `toRichContent`; deleting the draw code is a large simplification but needs careful staging.
+
+### Phase 5 success criteria — met (`f8b5f943a`)
+
+`ActMainRegistry` / `WeakReference<ActMain>` deleted. The cross-Activity signals that needed it (multi-window ActPost close-on-parent-destroy + post-complete bus) now route through the new `services/MultiWindowPostService.kt` Koin single:
+
+- `register(activity)` / `closeAll()` replace the `LinkedList<WeakReference<Activity>>` on `ActMain`.
+- `emitComplete(intent)` publishes to a `SharedFlow<Intent>` that `ActMain` collects in `onCreate` via `lifecycleScope`.
+
+`startActivity(Intent(...))` audit: every remaining raw intent is either a system/external intent (`ACTION_SEND`, `ACTION_VIEW`, `Settings.EXTRA_CHANNEL_ID`, etc.) or targets one of the three still-Activity screens (ActMain, ActPost, ActAppSetting). No internal "inter-screen navigation via explicit Intent" remains.
+
+The three not-yet-migrated Activities are deliberate per the plan's difficulty classification:
+
+| File | Classification | Rationale |
+|---|---|---|
+| `ActMain` (653) | hard / risky | Single-activity host for the timeline; touches columns, streaming, the drawer. Hundreds of extension methods take `ActMain` as receiver. A route-ified version would need `RootActivity` to take over the launcher intent-filter and deep-link handling. |
+| `ActPost` (731) | large | Post composer. Self-contained but large; structurally feasible to migrate but would roughly double the session cost of the smaller migrations already done. |
+| `ActAppSetting` (745) | viable-to-keep | Heavy framework-coupled file I/O (export/import/font picker/log export) that doesn't benefit meaningfully from route hosting. |
+
+These remain viable future work but aren't on the Phase 5 critical path. Phase 7 (Column state unification) is the natural next target — and was always planned to come after Phase 6.
 
