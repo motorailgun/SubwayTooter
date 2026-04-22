@@ -14,11 +14,9 @@ import es.ariaontheplanet.quasar.table.SavedAccount
 import es.ariaontheplanet.quasar.table.daoUserRelation
 import es.ariaontheplanet.quasar.util.*
 import es.ariaontheplanet.quasar.util.DecodeOptions.Companion.emojiScaleUserName
-import es.ariaontheplanet.quasar.view.MyLinkMovementMethod
 import jp.juggler.util.*
 import jp.juggler.util.data.*
 import jp.juggler.util.log.LogCategory
-import jp.juggler.util.ui.vg
 import java.util.*
 import java.util.regex.Pattern
 
@@ -217,95 +215,6 @@ open class TootAccount(
             start == 0 && end == length -> this
             else -> subSequence(start, end)
         }
-    }
-
-    fun setAccountExtra(
-        accessInfo: SavedAccount,
-        invalidator: NetworkEmojiInvalidator,
-        fromProfileHeader: Boolean = false,
-        suggestionSource: String? = null,
-    ): SpannableStringBuilder? {
-        val context = invalidator.view.context
-
-        var sb: SpannableStringBuilder? = null
-        fun prepareSb() = sb?.apply { append('\n') } ?: SpannableStringBuilder().also { sb = it }
-        val delm = ": "
-
-        if (suggestionSource?.isNotEmpty() == true) {
-            prepareSb()
-                .append(context.getString(R.string.suggestion_source))
-                .append(delm)
-                .append(suggestionSource)
-        }
-
-        if (PrefB.bpDirectoryLastActive.value && last_status_at > 0L) {
-            prepareSb()
-                .append(context.getString(R.string.last_active))
-                .append(delm)
-                .append(
-                    TootStatus.formatTime(
-                        context,
-                        last_status_at,
-                        bAllowRelative = true,
-                        onlyDate = true
-                    )
-                )
-        }
-
-        if (!fromProfileHeader) {
-            if (PrefB.bpDirectoryTootCount.value &&
-                (statuses_count ?: 0L) > 0L
-            ) {
-                prepareSb()
-                    .append(context.getString(R.string.toot_count))
-                    .append(delm)
-                    .append(statuses_count.toString())
-            }
-
-            if (PrefB.bpDirectoryFollowers.value &&
-                !PrefB.bpHideFollowCount.value &&
-                (followers_count ?: 0L) > 0L
-            ) {
-                prepareSb()
-                    .append(context.getString(R.string.followers))
-                    .append(delm)
-                    .append(followers_count.toString())
-            }
-
-            if (PrefB.bpDirectoryNote.value && note?.isNotEmpty() == true) {
-                val decodedNote = DecodeOptions(
-                    context,
-                    accessInfo,
-                    short = true,
-                    decodeEmoji = true,
-                    emojiMapProfile = profile_emojis,
-                    emojiMapCustom = custom_emojis,
-                    unwrapEmojiImageTag = true,
-                    authorDomain = this,
-                    emojiSizeMode = accessInfo.emojiSizeMode(),
-                    enlargeCustomEmoji = emojiScaleUserName,
-                    enlargeEmoji = emojiScaleUserName,
-                ).decodeHTML(note)
-                    .replaceAllEx(reNoteLineFeed, " ")
-                    .trimEx()
-                if (decodedNote.isNotBlank()) {
-                    prepareSb().append(
-                        if (decodedNote is SpannableStringBuilder && decodedNote.length > 200) {
-                            decodedNote.replace(200, decodedNote.length, "…")
-                        } else {
-                            decodedNote
-                        }
-                    )
-                }
-            }
-        }
-
-        invalidator.view.vg(sb != null)?.apply {
-            invalidator.text = sb!!
-            movementMethod = MyLinkMovementMethod
-        } ?: invalidator.clear()
-
-        return sb
     }
 
     companion object {

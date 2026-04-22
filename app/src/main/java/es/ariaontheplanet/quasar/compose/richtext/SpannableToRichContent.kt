@@ -17,25 +17,32 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.em
 import coil3.compose.AsyncImage
+import es.ariaontheplanet.quasar.span.BlockCodeSpan
+import es.ariaontheplanet.quasar.span.BlockQuoteSpan
+import es.ariaontheplanet.quasar.span.DdSpan
 import es.ariaontheplanet.quasar.span.EmojiImageSpan
 import es.ariaontheplanet.quasar.span.HighlightSpan
+import es.ariaontheplanet.quasar.span.HrSpan
 import es.ariaontheplanet.quasar.span.InlineCodeSpan
 import es.ariaontheplanet.quasar.span.MyClickableSpan
 import es.ariaontheplanet.quasar.span.NetworkEmojiSpan
+import es.ariaontheplanet.quasar.span.OrderedListItemSpan
 import es.ariaontheplanet.quasar.span.SvgEmojiSpan
+import es.ariaontheplanet.quasar.span.UnorderedListItemSpan
 
 // Converts a Spannable (as produced by HTMLDecoder / EmojiDecoder / MFM parser)
 // into the block-oriented RichContent used by the Compose RichText renderer.
 //
-// Scope: this is the Phase 6c bridgehead. Supports inline spans used across
-// the entire app (MyClickableSpan, HighlightSpan, InlineCodeSpan) and the three
-// emoji replacement spans (NetworkEmojiSpan, EmojiImageSpan, SvgEmojiSpan).
-// Animated spans (NetworkEmojiSpan animation, Misskey big/motion) render as
-// static approximations — animation is a follow-up.
+// Inline spans are rendered natively (MyClickableSpan → LinkAnnotation,
+// HighlightSpan → background, InlineCodeSpan → monospace background,
+// {Network,Emoji,Svg}EmojiSpan → InlineTextContent placeholders).
 //
-// Block-level spans (BlockQuote/BlockCode/Hr/list/Dd) are **flattened** into a
-// single Paragraph in this first pass. Most account bios and display names
-// don't hit them; proper block decomposition is scheduled for 6c-2.
+// Block-level spans are emitted as separate RichBlock variants so they
+// render with their decorations rather than flattening into a paragraph.
+// Nested blocks are not decomposed recursively — an inner block falling
+// inside an outer block's range is currently flattened into the outer's
+// paragraph. Most Mastodon HTML is single-level so this is acceptable for
+// now.
 
 fun CharSequence.toRichContent(
     defaultLinkColor: Int = 0,
@@ -46,18 +53,127 @@ fun CharSequence.toRichContent(
         return RichContent(listOf(RichBlock.Paragraph(AnnotatedString(this.toString()))))
     }
 
-    val text = spannable.toString()
+    val length = spannable.length
+    if (length == 0) return RichContent.Empty
+
+    // Collect block-level spans, sorted by start, outer blocks first on ties.
+    // We greedily take non-overlapping blocks; inner overlaps flatten into
+    // the outer paragraph.
+    val blockSpans = spannable.getSpans(0, length, Any::class.java)
+        .mapNotNull { span ->
+            val kind = blockKindOf(span) ?: return@mapNotNull null
+            val start = spannable.getSpanStart(span)
+            val end = spannable.getSpanEnd(span)
+            if (start < 0 || end <= start) return@mapNotNull null
+            Triple(kind, start, end) to span
+        }
+        .sortedWith(
+            compareBy<Pair<Triple<BlockKind, Int, Int>, Any>> { it.first.second }
+                .thenByDescending { it.first.third },
+        )
+
+    val blocks = mutableListOf<RichBlock>()
+    var cursor = 0
+
+    for ((boundary, span) in blockSpans) {
+        val (kind, start, end) = boundary
+        if (start < cursor) continue // skip inner/overlapping
+
+        // Plain paragraph for any text before this block.
+        if (cursor < start) {
+            blocks += buildParagraph(spannable, cursor, start, defaultLinkColor, onLinkClick)
+        }
+
+        blocks += when (kind) {
+            BlockKind.BlockQuote -> RichBlock.BlockQuote(
+                listOf(buildParagraph(spannable, start, end, defaultLinkColor, onLinkClick)),
+            )
+            BlockKind.BlockCode -> RichBlock.CodeBlock(spannable.substring(start, end))
+            BlockKind.Hr -> RichBlock.Hr
+            BlockKind.OrderedItem -> {
+                val index = (span as OrderedListItemSpan).orderIndexOrNull() ?: 0
+                RichBlock.ListItem(
+                    ordered = true,
+                    index = index,
+                    children = listOf(buildParagraph(spannable, start, end, defaultLinkColor, onLinkClick)),
+                )
+            }
+            BlockKind.UnorderedItem -> RichBlock.ListItem(
+                ordered = false,
+                index = 0,
+                children = listOf(buildParagraph(spannable, start, end, defaultLinkColor, onLinkClick)),
+            )
+            BlockKind.Indent -> RichBlock.Indent(
+                listOf(buildParagraph(spannable, start, end, defaultLinkColor, onLinkClick)),
+            )
+        }
+
+        cursor = end
+    }
+
+    // Trailing text.
+    if (cursor < length) {
+        blocks += buildParagraph(spannable, cursor, length, defaultLinkColor, onLinkClick)
+    }
+
+    if (blocks.isEmpty()) {
+        // All block spans were degenerate; render the whole thing as one paragraph.
+        blocks += buildParagraph(spannable, 0, length, defaultLinkColor, onLinkClick)
+    }
+
+    return RichContent(blocks)
+}
+
+private enum class BlockKind {
+    BlockQuote,
+    BlockCode,
+    Hr,
+    OrderedItem,
+    UnorderedItem,
+    Indent,
+}
+
+private fun blockKindOf(span: Any): BlockKind? = when (span) {
+    is BlockQuoteSpan -> BlockKind.BlockQuote
+    is BlockCodeSpan -> BlockKind.BlockCode
+    is HrSpan -> BlockKind.Hr
+    is OrderedListItemSpan -> BlockKind.OrderedItem
+    is UnorderedListItemSpan -> BlockKind.UnorderedItem
+    is DdSpan -> BlockKind.Indent
+    else -> null
+}
+
+private fun OrderedListItemSpan.orderIndexOrNull(): Int? = try {
+    val f = javaClass.getDeclaredField("order")
+    f.isAccessible = true
+    (f.get(this) as? String)?.trim()?.toIntOrNull()?.minus(1)
+} catch (_: Throwable) {
+    null
+}
+
+private fun buildParagraph(
+    spannable: Spanned,
+    start: Int,
+    end: Int,
+    defaultLinkColor: Int,
+    onLinkClick: ((String) -> Unit)?,
+): RichBlock.Paragraph {
+    val text = spannable.subSequence(start, end).toString()
     val inline = mutableMapOf<String, InlineTextContent>()
     var emojiCounter = 0
 
     val annotated = buildAnnotatedString {
         append(text)
 
-        // Inline styling spans — apply in document order.
-        for (span in spannable.getSpans(0, text.length, Any::class.java)) {
-            val start = spannable.getSpanStart(span)
-            val end = spannable.getSpanEnd(span)
-            if (start < 0 || end <= start) continue
+        // Translate each span's absolute range into a paragraph-local range.
+        for (span in spannable.getSpans(start, end, Any::class.java)) {
+            val sAbs = spannable.getSpanStart(span)
+            val eAbs = spannable.getSpanEnd(span)
+            if (sAbs < 0 || eAbs <= sAbs) continue
+            // Clamp to the paragraph range.
+            val sLocal = (sAbs - start).coerceAtLeast(0)
+            val eLocal = (eAbs - start).coerceAtMost(end - start)
+            if (eLocal <= sLocal) continue
 
             when (span) {
                 is MyClickableSpan -> {
@@ -71,28 +187,24 @@ fun CharSequence.toRichContent(
                     )
                     val url = span.linkInfo.url
                     if (onLinkClick != null) {
-                        // Compose 1.7 LinkAnnotation — Text's native link handling
-                        // honours the listener, so no extra pointer-input wiring.
                         val link = LinkAnnotation.Clickable(
                             tag = RICH_LINK_TAG,
                             styles = TextLinkStyles(style = linkStyle),
                             linkInteractionListener = { onLinkClick(url) },
                         )
-                        addLink(link, start, end)
+                        addLink(link, sLocal, eLocal)
                     } else {
-                        addStyle(linkStyle, start, end)
-                        addStringAnnotation(RICH_LINK_TAG, url, start, end)
+                        addStyle(linkStyle, sLocal, eLocal)
+                        addStringAnnotation(RICH_LINK_TAG, url, sLocal, eLocal)
                     }
                 }
 
                 is HighlightSpan -> {
                     addStyle(
                         SpanStyle(
-                            color = Color(span.colorBg.argbWithAlpha()).takeIf { false } // never
-                                ?: Color.Unspecified,
                             background = if (span.colorBg != 0) Color(span.colorBg.argbWithAlpha()) else Color.Unspecified,
                         ),
-                        start, end,
+                        sLocal, eLocal,
                     )
                 }
 
@@ -102,37 +214,32 @@ fun CharSequence.toRichContent(
                             fontFamily = FontFamily.Monospace,
                             background = Color(0x40808080.toInt().argbWithAlpha()),
                         ),
-                        start, end,
+                        sLocal, eLocal,
                     )
                 }
 
                 is NetworkEmojiSpan -> {
                     val id = "emoji-${emojiCounter++}"
-                    // Replace the placeholder char with the tag's id so InlineTextContent lookup works.
-                    addStringAnnotation(RICH_EMOJI_TAG, id, start, end)
+                    addStringAnnotation(RICH_EMOJI_TAG, id, sLocal, eLocal)
                     inline[id] = networkEmojiInline(span)
                 }
 
                 is EmojiImageSpan -> {
                     val id = "emoji-${emojiCounter++}"
-                    addStringAnnotation(RICH_EMOJI_TAG, id, start, end)
+                    addStringAnnotation(RICH_EMOJI_TAG, id, sLocal, eLocal)
                     inline[id] = resourceEmojiInline(span.resIdOrNull())
                 }
 
                 is SvgEmojiSpan -> {
                     val id = "emoji-${emojiCounter++}"
-                    addStringAnnotation(RICH_EMOJI_TAG, id, start, end)
+                    addStringAnnotation(RICH_EMOJI_TAG, id, sLocal, eLocal)
                     inline[id] = svgEmojiInline(span.assetPathOrNull())
                 }
-
-                // Other spans (BlockQuote / BlockCode / Hr / list / Dd / Animatable / Misskey*)
-                // fall through and currently render as plain text. Block decomposition
-                // lands in the next 6c slice.
             }
         }
     }
 
-    return RichContent(listOf(RichBlock.Paragraph(annotated, inline)))
+    return RichBlock.Paragraph(annotated, inline)
 }
 
 private fun Int.argbWithAlpha(): Long =

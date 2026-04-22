@@ -619,17 +619,25 @@ fun StatusBody(
                     }
 
                     // Main text content
-                    SpannableTextView(
-                        text = status.decoded_content,
-                        textColor = contentColor,
-                        textSizeSp = ActMain.timelineFontSizeSp.takeIf { it.isFinite() }
-                            ?: Float.NaN,
-                        lineSpacingMultiplier = 1.1f,
+                    val bodyContent = remember(status.decoded_content, onLinkClick) {
+                        status.decoded_content.toRichContent(
+                            MyClickableSpan.defaultLinkColor,
+                            onLinkClick,
+                        )
+                    }
+                    val bodyStyle = remember {
+                        androidx.compose.ui.text.TextStyle(
+                            fontSize = (ActMain.timelineFontSizeSp.takeIf { it.isFinite() } ?: 14f).sp,
+                            lineHeight = ((ActMain.timelineFontSizeSp.takeIf { it.isFinite() } ?: 14f) * 1.1f).sp,
+                        )
+                    }
+                    RichText(
+                        content = bodyContent,
+                        color = Color(contentColor),
+                        style = bodyStyle,
                         modifier = Modifier
                             .fillMaxWidth()
                             .alpha(fadeAlpha),
-                        movementMethod = true,
-                        handler = activity.handler,
                     )
 
                     // Media attachments
