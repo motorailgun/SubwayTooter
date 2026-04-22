@@ -22,6 +22,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,12 +35,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import es.ariaontheplanet.quasar.ActMain
 import es.ariaontheplanet.quasar.R
+import es.ariaontheplanet.quasar.actmain.nextPosition
 import es.ariaontheplanet.quasar.api.entity.TootAccount
 import es.ariaontheplanet.quasar.api.entity.TootAccountRef
 import es.ariaontheplanet.quasar.api.entity.TootInstance
 import es.ariaontheplanet.quasar.column.Column
 import es.ariaontheplanet.quasar.column.HeaderType
+import es.ariaontheplanet.quasar.compose.richtext.RichText
+import es.ariaontheplanet.quasar.compose.richtext.toRichContent
+import es.ariaontheplanet.quasar.span.MyClickableSpan
 import es.ariaontheplanet.quasar.table.SavedAccount
+import es.ariaontheplanet.quasar.util.openCustomTab
 
 /**
  * Renders the appropriate content-specific header based on the column's [Column.HeaderType].
@@ -177,12 +183,19 @@ fun ProfileHeader(
 
             // Name + acct
             Column(modifier = Modifier.weight(1f)) {
-                SpannableTextView(
-                    text = whoRef.decoded_display_name,
-                    textColor = contentColor,
-                    textSizeSp = 18f,
-                    typeface = ActMain.timelineFontBold,
-                    handler = activity.handler,
+                val nameContent = remember(whoRef.decoded_display_name) {
+                    whoRef.decoded_display_name.toRichContent()
+                }
+                val nameStyle = remember(ActMain.timelineFontBold) {
+                    androidx.compose.ui.text.TextStyle(
+                        fontFamily = androidx.compose.ui.text.font.FontFamily(ActMain.timelineFontBold),
+                        fontSize = 18f.sp,
+                    )
+                }
+                RichText(
+                    content = nameContent,
+                    color = Color(contentColor),
+                    style = nameStyle,
                 )
 
                 AcctText(
@@ -228,12 +241,28 @@ fun ProfileHeader(
 
         // Bio / note
         if (whoRef.decoded_note.isNotEmpty()) {
-            SpannableTextView(
-                text = whoRef.decoded_note,
-                textColor = contentColor,
-                textSizeSp = ActMain.timelineFontSizeSp.takeIf { it.isFinite() } ?: Float.NaN,
-                handler = activity.handler,
-                movementMethod = true,
+            val noteOnLinkClick = remember(activity, column) {
+                { url: String ->
+                    openCustomTab(
+                        activity = activity,
+                        pos = activity.nextPosition(column),
+                        url = url,
+                        accessInfo = column.accessInfo,
+                    )
+                }
+            }
+            val noteContent = remember(whoRef.decoded_note, noteOnLinkClick) {
+                whoRef.decoded_note.toRichContent(MyClickableSpan.defaultLinkColor, noteOnLinkClick)
+            }
+            val noteStyle = remember {
+                androidx.compose.ui.text.TextStyle(
+                    fontSize = (ActMain.timelineFontSizeSp.takeIf { it.isFinite() } ?: 14f).sp,
+                )
+            }
+            RichText(
+                content = noteContent,
+                color = Color(contentColor),
+                style = noteStyle,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 4.dp),
